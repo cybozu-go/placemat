@@ -54,12 +54,16 @@ func loadResourcesFromFile(args []string) (*placemat.Cluster, error) {
 }
 
 func run(args []string) error {
+	qemu := placemat.QemuProvider{
+		BaseDir: ".",
+	}
+
 	cluster, err := loadResourcesFromFile(args)
 	if err != nil {
 		return err
 	}
 
-	return placemat.Run(context.Background(), cluster)
+	return placemat.Run(context.Background(), qemu, cluster)
 }
 
 func main() {

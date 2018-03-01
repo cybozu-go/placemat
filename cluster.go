@@ -41,13 +41,11 @@ func startNodes(ctx context.Context, provider Provider, cluster *Cluster) error 
 	return env.Wait()
 }
 
-func Run(ctx context.Context, cluster *Cluster) error {
-	var qemu QemuProvider
-
-	err := createNodeVolumes(ctx, qemu, cluster)
+func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
+	err := createNodeVolumes(ctx, provider, cluster)
 	if err != nil {
 		return err
 	}
 
-	return startNodes(ctx, qemu, cluster)
+	return startNodes(ctx, provider, cluster)
 }
