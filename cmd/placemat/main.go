@@ -58,8 +58,8 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
-	return placemat.Start(ctx, networks, nodes, nodesets)
+
+	return placemat.Run(context.Background(), networks, nodes, nodesets)
 }
 
 func main() {
