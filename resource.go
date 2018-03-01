@@ -27,3 +27,9 @@ type Node struct {
 }
 
 type NodeSet struct{}
+
+type Cluster struct {
+	Networks []*Network
+	Nodes    []*Node
+	NodeSets []*NodeSet
+}

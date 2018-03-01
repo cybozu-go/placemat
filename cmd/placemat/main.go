@@ -12,54 +12,54 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func loadResources(data []byte) ([]*placemat.Network, []*placemat.Node, []*placemat.NodeSet, error) {
+func loadResources(data []byte) (*placemat.Cluster, error) {
 	yamls := bytes.Split(data, []byte("---\n"))
 
 	var c baseConfig
-	var nodes = make([]*placemat.Node, 0, 0)
+	var cluster placemat.Cluster
 	for _, text := range yamls {
 		err := yaml.Unmarshal([]byte(text), &c)
 		if err != nil {
-			return nil, nil, nil, err
+			return &cluster, err
 		}
 		switch c.Kind {
 		case "Node":
 			r, err := loadNodeResource(text)
 			if err != nil {
-				return nil, nil, nil, err
+				return &cluster, err
 			}
-			nodes = append(nodes, r)
+			cluster.Nodes = append(cluster.Nodes, r)
 
 		}
 
 	}
-	return nil, nodes, nil, nil
+	return &cluster, nil
 }
 
-func loadResourcesFromFile(args []string) ([]*placemat.Network, []*placemat.Node, []*placemat.NodeSet, error) {
-	var allNodes = make([]*placemat.Node, 0, 0)
+func loadResourcesFromFile(args []string) (*placemat.Cluster, error) {
+	var cluster placemat.Cluster
 	for _, file := range args {
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
-		_, nodes, _, err := loadResources(data)
+		c, err := loadResources(data)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 
-		allNodes = append(allNodes, nodes...)
+		cluster.Nodes = append(cluster.Nodes, c.Nodes...)
 	}
-	return nil, allNodes, nil, nil
+	return &cluster, nil
 }
 
 func run(args []string) error {
-	networks, nodes, nodesets, err := loadResourcesFromFile(args)
+	cluster, err := loadResourcesFromFile(args)
 	if err != nil {
 		return err
 	}
 
-	return placemat.Run(context.Background(), networks, nodes, nodesets)
+	return placemat.Run(context.Background(), cluster)
 }
 
 func main() {

@@ -14,8 +14,8 @@ type Provider interface {
 	StartNode(ctx context.Context, n *Node) error
 }
 
-func createNodeVolumes(ctx context.Context, provider Provider, nodes []*Node) error {
-	for _, n := range nodes {
+func createNodeVolumes(ctx context.Context, provider Provider, cluster *Cluster) error {
+	for _, n := range cluster.Nodes {
 		for _, v := range n.Spec.Volumes {
 			exists, err := provider.VolumeExists(ctx, n, v)
 			if err != nil {
@@ -30,9 +30,9 @@ func createNodeVolumes(ctx context.Context, provider Provider, nodes []*Node) er
 	return nil
 }
 
-func startNodes(ctx context.Context, provider Provider, nodes []*Node) error {
+func startNodes(ctx context.Context, provider Provider, cluster *Cluster) error {
 	env := cmd.NewEnvironment(ctx)
-	for _, n := range nodes {
+	for _, n := range cluster.Nodes {
 		env.Go(func(ctx context.Context) error {
 			return provider.StartNode(ctx, n)
 		})
@@ -41,13 +41,13 @@ func startNodes(ctx context.Context, provider Provider, nodes []*Node) error {
 	return env.Wait()
 }
 
-func Run(ctx context.Context, networks []*Network, nodes []*Node, nodeSets []*NodeSet) error {
+func Run(ctx context.Context, cluster *Cluster) error {
 	var qemu QemuProvider
 
-	err := createNodeVolumes(ctx, qemu, nodes)
+	err := createNodeVolumes(ctx, qemu, cluster)
 	if err != nil {
 		return err
 	}
 
-	return startNodes(ctx, qemu, nodes)
+	return startNodes(ctx, qemu, cluster)
 }
