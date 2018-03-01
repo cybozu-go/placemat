@@ -7,9 +7,9 @@ import (
 )
 
 type Provider interface {
-	VolumeExists(ctx context.Context, n *Node, v *VolumeSpec) (bool, error)
+	VolumeExists(ctx context.Context, node, vol string) (bool, error)
 
-	CreateVolume(ctx context.Context, n *Node, v *VolumeSpec) error
+	CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error
 
 	StartNode(ctx context.Context, n *Node) error
 }
@@ -17,13 +17,13 @@ type Provider interface {
 func createNodeVolumes(ctx context.Context, provider Provider, cluster *Cluster) error {
 	for _, n := range cluster.Nodes {
 		for _, v := range n.Spec.Volumes {
-			exists, err := provider.VolumeExists(ctx, n, v)
+			exists, err := provider.VolumeExists(ctx, n.Name, v.Name)
 			if err != nil {
 				return err
 			}
 			if v.RecreatePolicy == RecreateAlways ||
 				v.RecreatePolicy == RecreateIfNotPresent && !exists {
-				provider.CreateVolume(ctx, n, v)
+				provider.CreateVolume(ctx, n.Name, v)
 			}
 		}
 	}

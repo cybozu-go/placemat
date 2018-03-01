@@ -9,6 +9,7 @@ import (
 	"github.com/cybozu-go/log"
 )
 
+// QemuProvider is an implementation of Provider interface
 type QemuProvider struct {
 	BaseDir string
 }
@@ -17,23 +18,26 @@ func (q QemuProvider) volumePath(host, name string) string {
 	return path.Join(q.BaseDir, host+"_"+name+".img")
 }
 
-func (p QemuProvider) VolumeExists(ctx context.Context, n *Node, v *VolumeSpec) (bool, error) {
-	path := p.volumePath(n.Name, v.Name)
+// VolumeExists checks if the volume exists
+func (q QemuProvider) VolumeExists(ctx context.Context, node, vol string) (bool, error) {
+	path := q.volumePath(node, vol)
 	_, err := os.Stat(path)
-	return os.IsExist(err), nil
+	return !os.IsNotExist(err), nil
 }
 
-func (p QemuProvider) CreateVolume(ctx context.Context, n *Node, v *VolumeSpec) error {
-	path := p.volumePath(n.Name, v.Name)
-	cmd := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", path, v.Size)
-	log.Info("Created volume", map[string]interface{}{"node": n.Name, "volume": v.Name})
+// CreateVolume creates the named by node and vol
+func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error {
+	path := q.volumePath(node, vol.Name)
+	cmd := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", path, vol.Size)
+	log.Info("Created volume", map[string]interface{}{"node": node, "volume": vol.Name})
 	return cmd.Run()
 }
 
-func (p QemuProvider) StartNode(ctx context.Context, n *Node) error {
+// StartNode starts a QEMU vm
+func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	params := []string{"-enable-kvm"}
 	for _, v := range n.Spec.Volumes {
-		path := p.volumePath(n.Name, v.Name)
+		path := q.volumePath(n.Name, v.Name)
 		params = append(params, "-drive")
 		params = append(params, "if=virtio,file="+path)
 	}
