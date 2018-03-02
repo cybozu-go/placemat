@@ -9,7 +9,8 @@ import (
 	"github.com/cybozu-go/log"
 )
 
-// QemuProvider is an implementation of Provider interface
+// QemuProvider is an implementation of Provider interface.  It launches
+// qemu-system-x86_64 as a VM engine, and qemu-img to create image.
 type QemuProvider struct {
 	BaseDir string
 }
