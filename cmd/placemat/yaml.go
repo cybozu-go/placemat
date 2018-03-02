@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 
 	"github.com/cybozu-go/placemat"
@@ -30,7 +31,7 @@ var recreatePolicyConfig = map[string]placemat.VolumeRecreatePolicy{
 	"Never":        placemat.RecreateNever,
 }
 
-func loadNodeResource(data []byte) (*placemat.Node, error) {
+func unmarshalNode(data []byte) (*placemat.Node, error) {
 	var n nodeConfig
 	err := yaml.Unmarshal(data, &n)
 	if err != nil {
@@ -61,4 +62,28 @@ func loadNodeResource(data []byte) (*placemat.Node, error) {
 	}
 
 	return &node, nil
+}
+
+func unmarshalCluster(data []byte) (*placemat.Cluster, error) {
+	yamls := bytes.Split(data, []byte("---\n"))
+
+	var c baseConfig
+	var cluster placemat.Cluster
+	for _, text := range yamls {
+		err := yaml.Unmarshal([]byte(text), &c)
+		if err != nil {
+			return &cluster, err
+		}
+		switch c.Kind {
+		case "Node":
+			r, err := unmarshalNode(text)
+			if err != nil {
+				return &cluster, err
+			}
+			cluster.Nodes = append(cluster.Nodes, r)
+
+		}
+
+	}
+	return &cluster, nil
 }

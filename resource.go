@@ -30,16 +30,16 @@ type NodeSpec struct {
 	Volumes    []*VolumeSpec
 }
 
-// NodeSpec represents a node configuration
+// Node represents a node configuration
 type Node struct {
 	Name string
 	Spec NodeSpec
 }
 
-// NodeSpec represents a node-set configuration
+// NodeSet represents a node-set configuration
 type NodeSet struct{}
 
-// NodeSpec represents cluster configuration
+// Cluster represents cluster configuration
 type Cluster struct {
 	Networks []*Network
 	Nodes    []*Node
