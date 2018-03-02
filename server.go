@@ -6,6 +6,7 @@ import (
 	"github.com/cybozu-go/cmd"
 )
 
+// Provider represents a back-end of VM engine
 type Provider interface {
 	VolumeExists(ctx context.Context, node, vol string) (bool, error)
 
@@ -33,14 +34,16 @@ func createNodeVolumes(ctx context.Context, provider Provider, cluster *Cluster)
 func startNodes(ctx context.Context, provider Provider, cluster *Cluster) error {
 	env := cmd.NewEnvironment(ctx)
 	for _, n := range cluster.Nodes {
+		node := n
 		env.Go(func(ctx context.Context) error {
-			return provider.StartNode(ctx, n)
+			return provider.StartNode(ctx, node)
 		})
 	}
 	env.Stop()
 	return env.Wait()
 }
 
+// Run runs VMs described in cluster by provider
 func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
 	err := createNodeVolumes(ctx, provider, cluster)
 	if err != nil {
