@@ -22,9 +22,13 @@ func createNodeVolumes(ctx context.Context, provider Provider, cluster *Cluster)
 			if err != nil {
 				return err
 			}
-			if v.RecreatePolicy == RecreateAlways ||
-				v.RecreatePolicy == RecreateIfNotPresent && !exists {
-				provider.CreateVolume(ctx, n.Name, v)
+			if !(v.RecreatePolicy == RecreateAlways ||
+				v.RecreatePolicy == RecreateIfNotPresent && !exists) {
+				continue
+			}
+			err = provider.CreateVolume(ctx, n.Name, v)
+			if err != nil {
+				return err
 			}
 		}
 	}

@@ -47,7 +47,7 @@ func unmarshalNode(data []byte) (*placemat.Node, error) {
 	if n.Spec.Interfaces == nil {
 		node.Spec.Interfaces = []string{}
 	}
-	node.Spec.Volumes = make([]*placemat.VolumeSpec, len(n.Spec.Volumes), len(n.Spec.Volumes))
+	node.Spec.Volumes = make([]*placemat.VolumeSpec, len(n.Spec.Volumes))
 	for i, v := range n.Spec.Volumes {
 		dst := &placemat.VolumeSpec{}
 		node.Spec.Volumes[i] = dst
