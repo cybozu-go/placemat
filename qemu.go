@@ -21,26 +21,26 @@ func (q QemuProvider) volumePath(host, name string) string {
 
 // VolumeExists checks if the volume exists
 func (q QemuProvider) VolumeExists(ctx context.Context, node, vol string) (bool, error) {
-	path := q.volumePath(node, vol)
-	_, err := os.Stat(path)
+	p := q.volumePath(node, vol)
+	_, err := os.Stat(p)
 	return !os.IsNotExist(err), nil
 }
 
 // CreateVolume creates the named by node and vol
 func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error {
-	path := q.volumePath(node, vol.Name)
-	cmd := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", path, vol.Size)
+	p := q.volumePath(node, vol.Name)
+	c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, vol.Size)
 	log.Info("Created volume", map[string]interface{}{"node": node, "volume": vol.Name})
-	return cmd.Run()
+	return c.Run()
 }
 
 // StartNode starts a QEMU vm
 func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	params := []string{"-enable-kvm"}
 	for _, v := range n.Spec.Volumes {
-		path := q.volumePath(n.Name, v.Name)
+		p := q.volumePath(n.Name, v.Name)
 		params = append(params, "-drive")
-		params = append(params, "if=virtio,file="+path)
+		params = append(params, "if=virtio,cache=none,aio=native,file="+p)
 	}
 	return cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
 }

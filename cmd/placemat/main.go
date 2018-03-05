@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"flag"
 	"io/ioutil"
-	"os"
 
+	"github.com/cybozu-go/cmd"
+	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat"
 )
 
@@ -36,13 +37,19 @@ func run(args []string) error {
 		return err
 	}
 
-	return placemat.Run(context.Background(), qemu, cluster)
+	cmd.Go(func(ctx context.Context) error {
+		return placemat.Run(ctx, qemu, cluster)
+	})
+	cmd.Stop()
+	return cmd.Wait()
 }
 
 func main() {
-	err := run(os.Args[1:])
+	flag.Parse()
+	cmd.LogConfig{}.Apply()
+
+	err := run(flag.Args())
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		log.ErrorExit(err)
 	}
 }
