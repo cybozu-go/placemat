@@ -30,7 +30,7 @@ func (q QemuProvider) VolumeExists(ctx context.Context, node, vol string) (bool,
 func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error {
 	p := q.volumePath(node, vol.Name)
 	c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, vol.Size)
-	log.Info("Created volume", map[string]interface{}{"node": node, "volume": vol.Name})
+	log.Info("Creating volume", map[string]interface{}{"node": node, "volume": vol.Name})
 	return c.Run()
 }
 

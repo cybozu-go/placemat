@@ -10,15 +10,19 @@ import (
 	"github.com/cybozu-go/placemat"
 )
 
-func loadCluster(args []string) (*placemat.Cluster, error) {
+func loadClusterFromFile(p string) (*placemat.Cluster, error) {
+	f, err := os.Open(p)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return readYaml(f)
+}
+
+func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {
 	var cluster placemat.Cluster
 	for _, p := range args {
-		f, err := os.Open(p)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		c, err := readYaml(f)
+		c, err := loadClusterFromFile(p)
 		if err != nil {
 			return nil, err
 		}
@@ -33,7 +37,7 @@ func run(args []string) error {
 		BaseDir: ".",
 	}
 
-	cluster, err := loadCluster(args)
+	cluster, err := loadClusterFromFiles(args)
 	if err != nil {
 		return err
 	}
