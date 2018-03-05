@@ -1,0 +1,11 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1-stretch
+    working_directory: /go/src/github.com/cybozu-go/placemat
+    steps:
+      - checkout
+      - run: sudo apt-get update && sudo apt-get install -y qemu-utils
+      - run: go get -v -t -d ./...
+      - run: go test -race -v ./...
