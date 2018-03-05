@@ -1,10 +1,12 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"errors"
+	"io"
 
 	"github.com/cybozu-go/placemat"
+	k8sYaml "github.com/kubernetes/apimachinery/pkg/util/yaml"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -64,26 +66,32 @@ func unmarshalNode(data []byte) (*placemat.Node, error) {
 	return &node, nil
 }
 
-func unmarshalCluster(data []byte) (*placemat.Cluster, error) {
-	yamls := bytes.Split(data, []byte("---\n"))
-
+func readYaml(r io.Reader) (*placemat.Cluster, error) {
 	var c baseConfig
 	var cluster placemat.Cluster
-	for _, text := range yamls {
-		err := yaml.Unmarshal([]byte(text), &c)
+	var y = k8sYaml.NewYAMLReader(bufio.NewReader(r))
+	for {
+		data, err := y.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+
+		err = yaml.Unmarshal(data, &c)
 		if err != nil {
 			return &cluster, err
 		}
+
 		switch c.Kind {
 		case "Node":
-			r, err := unmarshalNode(text)
+			r, err := unmarshalNode(data)
 			if err != nil {
 				return &cluster, err
 			}
 			cluster.Nodes = append(cluster.Nodes, r)
 
 		}
-
 	}
 	return &cluster, nil
 }

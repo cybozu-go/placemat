@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 
@@ -87,7 +88,7 @@ kind: Node
 name: node2
 `
 
-	cluster, err := unmarshalCluster([]byte(yaml))
+	cluster, err := readYaml(bytes.NewReader([]byte(yaml)))
 	if err != nil {
 		t.Error(err)
 	}

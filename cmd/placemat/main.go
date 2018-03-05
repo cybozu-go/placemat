@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"io/ioutil"
+	"os"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -12,12 +12,13 @@ import (
 
 func loadCluster(args []string) (*placemat.Cluster, error) {
 	var cluster placemat.Cluster
-	for _, file := range args {
-		data, err := ioutil.ReadFile(file)
+	for _, p := range args {
+		f, err := os.Open(p)
 		if err != nil {
 			return nil, err
 		}
-		c, err := unmarshalCluster(data)
+		defer f.Close()
+		c, err := readYaml(f)
 		if err != nil {
 			return nil, err
 		}
