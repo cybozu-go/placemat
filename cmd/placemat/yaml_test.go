@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"reflect"
 	"testing"
@@ -88,7 +89,7 @@ kind: Node
 name: node2
 `
 
-	cluster, err := readYaml(bytes.NewReader([]byte(yaml)))
+	cluster, err := readYaml(bufio.NewReader(bytes.NewReader([]byte(yaml))))
 	if err != nil {
 		t.Error(err)
 	}

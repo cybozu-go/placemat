@@ -45,3 +45,9 @@ type Cluster struct {
 	Nodes    []*Node
 	NodeSets []*NodeSet
 }
+
+// Append appends the other cluster into the receiver
+func (c *Cluster) Append(other *Cluster) *Cluster {
+	c.Nodes = append(c.Nodes, other.Nodes...)
+	return c
+}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"os"
@@ -16,7 +17,7 @@ func loadClusterFromFile(p string) (*placemat.Cluster, error) {
 		return nil, err
 	}
 	defer f.Close()
-	return readYaml(f)
+	return readYaml(bufio.NewReader(f))
 }
 
 func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {
@@ -27,7 +28,7 @@ func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {
 			return nil, err
 		}
 
-		cluster.Nodes = append(cluster.Nodes, c.Nodes...)
+		cluster.Append(c)
 	}
 	return &cluster, nil
 }

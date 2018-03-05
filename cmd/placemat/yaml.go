@@ -66,10 +66,10 @@ func unmarshalNode(data []byte) (*placemat.Node, error) {
 	return &node, nil
 }
 
-func readYaml(r io.Reader) (*placemat.Cluster, error) {
+func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 	var c baseConfig
 	var cluster placemat.Cluster
-	var y = k8sYaml.NewYAMLReader(bufio.NewReader(r))
+	var y = k8sYaml.NewYAMLReader(r)
 	for {
 		data, err := y.Read()
 		if err == io.EOF {
