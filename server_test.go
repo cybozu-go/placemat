@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"strconv"
 )
 
 type MockProvider struct {
@@ -30,14 +31,37 @@ func (m *MockProvider) StartNode(ctx context.Context, n *Node) error {
 	return ctx.Err()
 }
 
+func TestInterpretNodesFromNodeSet(t *testing.T) {
+	spec := &Cluster{}
+	expectedReplicas := 2
+	spec.NodeSets = getNodeSet(expectedReplicas)
+
+	p := MockProvider{
+		volumes: make(map[string]struct{}),
+		nodes:   make(map[string]struct{}),
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	nodes := interpretNodesFromNodeSet(ctx, &p, spec)
+	if len(nodes) != expectedReplicas {
+		t.Fatal("expected len(p.volumes) != "+strconv.Itoa(expectedReplicas)+", ",
+			len(p.volumes))
+	}
+
+}
+
 func TestCreateNodeVolumes(t *testing.T) {
 	spec := &Cluster{}
+
 	spec.Nodes = []*Node{
 		{Name: "host1", Spec: NodeSpec{Volumes: []*VolumeSpec{
 			{Name: "vol1", Size: "10GB"}}}},
 		{Name: "host2", Spec: NodeSpec{Volumes: []*VolumeSpec{
 			{Name: "vol1", Size: "10GB"}, {Name: "vol2", Size: "20GB"}}}},
 	}
+
+	expectedReplicas := 2
+	spec.NodeSets = getNodeSet(expectedReplicas)
 
 	p := MockProvider{
 		volumes: make(map[string]struct{}),
@@ -47,10 +71,30 @@ func TestCreateNodeVolumes(t *testing.T) {
 	cancel()
 	Run(ctx, &p, spec)
 
-	if len(p.volumes) != 3 {
-		t.Fatal("expected len(p.volumes) != 3, ", len(p.volumes))
+	if len(p.volumes) != 5 {
+		t.Fatal("expected len(p.volumes) != 5, ", len(p.volumes))
 	}
 	if len(p.nodes) != 2 {
 		t.Fatal("expected len(p.nodes) != 2, ", len(p.nodes))
+	}
+}
+
+func getNodeSet(replicas int) []*NodeSet {
+	template := NodeSpec{
+		Volumes: []*VolumeSpec{
+			{
+				Name: "template-vol",
+				Size: "10GB",
+			},
+		},
+	}
+	return []*NodeSet{
+		{
+			Name: "node",
+			Spec: NodeSetSpec{
+				Replicas: replicas,
+				Template: &template,
+			},
+		},
 	}
 }

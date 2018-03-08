@@ -14,15 +14,25 @@ type baseConfig struct {
 	Kind string `yaml:"kind"`
 }
 
+type nodeSpec struct {
+	Interfaces []string `yaml:"interfaces"`
+	Volumes []struct {
+		Name           string `yaml:"name"`
+		Size           string `yaml:"size"`
+		RecreatePolicy string `yaml:"recreatePolicy"`
+	} `yaml:"volumes"`
+}
+
 type nodeConfig struct {
+	Name string   `yaml:"name"`
+	Spec nodeSpec `yaml:"spec"`
+}
+
+type nodeSetConfig struct {
 	Name string `yaml:"name"`
 	Spec struct {
-		Interfaces []string `yaml:"interfaces"`
-		Volumes    []struct {
-			Name           string `yaml:"name"`
-			Size           string `yaml:"size"`
-			RecreatePolicy string `yaml:"recreatePolicy"`
-		} `yaml:"volumes"`
+		Replicas int      `yaml:"replicas"`
+		Template nodeSpec `yaml:"template"`
 	} `yaml:"spec"`
 }
 
@@ -45,14 +55,43 @@ func unmarshalNode(data []byte) (*placemat.Node, error) {
 
 	var node placemat.Node
 	node.Name = n.Name
-	node.Spec.Interfaces = n.Spec.Interfaces
-	if n.Spec.Interfaces == nil {
-		node.Spec.Interfaces = []string{}
+	s, err := constructNodeSpec(n.Spec)
+	if err != nil {
+		return nil, err
 	}
-	node.Spec.Volumes = make([]*placemat.VolumeSpec, len(n.Spec.Volumes))
-	for i, v := range n.Spec.Volumes {
+	node.Spec = *s
+
+	return &node, err
+}
+
+func unmarshalNodeSet(data []byte) (*placemat.NodeSet, error) {
+	var nsc nodeSetConfig
+	err := yaml.Unmarshal(data, &nsc)
+	if err != nil {
+		return nil, err
+	}
+	if nsc.Name == "" {
+		return nil, errors.New("nodeSet name is empty")
+	}
+
+	var nodeSet placemat.NodeSet
+	nodeSet.Name = nsc.Name
+	nodeSet.Spec.Replicas = nsc.Spec.Replicas
+	nodeSet.Spec.Template, err = constructNodeSpec(nsc.Spec.Template)
+
+	return &nodeSet, err
+}
+
+func constructNodeSpec(ns nodeSpec) (*placemat.NodeSpec, error) {
+	var res placemat.NodeSpec
+	res.Interfaces = ns.Interfaces
+	if ns.Interfaces == nil {
+		res.Interfaces = []string{}
+	}
+	res.Volumes = make([]*placemat.VolumeSpec, len(ns.Volumes))
+	for i, v := range ns.Volumes {
 		dst := &placemat.VolumeSpec{}
-		node.Spec.Volumes[i] = dst
+		res.Volumes[i] = dst
 
 		dst.Name = v.Name
 		dst.Size = v.Size
@@ -63,7 +102,7 @@ func unmarshalNode(data []byte) (*placemat.Node, error) {
 		}
 	}
 
-	return &node, nil
+	return &res, nil
 }
 
 func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
@@ -90,7 +129,12 @@ func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 				return &cluster, err
 			}
 			cluster.Nodes = append(cluster.Nodes, r)
-
+		case "NodeSet":
+			r, err := unmarshalNodeSet(data)
+			if err != nil {
+				return &cluster, err
+			}
+			cluster.NodeSets = append(cluster.NodeSets, r)
 		}
 	}
 	return &cluster, nil
