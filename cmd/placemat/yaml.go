@@ -61,7 +61,7 @@ func unmarshalNode(data []byte) (*placemat.Node, error) {
 	}
 	node.Spec = s
 
-	return &node, err
+	return &node, nil
 }
 
 func unmarshalNodeSet(data []byte) (*placemat.NodeSet, error) {
@@ -98,7 +98,7 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 		var ok bool
 		dst.RecreatePolicy, ok = recreatePolicyConfig[v.RecreatePolicy]
 		if !ok {
-			return res, errors.New("Invalid RecreatePolicy: " + v.RecreatePolicy)
+			return placemat.NodeSpec{}, errors.New("Invalid RecreatePolicy: " + v.RecreatePolicy)
 		}
 	}
 

@@ -2,10 +2,11 @@ package placemat
 
 import (
 	"context"
-	"github.com/cybozu-go/cmd"
 	"strconv"
 	"sync"
 	"testing"
+
+	"github.com/cybozu-go/cmd"
 )
 
 type MockProvider struct {
