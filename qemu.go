@@ -1,13 +1,35 @@
 package placemat
 
 import (
+	"bufio"
 	"context"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 )
+
+var vhostNetSupported bool
+
+func init() {
+	f, err := os.Open("/proc/modules")
+	if err != nil {
+		log.Error("failed to open /proc/modules", map[string]interface{}{
+			"error": err,
+		})
+	}
+	defer f.Close()
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		if strings.Contains(s.Text(), "vhost_net") {
+			vhostNetSupported = true
+			return
+		}
+	}
+}
 
 // QemuProvider is an implementation of Provider interface.  It launches
 // qemu-system-x86_64 as a VM engine, and qemu-img to create image.
@@ -92,8 +114,12 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		if err != nil {
 			return err
 		}
+		netdev := "tap,id=" + br + ",ifname=" + tap + ",script=no,downscript=no"
+		if vhostNetSupported {
+			netdev += ",vhost=on"
+		}
 
-		params = append(params, "-netdev", "tap,id="+br+",ifname="+tap+",script=no,downscript=no")
+		params = append(params, "-netdev", netdev)
 		params = append(params, "-device", "virtio-net-pci,netdev="+br+",romfile=")
 	}
 	for _, v := range n.Spec.Volumes {
