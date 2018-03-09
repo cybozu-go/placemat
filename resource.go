@@ -39,7 +39,7 @@ type Node struct {
 // NodeSetSpec represents a node-set specification
 type NodeSetSpec struct {
 	Replicas int
-	Template *NodeSpec
+	Template NodeSpec
 }
 
 // NodeSet represents a node-set configuration

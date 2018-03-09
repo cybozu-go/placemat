@@ -59,7 +59,7 @@ func unmarshalNode(data []byte) (*placemat.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	node.Spec = *s
+	node.Spec = s
 
 	return &node, err
 }
@@ -82,7 +82,7 @@ func unmarshalNodeSet(data []byte) (*placemat.NodeSet, error) {
 	return &nodeSet, err
 }
 
-func constructNodeSpec(ns nodeSpec) (*placemat.NodeSpec, error) {
+func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 	var res placemat.NodeSpec
 	res.Interfaces = ns.Interfaces
 	if ns.Interfaces == nil {
@@ -98,11 +98,11 @@ func constructNodeSpec(ns nodeSpec) (*placemat.NodeSpec, error) {
 		var ok bool
 		dst.RecreatePolicy, ok = recreatePolicyConfig[v.RecreatePolicy]
 		if !ok {
-			return nil, errors.New("Invalid RecreatePolicy: " + v.RecreatePolicy)
+			return res, errors.New("Invalid RecreatePolicy: " + v.RecreatePolicy)
 		}
 	}
 
-	return &res, nil
+	return res, nil
 }
 
 func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {

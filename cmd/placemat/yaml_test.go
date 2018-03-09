@@ -102,7 +102,7 @@ spec:
 				Name: "worker",
 				Spec: placemat.NodeSetSpec{
 					Replicas: 3,
-					Template: &placemat.NodeSpec{
+					Template: placemat.NodeSpec{
 						Interfaces: []string{"my-net"},
 						Volumes: []*placemat.VolumeSpec{
 							{Name: "data", Size: "10GB", RecreatePolicy: placemat.RecreateIfNotPresent},

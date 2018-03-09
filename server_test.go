@@ -2,6 +2,7 @@ package placemat
 
 import (
 	"context"
+	"github.com/cybozu-go/cmd"
 	"strconv"
 	"sync"
 	"testing"
@@ -28,7 +29,7 @@ func (m *MockProvider) StartNode(ctx context.Context, n *Node) error {
 	m.nodes[n.Name] = struct{}{}
 	m.mutex.Unlock()
 	<-ctx.Done()
-	return ctx.Err()
+	return nil
 }
 
 func TestInterpretNodesFromNodeSet(t *testing.T) {
@@ -40,12 +41,10 @@ func TestInterpretNodesFromNodeSet(t *testing.T) {
 		volumes: make(map[string]struct{}),
 		nodes:   make(map[string]struct{}),
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	nodes := interpretNodesFromNodeSet(ctx, &p, spec)
+	nodes := interpretNodesFromNodeSet(spec)
 	if len(nodes) != expectedReplicas {
-		t.Fatal("expected len(p.volumes) != "+strconv.Itoa(expectedReplicas)+", ",
-			len(p.volumes))
+		t.Fatal("expected len(p.nodes) != "+strconv.Itoa(expectedReplicas)+", ",
+			len(p.nodes))
 	}
 
 }
@@ -69,13 +68,21 @@ func TestCreateNodeVolumes(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	Run(ctx, &p, spec)
+	env := cmd.NewEnvironment(ctx)
+	env.Go(func(ctx context.Context) error {
+		return Run(ctx, &p, spec)
+	})
+	env.Stop()
+	err := env.Wait()
+	if err != nil && err != context.Canceled {
+		t.Fatal(err)
+	}
 
 	if len(p.volumes) != 5 {
 		t.Fatal("expected len(p.volumes) != 5, ", len(p.volumes))
 	}
-	if len(p.nodes) != 2 {
-		t.Fatal("expected len(p.nodes) != 2, ", len(p.nodes))
+	if len(p.nodes) != 4 {
+		t.Fatal("expected len(p.nodes) != 4, ", len(p.nodes))
 	}
 }
 
@@ -93,7 +100,7 @@ func getNodeSet(replicas int) []*NodeSet {
 			Name: "node",
 			Spec: NodeSetSpec{
 				Replicas: replicas,
-				Template: &template,
+				Template: template,
 			},
 		},
 	}

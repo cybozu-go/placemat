@@ -15,13 +15,13 @@ type Provider interface {
 	StartNode(ctx context.Context, n *Node) error
 }
 
-func interpretNodesFromNodeSet(ctx context.Context, provider Provider, cluster *Cluster) []*Node {
+func interpretNodesFromNodeSet(cluster *Cluster) []*Node {
 	var nodes []*Node
 	for _, nodeSet := range cluster.NodeSets {
 		for i := 1; i <= nodeSet.Spec.Replicas; i++ {
 			var node Node
 			node.Name = nodeSet.Name + "-" + strconv.Itoa(i)
-			node.Spec = *nodeSet.Spec.Template
+			node.Spec = nodeSet.Spec.Template
 			nodes = append(nodes, &node)
 		}
 	}
@@ -62,7 +62,7 @@ func startNodes(ctx context.Context, provider Provider, nodes []*Node) error {
 
 // Run runs VMs described in cluster by provider
 func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
-	nodes := interpretNodesFromNodeSet(ctx, provider, cluster)
+	nodes := interpretNodesFromNodeSet(cluster)
 	nodes = append(nodes, cluster.Nodes...)
 
 	err := createNodeVolumes(ctx, provider, nodes)
