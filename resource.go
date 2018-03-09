@@ -56,6 +56,8 @@ type Cluster struct {
 
 // Append appends the other cluster into the receiver
 func (c *Cluster) Append(other *Cluster) *Cluster {
+	c.Networks = append(c.Networks, other.Networks...)
 	c.Nodes = append(c.Nodes, other.Nodes...)
+	c.NodeSets = append(c.NodeSets, other.NodeSets...)
 	return c
 }
