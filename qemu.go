@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path"
-	"time"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -110,17 +109,13 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 
 	for _, br := range n.Spec.Interfaces {
 		tap := n.Name + "_" + br
-		func() {
-			ctx2, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
-			err := deleteTap(ctx2, tap)
-			if err != nil {
-				log.Error("Failed to delete a TAP", map[string]interface{}{
-					"name":  tap,
-					"error": err,
-				})
-			}
-		}()
+		err := deleteTap(context.Background(), tap)
+		if err != nil {
+			log.Error("Failed to delete a TAP", map[string]interface{}{
+				"name":  tap,
+				"error": err,
+			})
+		}
 	}
 	return nil
 }

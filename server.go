@@ -2,7 +2,6 @@ package placemat
 
 import (
 	"context"
-	"time"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -67,10 +66,8 @@ func handleDestroyNetwork(env *cmd.Environment, provider Provider, networks []*N
 	env.Go(func(ctx context.Context) error {
 		<-ctx.Done()
 
-		ctx2, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
 		for _, name := range names {
-			err := provider.DestroyNetwork(ctx2, name)
+			err := provider.DestroyNetwork(context.Background(), name)
 			if err != nil {
 				log.Info("Failed to destroy networks", map[string]interface{}{
 					"name":  name,
