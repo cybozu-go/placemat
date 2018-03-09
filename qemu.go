@@ -26,6 +26,9 @@ func createTap(ctx context.Context, tap string, network string) error {
 		return err
 	}
 	err = cmd.CommandContext(ctx, "ip", "link", "set", tap, "master", network).Run()
+	if err != nil {
+		return err
+	}
 	return cmd.CommandContext(ctx, "ip", "link", "set", tap, "up").Run()
 }
 
