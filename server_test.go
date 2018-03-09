@@ -2,9 +2,9 @@ package placemat
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"testing"
-	"strconv"
 )
 
 type MockProvider struct {

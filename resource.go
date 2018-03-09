@@ -44,7 +44,7 @@ type NodeSetSpec struct {
 
 // NodeSet represents a node-set configuration
 type NodeSet struct {
-	Name     string
+	Name string
 	Spec NodeSetSpec
 }
 

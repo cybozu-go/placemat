@@ -80,6 +80,59 @@ spec:
 
 }
 
+func TestUnmarshalNodeSet(t *testing.T) {
+	cases := []struct {
+		source   string
+		expected placemat.NodeSet
+	}{
+		{
+			source: `
+kind: NodeSet
+name: worker
+spec:
+  replicas: 3
+  template:
+    interfaces:
+      - my-net
+    volumes:
+      - name: data
+        size: 10GB
+`,
+			expected: placemat.NodeSet{
+				Name: "worker",
+				Spec: placemat.NodeSetSpec{
+					Replicas: 3,
+					Template: &placemat.NodeSpec{
+						Interfaces: []string{"my-net"},
+						Volumes: []*placemat.VolumeSpec{
+							{Name: "data", Size: "10GB", RecreatePolicy: placemat.RecreateIfNotPresent},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, c := range cases {
+		actual, err := unmarshalNodeSet([]byte(c.source))
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(*actual, c.expected) {
+			t.Errorf("%v != %v", *actual, c.expected)
+		}
+	}
+	errorSources := []string{
+		`kind: NodeSet`,
+	}
+	for _, c := range errorSources {
+		_, err := unmarshalNodeSet([]byte(c))
+		if err == nil {
+			t.Error("err == nil, ", err)
+		}
+	}
+
+}
+
 func TestUnmarshalCluster(t *testing.T) {
 	yaml := `
 kind: Node
@@ -87,6 +140,9 @@ name: node1
 ---
 kind: Node
 name: node2
+---
+kind: NodeSet
+name: nodeSet
 `
 
 	cluster, err := readYaml(bufio.NewReader(bytes.NewReader([]byte(yaml))))
@@ -95,6 +151,9 @@ name: node2
 	}
 	if len(cluster.Nodes) != 2 {
 		t.Error("len(cluster.Nodes) != 2, ", len(cluster.Nodes))
+	}
+	if len(cluster.NodeSets) != 1 {
+		t.Error("len(cluster.NodeSets) != 1, ", len(cluster.NodeSets))
 	}
 
 }

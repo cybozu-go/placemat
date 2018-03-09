@@ -2,8 +2,8 @@ package placemat
 
 import (
 	"context"
-	"strconv"
 	"github.com/cybozu-go/cmd"
+	"strconv"
 )
 
 // Provider represents a back-end of VM engine

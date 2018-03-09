@@ -16,7 +16,7 @@ type baseConfig struct {
 
 type nodeSpec struct {
 	Interfaces []string `yaml:"interfaces"`
-	Volumes []struct {
+	Volumes    []struct {
 		Name           string `yaml:"name"`
 		Size           string `yaml:"size"`
 		RecreatePolicy string `yaml:"recreatePolicy"`
