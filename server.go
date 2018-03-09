@@ -59,6 +59,29 @@ func startNodes(env *cmd.Environment, provider Provider, cluster *Cluster) {
 		})
 	}
 }
+func handleDestroyNetwork(env *cmd.Environment, provider Provider, networks []*Network) {
+	names := make([]string, len(networks))
+	for i, n := range networks {
+		names[i] = n.Name
+	}
+	env.Go(func(ctx context.Context) error {
+		<-ctx.Done()
+
+		ctx2, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		for _, name := range names {
+			err := provider.DestroyNetwork(ctx2, name)
+			if err != nil {
+				log.Info("Failed to destroy networks", map[string]interface{}{
+					"name":  name,
+					"error": err,
+				})
+			}
+
+		}
+		return nil
+	})
+}
 
 // Run runs VMs described in cluster by provider
 func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
@@ -73,27 +96,7 @@ func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
 
 	env := cmd.NewEnvironment(ctx)
 	startNodes(env, provider, cluster)
-	env.Go(func(ctx context.Context) error {
-		names := make([]string, len(cluster.Networks))
-		for i, n := range cluster.Networks {
-			names[i] = n.Name
-		}
-
-		<-ctx.Done()
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		for _, name := range names {
-			err := provider.DestroyNetwork(ctx, name)
-			if err != nil {
-				log.Info("Failed to destroy networks", map[string]interface{}{
-					"name":  name,
-					"error": err,
-				})
-			}
-
-		}
-		return nil
-	})
+	handleDestroyNetwork(env, provider, cluster.Networks)
 	env.Stop()
 	return env.Wait()
 }
