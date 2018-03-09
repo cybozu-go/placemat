@@ -89,7 +89,7 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, net *Network) error {
 	return nil
 }
 
-// DestroyNetwork destroies a bridge by the name
+// DestroyNetwork destroys a bridge by the name
 func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 	c := cmd.CommandContext(ctx, "ip", "link", "delete", name, "type", "bridge")
 	log.Info("Destroying network", map[string]interface{}{"name": name})

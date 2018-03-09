@@ -143,7 +143,7 @@ name: node2
 		t.Error(err)
 	}
 	if len(cluster.Networks) != 1 {
-		t.Error("len(cluster.Networks) != 2, ", len(cluster.Networks))
+		t.Error("len(cluster.Networks) != 1, ", len(cluster.Networks))
 	}
 	if len(cluster.Nodes) != 2 {
 		t.Error("len(cluster.Nodes) != 2, ", len(cluster.Nodes))
