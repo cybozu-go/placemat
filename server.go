@@ -62,11 +62,11 @@ func startNodes(env *cmd.Environment, provider Provider, cluster *Cluster) {
 
 // Run runs VMs described in cluster by provider
 func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
-	err := createNodeVolumes(ctx, provider, cluster)
+	err := createNetworks(ctx, provider, cluster.Networks)
 	if err != nil {
 		return err
 	}
-	err = createNetworks(ctx, provider, cluster.Networks)
+	err = createNodeVolumes(ctx, provider, cluster)
 	if err != nil {
 		return err
 	}
