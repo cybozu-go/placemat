@@ -51,6 +51,10 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, net *Network) error {
 	if err != nil {
 		return err
 	}
+	err = cmd.CommandContext(ctx, "ip", "link", "set", net.Name, "up").Run()
+	if err != nil {
+		return err
+	}
 	for _, addr := range net.Spec.Addresses {
 		err := cmd.CommandContext(ctx, "ip", "addr", "add", addr, "dev", net.Name).Run()
 		if err != nil {
