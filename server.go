@@ -2,6 +2,7 @@ package placemat
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -20,8 +21,21 @@ type Provider interface {
 	StartNode(ctx context.Context, n *Node) error
 }
 
-func createNodeVolumes(ctx context.Context, provider Provider, cluster *Cluster) error {
-	for _, n := range cluster.Nodes {
+func interpretNodesFromNodeSet(cluster *Cluster) []*Node {
+	var nodes []*Node
+	for _, nodeSet := range cluster.NodeSets {
+		for i := 1; i <= nodeSet.Spec.Replicas; i++ {
+			var node Node
+			node.Name = nodeSet.Name + "-" + strconv.Itoa(i)
+			node.Spec = nodeSet.Spec.Template
+			nodes = append(nodes, &node)
+		}
+	}
+	return nodes
+}
+
+func createNodeVolumes(ctx context.Context, provider Provider, nodes []*Node) error {
+	for _, n := range nodes {
 		for _, v := range n.Spec.Volumes {
 			exists, err := provider.VolumeExists(ctx, n.Name, v.Name)
 			if err != nil {
@@ -50,14 +64,15 @@ func createNetworks(ctx context.Context, provider Provider, networks []*Network)
 	return nil
 }
 
-func startNodes(env *cmd.Environment, provider Provider, cluster *Cluster) {
-	for _, n := range cluster.Nodes {
+func startNodes(env *cmd.Environment, provider Provider, nodes []*Node) {
+	for _, n := range nodes {
 		node := n
 		env.Go(func(ctx context.Context) error {
 			return provider.StartNode(ctx, node)
 		})
 	}
 }
+
 func handleDestroyNetwork(env *cmd.Environment, provider Provider, networks []*Network) {
 	names := make([]string, len(networks))
 	for i, n := range networks {
@@ -86,13 +101,16 @@ func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
 	if err != nil {
 		return err
 	}
-	err = createNodeVolumes(ctx, provider, cluster)
+
+	nodes := interpretNodesFromNodeSet(cluster)
+	nodes = append(nodes, cluster.Nodes...)
+	err = createNodeVolumes(ctx, provider, nodes)
 	if err != nil {
 		return err
 	}
 
 	env := cmd.NewEnvironment(ctx)
-	startNodes(env, provider, cluster)
+	startNodes(env, provider, nodes)
 	handleDestroyNetwork(env, provider, cluster.Networks)
 	env.Stop()
 	return env.Wait()

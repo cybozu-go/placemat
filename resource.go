@@ -44,8 +44,17 @@ type Node struct {
 	Spec NodeSpec
 }
 
+// NodeSetSpec represents a node-set specification
+type NodeSetSpec struct {
+	Replicas int
+	Template NodeSpec
+}
+
 // NodeSet represents a node-set configuration
-type NodeSet struct{}
+type NodeSet struct {
+	Name string
+	Spec NodeSetSpec
+}
 
 // Cluster represents cluster configuration
 type Cluster struct {
