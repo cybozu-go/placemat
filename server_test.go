@@ -2,8 +2,11 @@ package placemat
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"testing"
+
+	"github.com/cybozu-go/cmd"
 )
 
 type MockProvider struct {
@@ -27,11 +30,29 @@ func (m *MockProvider) StartNode(ctx context.Context, n *Node) error {
 	m.nodes[n.Name] = struct{}{}
 	m.mutex.Unlock()
 	<-ctx.Done()
-	return ctx.Err()
+	return nil
+}
+
+func TestInterpretNodesFromNodeSet(t *testing.T) {
+	spec := &Cluster{}
+	expectedReplicas := 2
+	spec.NodeSets = getNodeSet(expectedReplicas)
+
+	p := MockProvider{
+		volumes: make(map[string]struct{}),
+		nodes:   make(map[string]struct{}),
+	}
+	nodes := interpretNodesFromNodeSet(spec)
+	if len(nodes) != expectedReplicas {
+		t.Fatal("expected len(p.nodes) != "+strconv.Itoa(expectedReplicas)+", ",
+			len(p.nodes))
+	}
+
 }
 
 func TestCreateNodeVolumes(t *testing.T) {
 	spec := &Cluster{}
+
 	spec.Nodes = []*Node{
 		{Name: "host1", Spec: NodeSpec{Volumes: []*VolumeSpec{
 			{Name: "vol1", Size: "10GB"}}}},
@@ -39,18 +60,49 @@ func TestCreateNodeVolumes(t *testing.T) {
 			{Name: "vol1", Size: "10GB"}, {Name: "vol2", Size: "20GB"}}}},
 	}
 
+	expectedReplicas := 2
+	spec.NodeSets = getNodeSet(expectedReplicas)
+
 	p := MockProvider{
 		volumes: make(map[string]struct{}),
 		nodes:   make(map[string]struct{}),
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	Run(ctx, &p, spec)
-
-	if len(p.volumes) != 3 {
-		t.Fatal("expected len(p.volumes) != 3, ", len(p.volumes))
+	env := cmd.NewEnvironment(ctx)
+	env.Go(func(ctx context.Context) error {
+		return Run(ctx, &p, spec)
+	})
+	env.Stop()
+	err := env.Wait()
+	if err != nil && err != context.Canceled {
+		t.Fatal(err)
 	}
-	if len(p.nodes) != 2 {
-		t.Fatal("expected len(p.nodes) != 2, ", len(p.nodes))
+
+	if len(p.volumes) != 5 {
+		t.Fatal("expected len(p.volumes) != 5, ", len(p.volumes))
+	}
+	if len(p.nodes) != 4 {
+		t.Fatal("expected len(p.nodes) != 4, ", len(p.nodes))
+	}
+}
+
+func getNodeSet(replicas int) []*NodeSet {
+	template := NodeSpec{
+		Volumes: []*VolumeSpec{
+			{
+				Name: "template-vol",
+				Size: "10GB",
+			},
+		},
+	}
+	return []*NodeSet{
+		{
+			Name: "node",
+			Spec: NodeSetSpec{
+				Replicas: replicas,
+				Template: template,
+			},
+		},
 	}
 }
