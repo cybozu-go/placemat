@@ -26,6 +26,20 @@ func (q QemuProvider) VolumeExists(ctx context.Context, node, vol string) (bool,
 	return !os.IsNotExist(err), nil
 }
 
+// CreateNetwork creates a bridge by the Network
+func (q QemuProvider) CreateNetwork(ctx context.Context, net *Network) error {
+	c := cmd.CommandContext(ctx, "ip", "link", "add", net.Name, "type", "bridge")
+	log.Info("Creating network", map[string]interface{}{"name": net.Name})
+	return c.Run()
+}
+
+// DestroyNetwork destroies a bridge by the name
+func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
+	c := cmd.CommandContext(ctx, "ip", "link", "delete", name, "type", "bridge")
+	log.Info("Destroying network", map[string]interface{}{"name": name})
+	return c.Run()
+}
+
 // CreateVolume creates the named by node and vol
 func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error {
 	p := q.volumePath(node, vol.Name)
