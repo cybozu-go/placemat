@@ -26,6 +26,13 @@ type nodeConfig struct {
 	} `yaml:"spec"`
 }
 
+type networkConfig struct {
+	Name string `yaml:"name"`
+	Spec struct {
+		Addresses []string `yaml:"addresses"`
+	} `yaml:"spec"`
+}
+
 var recreatePolicyConfig = map[string]placemat.VolumeRecreatePolicy{
 	"":             placemat.RecreateIfNotPresent,
 	"IfNotPresent": placemat.RecreateIfNotPresent,
@@ -66,6 +73,23 @@ func unmarshalNode(data []byte) (*placemat.Node, error) {
 	return &node, nil
 }
 
+func unmarshalNetwork(data []byte) (*placemat.Network, error) {
+	var n networkConfig
+	err := yaml.Unmarshal(data, &n)
+	if err != nil {
+		return nil, err
+	}
+	if n.Name == "" {
+		return nil, errors.New("network name is empty")
+	}
+
+	var network placemat.Network
+	network.Name = n.Name
+	network.Spec.Addresses = n.Spec.Addresses
+	return &network, nil
+
+}
+
 func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 	var c baseConfig
 	var cluster placemat.Cluster
@@ -87,10 +111,15 @@ func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 		case "Node":
 			r, err := unmarshalNode(data)
 			if err != nil {
-				return &cluster, err
+				return nil, err
 			}
 			cluster.Nodes = append(cluster.Nodes, r)
-
+		case "Network":
+			r, err := unmarshalNetwork(data)
+			if err != nil {
+				return nil, err
+			}
+			cluster.Networks = append(cluster.Networks, r)
 		}
 	}
 	return &cluster, nil
