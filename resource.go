@@ -25,10 +25,17 @@ type Network struct {
 	Spec NetworkSpec
 }
 
+// CloudConfigSpec represents a cloud-config configuration
+type CloudConfigSpec struct {
+	UserData string
+}
+
 // VolumeSpec represents a volume specification
 type VolumeSpec struct {
 	Name           string
 	Size           string
+	Source         string
+	CloudConfig    CloudConfigSpec
 	RecreatePolicy VolumeRecreatePolicy
 }
 

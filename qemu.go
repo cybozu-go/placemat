@@ -3,6 +3,10 @@ package placemat
 import (
 	"bufio"
 	"context"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -96,12 +100,60 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 	return c.Run()
 }
 
+func createEmptyVolume(ctx context.Context, p string, size string) error {
+	c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, size)
+	return c.Run()
+}
+
+func createVolumeFromURL(ctx context.Context, p string, url string) error {
+	file, err := os.Create(p)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil
+	}
+	req = req.WithContext(ctx)
+
+	client := http.DefaultClient
+	res, err := client.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download: %s: %s", res.Status, url)
+	}
+
+	_, err = io.Copy(file, res.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createVolumeFromCloudConfig(ctx context.Context, p string, config string) error {
+	c := cmd.CommandContext(ctx, "cloud-localds", p, config)
+	return c.Run()
+}
+
 // CreateVolume creates the named by node and vol
 func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error {
 	p := q.volumePath(node, vol.Name)
-	c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, vol.Size)
 	log.Info("Creating volume", map[string]interface{}{"node": node, "volume": vol.Name})
-	return c.Run()
+	if vol.Size != "" {
+		return createEmptyVolume(ctx, p, vol.Size)
+	} else if vol.Source != "" {
+		return createVolumeFromURL(ctx, p, vol.Source)
+	} else if vol.CloudConfig.UserData != "" {
+		return createVolumeFromCloudConfig(ctx, p, vol.CloudConfig.UserData)
+	}
+	return errors.New("invalid volume type")
 }
 
 // StartNode starts a QEMU vm
