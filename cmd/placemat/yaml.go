@@ -131,6 +131,8 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 			return res, errors.New("invalid volume type: must specify only one of 'size' or 'source' or 'cloud-config'")
 		}
 	}
+	res.Resources.Cpu = ns.Resources.Cpu
+	res.Resources.Memory = ns.Resources.Memory
 
 	return res, nil
 }

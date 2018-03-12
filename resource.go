@@ -39,10 +39,17 @@ type VolumeSpec struct {
 	RecreatePolicy VolumeRecreatePolicy
 }
 
+// ResourceSpec represents a resource specification
+type ResourceSpec struct {
+	Cpu    string
+	Memory string
+}
+
 // NodeSpec represents a node specification
 type NodeSpec struct {
 	Interfaces []string
 	Volumes    []*VolumeSpec
+	Resources  ResourceSpec
 }
 
 // Node represents a node configuration

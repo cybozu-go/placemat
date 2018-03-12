@@ -79,6 +79,9 @@ spec:
         user-data: user-data.yml
     - name: data
       size: 20GB
+  resources:
+    cpu: 4
+    memory: 8G
 `,
 
 			expected: placemat.Node{
@@ -90,6 +93,10 @@ spec:
 						{Name: "seed", CloudConfig: struct{ UserData string }{UserData: "user-data.yml"}, RecreatePolicy: placemat.RecreateAlways},
 						{Name: "data", Size: "20GB", RecreatePolicy: placemat.RecreateIfNotPresent},
 					},
+					Resources: struct {
+						Cpu    string
+						Memory string
+					}{Cpu: "4", Memory: "8G"},
 				},
 			},
 		},

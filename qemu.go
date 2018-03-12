@@ -178,6 +178,12 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		p := q.volumePath(n.Name, v.Name)
 		params = append(params, "-drive", "if=virtio,cache=none,aio=native,file="+p)
 	}
+	if n.Spec.Resources.Cpu != "" {
+		params = append(params, "-smp", n.Spec.Resources.Cpu)
+	}
+	if n.Spec.Resources.Memory != "" {
+		params = append(params, "-m", n.Spec.Resources.Memory)
+	}
 	err := cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
 	if err != nil {
 		log.Error("QEMU exited with an error", map[string]interface{}{
