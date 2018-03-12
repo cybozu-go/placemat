@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/cybozu-go/cmd"
+	"github.com/cybozu-go/log"
 )
 
 // Provider represents a back-end of VM engine
@@ -12,6 +13,10 @@ type Provider interface {
 	VolumeExists(ctx context.Context, node, vol string) (bool, error)
 
 	CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error
+
+	CreateNetwork(ctx context.Context, n *Network) error
+
+	DestroyNetwork(ctx context.Context, name string) error
 
 	StartNode(ctx context.Context, n *Node) error
 }
@@ -49,27 +54,64 @@ func createNodeVolumes(ctx context.Context, provider Provider, nodes []*Node) er
 	return nil
 }
 
-func startNodes(ctx context.Context, provider Provider, nodes []*Node) error {
-	env := cmd.NewEnvironment(ctx)
+func createNetworks(ctx context.Context, provider Provider, networks []*Network) error {
+	for _, n := range networks {
+		err := provider.CreateNetwork(ctx, n)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func startNodes(env *cmd.Environment, provider Provider, nodes []*Node) {
 	for _, n := range nodes {
 		node := n
 		env.Go(func(ctx context.Context) error {
 			return provider.StartNode(ctx, node)
 		})
 	}
-	env.Stop()
-	return env.Wait()
+}
+
+func handleDestroyNetwork(env *cmd.Environment, provider Provider, networks []*Network) {
+	names := make([]string, len(networks))
+	for i, n := range networks {
+		names[i] = n.Name
+	}
+	env.Go(func(ctx context.Context) error {
+		<-ctx.Done()
+
+		for _, name := range names {
+			err := provider.DestroyNetwork(context.Background(), name)
+			if err != nil {
+				log.Info("Failed to destroy networks", map[string]interface{}{
+					"name":  name,
+					"error": err,
+				})
+			}
+
+		}
+		return nil
+	})
 }
 
 // Run runs VMs described in cluster by provider
 func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
-	nodes := interpretNodesFromNodeSet(cluster)
-	nodes = append(nodes, cluster.Nodes...)
-
-	err := createNodeVolumes(ctx, provider, nodes)
+	err := createNetworks(ctx, provider, cluster.Networks)
 	if err != nil {
 		return err
 	}
 
-	return startNodes(ctx, provider, nodes)
+	nodes := interpretNodesFromNodeSet(cluster)
+	nodes = append(nodes, cluster.Nodes...)
+	err = createNodeVolumes(ctx, provider, nodes)
+	if err != nil {
+		return err
+	}
+
+	env := cmd.NewEnvironment(ctx)
+	startNodes(env, provider, nodes)
+	handleDestroyNetwork(env, provider, cluster.Networks)
+	env.Stop()
+	return env.Wait()
 }

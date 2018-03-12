@@ -10,9 +10,18 @@ import (
 )
 
 type MockProvider struct {
-	volumes map[string]struct{}
-	nodes   map[string]struct{}
-	mutex   sync.Mutex
+	networks map[string]struct{}
+	volumes  map[string]struct{}
+	nodes    map[string]struct{}
+	mutex    sync.Mutex
+}
+
+func newMockProvider() *MockProvider {
+	return &MockProvider{
+		networks: make(map[string]struct{}),
+		volumes:  make(map[string]struct{}),
+		nodes:    make(map[string]struct{}),
+	}
 }
 
 func (m *MockProvider) VolumeExists(ctx context.Context, node, vol string) (bool, error) {
@@ -50,7 +59,17 @@ func TestInterpretNodesFromNodeSet(t *testing.T) {
 
 }
 
-func TestCreateNodeVolumes(t *testing.T) {
+func (m *MockProvider) CreateNetwork(ctx context.Context, n *Network) error {
+	m.networks[n.Name] = struct{}{}
+	return nil
+}
+
+func (m *MockProvider) DestroyNetwork(ctx context.Context, name string) error {
+	m.networks[name] = struct{}{}
+	return nil
+}
+
+func TestRun(t *testing.T) {
 	spec := &Cluster{}
 
 	spec.Nodes = []*Node{
@@ -59,19 +78,20 @@ func TestCreateNodeVolumes(t *testing.T) {
 		{Name: "host2", Spec: NodeSpec{Volumes: []*VolumeSpec{
 			{Name: "vol1", Size: "10GB"}, {Name: "vol2", Size: "20GB"}}}},
 	}
+	spec.Networks = []*Network{
+		&Network{Name: "net1"},
+		&Network{Name: "net2"},
+	}
 
 	expectedReplicas := 2
 	spec.NodeSets = getNodeSet(expectedReplicas)
 
-	p := MockProvider{
-		volumes: make(map[string]struct{}),
-		nodes:   make(map[string]struct{}),
-	}
+	p := newMockProvider()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	env := cmd.NewEnvironment(ctx)
 	env.Go(func(ctx context.Context) error {
-		return Run(ctx, &p, spec)
+		return Run(ctx, p, spec)
 	})
 	env.Stop()
 	err := env.Wait()
@@ -79,6 +99,9 @@ func TestCreateNodeVolumes(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if len(p.networks) != 2 {
+		t.Fatal("expected len(p.networks) != 2, ", len(p.networks))
+	}
 	if len(p.volumes) != 5 {
 		t.Fatal("expected len(p.volumes) != 5, ", len(p.volumes))
 	}

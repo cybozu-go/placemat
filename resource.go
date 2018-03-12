@@ -14,8 +14,16 @@ const (
 	RecreateNever
 )
 
+// NetworkSpec represents a network specification
+type NetworkSpec struct {
+	Addresses []string
+}
+
 // Network represents a network configuration
-type Network struct{}
+type Network struct {
+	Name string
+	Spec NetworkSpec
+}
 
 // VolumeSpec represents a volume specification
 type VolumeSpec struct {

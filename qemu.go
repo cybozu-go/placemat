@@ -1,18 +1,61 @@
 package placemat
 
 import (
+	"bufio"
 	"context"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 )
 
+var vhostNetSupported bool
+
+func init() {
+	f, err := os.Open("/proc/modules")
+	if err != nil {
+		log.Error("failed to open /proc/modules", map[string]interface{}{
+			"error": err,
+		})
+	}
+	defer f.Close()
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		if strings.Contains(s.Text(), "vhost_net") {
+			vhostNetSupported = true
+			return
+		}
+	}
+}
+
 // QemuProvider is an implementation of Provider interface.  It launches
 // qemu-system-x86_64 as a VM engine, and qemu-img to create image.
 type QemuProvider struct {
 	BaseDir string
+}
+
+func createTap(ctx context.Context, tap string, network string) error {
+	log.Info("Creating TAP", map[string]interface{}{"name": tap})
+	err := cmd.CommandContext(ctx, "ip", "tuntap", "add", tap, "mode", "tap").Run()
+	if err != nil {
+		return err
+	}
+	err = cmd.CommandContext(ctx, "ip", "link", "set", tap, "master", network).Run()
+	if err != nil {
+		return err
+	}
+	err = cmd.CommandContext(ctx, "ip", "link", "set", tap, "master", network).Run()
+	if err != nil {
+		return err
+	}
+	return cmd.CommandContext(ctx, "ip", "link", "set", tap, "up").Run()
+}
+
+func deleteTap(ctx context.Context, tap string) error {
+	return cmd.CommandContext(ctx, "ip", "tuntap", "delete", tap, "mode", "tap").Run()
 }
 
 func (q QemuProvider) volumePath(host, name string) string {
@@ -26,6 +69,33 @@ func (q QemuProvider) VolumeExists(ctx context.Context, node, vol string) (bool,
 	return !os.IsNotExist(err), nil
 }
 
+// CreateNetwork creates a bridge by the Network
+func (q QemuProvider) CreateNetwork(ctx context.Context, net *Network) error {
+	log.Info("Creating network", map[string]interface{}{"name": net.Name, "spec": net})
+	err := cmd.CommandContext(ctx, "ip", "link", "add", net.Name, "type", "bridge").Run()
+	if err != nil {
+		return err
+	}
+	err = cmd.CommandContext(ctx, "ip", "link", "set", net.Name, "up").Run()
+	if err != nil {
+		return err
+	}
+	for _, addr := range net.Spec.Addresses {
+		err := cmd.CommandContext(ctx, "ip", "addr", "add", addr, "dev", net.Name).Run()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// DestroyNetwork destroys a bridge by the name
+func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
+	c := cmd.CommandContext(ctx, "ip", "link", "delete", name, "type", "bridge")
+	log.Info("Destroying network", map[string]interface{}{"name": name})
+	return c.Run()
+}
+
 // CreateVolume creates the named by node and vol
 func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error {
 	p := q.volumePath(node, vol.Name)
@@ -37,10 +107,41 @@ func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *Volume
 // StartNode starts a QEMU vm
 func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	params := []string{"-enable-kvm"}
+
+	for _, br := range n.Spec.Interfaces {
+		tap := n.Name + "_" + br
+		err := createTap(ctx, tap, br)
+		if err != nil {
+			return err
+		}
+		netdev := "tap,id=" + br + ",ifname=" + tap + ",script=no,downscript=no"
+		if vhostNetSupported {
+			netdev += ",vhost=on"
+		}
+
+		params = append(params, "-netdev", netdev)
+		params = append(params, "-device", "virtio-net-pci,netdev="+br+",romfile=")
+	}
 	for _, v := range n.Spec.Volumes {
 		p := q.volumePath(n.Name, v.Name)
-		params = append(params, "-drive")
-		params = append(params, "if=virtio,cache=none,aio=native,file="+p)
+		params = append(params, "-drive", "if=virtio,cache=none,aio=native,file="+p)
 	}
-	return cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
+	err := cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
+	if err != nil {
+		log.Error("QEMU exited with an error", map[string]interface{}{
+			"error": err,
+		})
+	}
+
+	for _, br := range n.Spec.Interfaces {
+		tap := n.Name + "_" + br
+		err := deleteTap(context.Background(), tap)
+		if err != nil {
+			log.Error("Failed to delete a TAP", map[string]interface{}{
+				"name":  tap,
+				"error": err,
+			})
+		}
+	}
+	return nil
 }
