@@ -178,8 +178,8 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		p := q.volumePath(n.Name, v.Name)
 		params = append(params, "-drive", "if=virtio,cache=none,aio=native,file="+p)
 	}
-	if n.Spec.Resources.Cpu != "" {
-		params = append(params, "-smp", n.Spec.Resources.Cpu)
+	if n.Spec.Resources.CPU != "" {
+		params = append(params, "-smp", n.Spec.Resources.CPU)
 	}
 	if n.Spec.Resources.Memory != "" {
 		params = append(params, "-m", n.Spec.Resources.Memory)

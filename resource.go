@@ -41,7 +41,7 @@ type VolumeSpec struct {
 
 // ResourceSpec represents a resource specification
 type ResourceSpec struct {
-	Cpu    string
+	CPU    string
 	Memory string
 }
 

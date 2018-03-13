@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/cybozu-go/placemat"
@@ -26,7 +27,7 @@ type nodeSpec struct {
 		RecreatePolicy string `yaml:"recreatePolicy"`
 	} `yaml:"volumes"`
 	Resources struct {
-		Cpu    string `yaml:"cpu"`
+		CPU    string `yaml:"cpu"`
 		Memory string `yaml:"memory"`
 	} `yaml:"resources"`
 }
@@ -115,7 +116,7 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 		var ok bool
 		dst.RecreatePolicy, ok = recreatePolicyConfig[v.RecreatePolicy]
 		if !ok {
-			return placemat.NodeSpec{}, errors.New("Invalid RecreatePolicy: " + v.RecreatePolicy)
+			return placemat.NodeSpec{}, fmt.Errorf("invalid RecreatePolicy: %s" + v.RecreatePolicy)
 		}
 		count := 0
 		if v.Size != "" {
@@ -131,7 +132,7 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 			return res, errors.New("invalid volume type: must specify only one of 'size' or 'source' or 'cloud-config'")
 		}
 	}
-	res.Resources.Cpu = ns.Resources.Cpu
+	res.Resources.CPU = ns.Resources.CPU
 	res.Resources.Memory = ns.Resources.Memory
 
 	return res, nil
