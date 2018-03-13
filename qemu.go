@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/cybozu-go/cmd"
@@ -105,23 +107,27 @@ func createEmptyVolume(ctx context.Context, p string, size string) error {
 	return c.Run()
 }
 
-func createVolumeFromURL(ctx context.Context, p string, url string) error {
-	file, err := os.Create(p)
+func createVolumeFromURL(ctx context.Context, path string, url string) error {
+	dir := filepath.Dir(path)
+	temp, err := ioutil.TempFile(dir, "temp-placemat-image-")
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer temp.Close()
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil
+		return err
 	}
 	req = req.WithContext(ctx)
 
-	client := http.DefaultClient
+	client := &cmd.HTTPClient{
+		Client:   &http.Client{},
+		Severity: log.LvDebug,
+	}
 	res, err := client.Do(req)
 	if err != nil {
-		return nil
+		return err
 	}
 	defer res.Body.Close()
 
@@ -129,12 +135,17 @@ func createVolumeFromURL(ctx context.Context, p string, url string) error {
 		return fmt.Errorf("failed to download: %s: %s", res.Status, url)
 	}
 
-	_, err = io.Copy(file, res.Body)
+	_, err = io.Copy(temp, res.Body)
 	if err != nil {
 		return err
 	}
+	err = temp.Close()
+	if err != nil {
+		os.Remove(temp.Name())
+		return err
+	}
 
-	return nil
+	return os.Rename(temp.Name(), path)
 }
 
 func createVolumeFromCloudConfig(ctx context.Context, p string, config string) error {
@@ -142,7 +153,7 @@ func createVolumeFromCloudConfig(ctx context.Context, p string, config string) e
 	return c.Run()
 }
 
-// CreateVolume creates the named by node and vol
+// CreateVolume creates a volume with specified options
 func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error {
 	p := q.volumePath(node, vol.Name)
 	log.Info("Creating volume", map[string]interface{}{"node": node, "volume": vol.Name})
