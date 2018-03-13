@@ -94,9 +94,9 @@ spec:
 						{Name: "data", Size: "20GB", RecreatePolicy: placemat.RecreateIfNotPresent},
 					},
 					Resources: struct {
-						Cpu    string
+						CPU    string
 						Memory string
-					}{Cpu: "4", Memory: "8G"},
+					}{CPU: "4", Memory: "8G"},
 				},
 			},
 		},
