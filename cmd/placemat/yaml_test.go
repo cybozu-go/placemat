@@ -70,11 +70,18 @@ spec:
     - br0
     - br1
   volumes:
-    - name: boot
-      size: 10GB
+    - name: ubuntu
+      source: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+      recreatePolicy: IfNotPresent
+    - name: seed
       recreatePolicy: Always
+      cloud-config: 
+        user-data: user-data.yml
     - name: data
       size: 20GB
+  resources:
+    cpu: 4
+    memory: 8G
 `,
 
 			expected: placemat.Node{
@@ -82,9 +89,14 @@ spec:
 				Spec: placemat.NodeSpec{
 					Interfaces: []string{"br0", "br1"},
 					Volumes: []*placemat.VolumeSpec{
-						{Name: "boot", Size: "10GB", RecreatePolicy: placemat.RecreateAlways},
+						{Name: "ubuntu", Source: "https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img", RecreatePolicy: placemat.RecreateIfNotPresent},
+						{Name: "seed", CloudConfig: struct{ UserData string }{UserData: "user-data.yml"}, RecreatePolicy: placemat.RecreateAlways},
 						{Name: "data", Size: "20GB", RecreatePolicy: placemat.RecreateIfNotPresent},
 					},
+					Resources: struct {
+						CPU    string
+						Memory string
+					}{CPU: "4", Memory: "8G"},
 				},
 			},
 		},
@@ -114,13 +126,35 @@ spec:
 		}
 	}
 
-	errorSources := []string{
-		`kind: Node`,
+	errorSources := []struct {
+		source string
+
+		expected string
+	}{
+		{
+			source:   `kind: Node`,
+			expected: "node name is empty",
+		},
+		{
+			source: `
+kind: Node
+name: node4
+spec:
+  volumes:
+    - name: mixed
+      source: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+      cloud-config: 
+        user-data: user-data.yml
+      size: 20GB
+      recreatePolicy: IfNotPresent
+`,
+			expected: "invalid volume type: must specify only one of 'size' or 'source' or 'cloud-config'",
+		},
 	}
 	for _, c := range errorSources {
-		_, err := unmarshalNode([]byte(c))
-		if err == nil {
-			t.Error("err == nil, ", err)
+		_, err := unmarshalNode([]byte(c.source))
+		if err.Error() != c.expected {
+			t.Errorf("%v != %v", err.Error(), c.expected)
 		}
 	}
 

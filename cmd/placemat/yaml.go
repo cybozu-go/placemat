@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/cybozu-go/placemat"
@@ -17,10 +18,18 @@ type baseConfig struct {
 type nodeSpec struct {
 	Interfaces []string `yaml:"interfaces"`
 	Volumes    []struct {
-		Name           string `yaml:"name"`
-		Size           string `yaml:"size"`
+		Name        string `yaml:"name"`
+		Size        string `yaml:"size"`
+		Source      string `yaml:"source"`
+		CloudConfig struct {
+			UserData string `yaml:"user-data"`
+		} `yaml:"cloud-config"`
 		RecreatePolicy string `yaml:"recreatePolicy"`
 	} `yaml:"volumes"`
+	Resources struct {
+		CPU    string `yaml:"cpu"`
+		Memory string `yaml:"memory"`
+	} `yaml:"resources"`
 }
 
 type nodeConfig struct {
@@ -102,12 +111,29 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 
 		dst.Name = v.Name
 		dst.Size = v.Size
+		dst.Source = v.Source
+		dst.CloudConfig.UserData = v.CloudConfig.UserData
 		var ok bool
 		dst.RecreatePolicy, ok = recreatePolicyConfig[v.RecreatePolicy]
 		if !ok {
-			return placemat.NodeSpec{}, errors.New("Invalid RecreatePolicy: " + v.RecreatePolicy)
+			return placemat.NodeSpec{}, fmt.Errorf("invalid RecreatePolicy: %s" + v.RecreatePolicy)
+		}
+		count := 0
+		if v.Size != "" {
+			count++
+		}
+		if v.Source != "" {
+			count++
+		}
+		if v.CloudConfig.UserData != "" {
+			count++
+		}
+		if count != 1 {
+			return res, errors.New("invalid volume type: must specify only one of 'size' or 'source' or 'cloud-config'")
 		}
 	}
+	res.Resources.CPU = ns.Resources.CPU
+	res.Resources.Memory = ns.Resources.Memory
 
 	return res, nil
 }
