@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"context"
 	"flag"
+	"math/rand"
 	"os"
+
+	"time"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -51,6 +54,8 @@ func run(args []string) error {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	flag.Parse()
 	cmd.LogConfig{}.Apply()
 

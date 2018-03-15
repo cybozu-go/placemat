@@ -62,6 +62,17 @@ func TestCreateVolume(t *testing.T) {
 	}
 }
 
+func TestGenerateRandomMacForKVM(t *testing.T) {
+	sut := generateRandomMACForKVM()
+	if len(sut) != 17 {
+		t.Fatal("length of MAC address string is not 17")
+	}
+	if sut == generateRandomMACForKVM() {
+		t.Fatal("it should generate unique address")
+	}
+
+}
+
 func TestStartNode(t *testing.T) {
 	// TODO add tests
 }

@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"math/rand"
+
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 )
@@ -183,7 +185,8 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		}
 
 		params = append(params, "-netdev", netdev)
-		params = append(params, "-device", "virtio-net-pci,netdev="+br+",romfile=")
+		params = append(params, "-device",
+			fmt.Sprintf("virtio-net-pci,netdev=%s,romfile=,mac=%s", br, generateRandomMACForKVM()))
 	}
 	for _, v := range n.Spec.Volumes {
 		p := q.volumePath(n.Name, v.Name)
@@ -213,4 +216,11 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		}
 	}
 	return nil
+}
+
+func generateRandomMACForKVM() string {
+	prefix := "52:54:00"
+	bytes := make([]byte, 3)
+	rand.Read(bytes)
+	return fmt.Sprintf("%s:%02x:%02x:%02x", prefix, bytes[0], bytes[1], bytes[2])
 }
