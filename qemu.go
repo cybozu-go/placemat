@@ -150,8 +150,12 @@ func createVolumeFromURL(ctx context.Context, path string, url string) error {
 	return os.Rename(temp.Name(), path)
 }
 
-func createVolumeFromCloudConfig(ctx context.Context, p string, config string) error {
-	c := cmd.CommandContext(ctx, "cloud-localds", p, config)
+func createVolumeFromCloudConfig(ctx context.Context, p string, spec CloudConfigSpec) error {
+	if spec.NetworkConfig == "" {
+		c := cmd.CommandContext(ctx, "cloud-localds", p, spec.UserData)
+		return c.Run()
+	}
+	c := cmd.CommandContext(ctx, "cloud-localds", p, spec.UserData, "--network-config", spec.NetworkConfig)
 	return c.Run()
 }
 
@@ -164,7 +168,7 @@ func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *Volume
 	} else if vol.Source != "" {
 		return createVolumeFromURL(ctx, p, vol.Source)
 	} else if vol.CloudConfig.UserData != "" {
-		return createVolumeFromCloudConfig(ctx, p, vol.CloudConfig.UserData)
+		return createVolumeFromCloudConfig(ctx, p, vol.CloudConfig)
 	}
 	return errors.New("invalid volume type")
 }
