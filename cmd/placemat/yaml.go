@@ -22,7 +22,8 @@ type nodeSpec struct {
 		Size        string `yaml:"size"`
 		Source      string `yaml:"source"`
 		CloudConfig struct {
-			UserData string `yaml:"user-data"`
+			UserData      string `yaml:"user-data"`
+			NetworkConfig string `yaml:"network-config"`
 		} `yaml:"cloud-config"`
 		RecreatePolicy string `yaml:"recreatePolicy"`
 	} `yaml:"volumes"`
@@ -113,6 +114,7 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 		dst.Size = v.Size
 		dst.Source = v.Source
 		dst.CloudConfig.UserData = v.CloudConfig.UserData
+		dst.CloudConfig.NetworkConfig = v.CloudConfig.NetworkConfig
 		var ok bool
 		dst.RecreatePolicy, ok = recreatePolicyConfig[v.RecreatePolicy]
 		if !ok {

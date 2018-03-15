@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"path"
@@ -148,8 +149,12 @@ func createVolumeFromURL(ctx context.Context, path string, url string) error {
 	return os.Rename(temp.Name(), path)
 }
 
-func createVolumeFromCloudConfig(ctx context.Context, p string, config string) error {
-	c := cmd.CommandContext(ctx, "cloud-localds", p, config)
+func createVolumeFromCloudConfig(ctx context.Context, p string, spec CloudConfigSpec) error {
+	if spec.NetworkConfig == "" {
+		c := cmd.CommandContext(ctx, "cloud-localds", p, spec.UserData)
+		return c.Run()
+	}
+	c := cmd.CommandContext(ctx, "cloud-localds", p, spec.UserData, "--network-config", spec.NetworkConfig)
 	return c.Run()
 }
 
@@ -162,7 +167,7 @@ func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *Volume
 	} else if vol.Source != "" {
 		return createVolumeFromURL(ctx, p, vol.Source)
 	} else if vol.CloudConfig.UserData != "" {
-		return createVolumeFromCloudConfig(ctx, p, vol.CloudConfig.UserData)
+		return createVolumeFromCloudConfig(ctx, p, vol.CloudConfig)
 	}
 	return errors.New("invalid volume type")
 }
@@ -183,7 +188,8 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		}
 
 		params = append(params, "-netdev", netdev)
-		params = append(params, "-device", "virtio-net-pci,netdev="+br+",romfile=")
+		params = append(params, "-device",
+			fmt.Sprintf("virtio-net-pci,netdev=%s,romfile=,mac=%s", br, generateRandomMACForKVM()))
 	}
 	for _, v := range n.Spec.Volumes {
 		p := q.volumePath(n.Name, v.Name)
@@ -213,4 +219,11 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		}
 	}
 	return nil
+}
+
+func generateRandomMACForKVM() string {
+	vendorPrefix := "52:54:00" // QEMU's vendor prefix
+	bytes := make([]byte, 3)
+	rand.Read(bytes)
+	return fmt.Sprintf("%s:%02x:%02x:%02x", vendorPrefix, bytes[0], bytes[1], bytes[2])
 }

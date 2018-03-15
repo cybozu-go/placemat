@@ -76,6 +76,7 @@ spec:
     - name: seed
       recreatePolicy: Always
       cloud-config: 
+        network-config: network.yml
         user-data: user-data.yml
     - name: data
       size: 20GB
@@ -90,7 +91,14 @@ spec:
 					Interfaces: []string{"br0", "br1"},
 					Volumes: []*placemat.VolumeSpec{
 						{Name: "ubuntu", Source: "https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img", RecreatePolicy: placemat.RecreateIfNotPresent},
-						{Name: "seed", CloudConfig: struct{ UserData string }{UserData: "user-data.yml"}, RecreatePolicy: placemat.RecreateAlways},
+						{Name: "seed", CloudConfig: struct {
+							NetworkConfig string
+							UserData      string
+						}{
+							NetworkConfig: "network.yml",
+							UserData:      "user-data.yml",
+						},
+							RecreatePolicy: placemat.RecreateAlways},
 						{Name: "data", Size: "20GB", RecreatePolicy: placemat.RecreateIfNotPresent},
 					},
 					Resources: struct {
@@ -144,6 +152,7 @@ spec:
     - name: mixed
       source: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
       cloud-config: 
+        network-config: network.yml
         user-data: user-data.yml
       size: 20GB
       recreatePolicy: IfNotPresent
