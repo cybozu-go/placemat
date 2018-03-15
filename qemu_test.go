@@ -3,6 +3,7 @@ package placemat
 import (
 	"context"
 	"io/ioutil"
+	"net"
 	"os"
 	"testing"
 )
@@ -69,6 +70,10 @@ func TestGenerateRandomMacForKVM(t *testing.T) {
 	}
 	if sut == generateRandomMACForKVM() {
 		t.Fatal("it should generate unique address")
+	}
+	_, err := net.ParseMAC(sut)
+	if err != nil {
+		t.Fatal("invalid MAC address", err)
 	}
 
 }
