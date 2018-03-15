@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-
-	"math/rand"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -223,8 +222,8 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 }
 
 func generateRandomMACForKVM() string {
-	prefix := "52:54:00"
+	vendorPrefix := "52:54:00" // QEMU's vendor prefix
 	bytes := make([]byte, 3)
 	rand.Read(bytes)
-	return fmt.Sprintf("%s:%02x:%02x:%02x", prefix, bytes[0], bytes[1], bytes[2])
+	return fmt.Sprintf("%s:%02x:%02x:%02x", vendorPrefix, bytes[0], bytes[1], bytes[2])
 }

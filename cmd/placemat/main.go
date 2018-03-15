@@ -6,7 +6,6 @@ import (
 	"flag"
 	"math/rand"
 	"os"
-
 	"time"
 
 	"github.com/cybozu-go/cmd"
