@@ -7,5 +7,6 @@ jobs:
     steps:
       - checkout
       - run: sudo apt-get update && sudo apt-get install -y qemu-utils
+      - run: (! goimports -d . 2>&1 | read _)
       - run: go get -v -t -d ./...
       - run: go test -race -v ./...
