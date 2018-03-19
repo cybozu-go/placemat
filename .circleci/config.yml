@@ -8,6 +8,7 @@ jobs:
       - checkout
       - run: sudo apt-get update && sudo apt-get install -y qemu-utils
       - run: go get github.com/golang/lint/golint
+      - run: go get golang.org/x/tools/cmd/goimports
       - run: (! goimports -d . 2>&1 | read _)
       - run: $GOPATH/bin/golint -set_exit_status ./...
       - run: go get -v -t -d ./...
