@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/cybozu-go/cmd"
@@ -87,11 +88,34 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, net *Network) error {
 	if err != nil {
 		return err
 	}
+	rep := regexp.MustCompile(`/.*`)
 	for _, addr := range net.Spec.Addresses {
 		err := cmd.CommandContext(ctx, "ip", "addr", "add", addr, "dev", net.Name).Run()
 		if err != nil {
 			return err
 		}
+		//Bridge network via bridge's IP
+		bridgeIP := rep.ReplaceAllString(addr, "")
+		err = cmd.CommandContext(ctx,
+			"ip", "route", "add", bridgeIP, "dev", net.Name).Run()
+		if err != nil {
+			return err
+		}
+		err = cmd.CommandContext(ctx,
+			"iptables", "-t", "nat", "-A", "POSTROUTING", "-j", "MASQUERADE", "--source", addr).Run()
+		if err != nil {
+			return err
+		}
+	}
+	err = cmd.CommandContext(ctx,
+		"iptables", "-t", "filter", "-A", "FORWARD", "-i", net.Name, "-j", "ACCEPT").Run()
+	if err != nil {
+		return err
+	}
+	err = cmd.CommandContext(ctx,
+		"iptables", "-t", "filter", "-A", "FORWARD", "-o", net.Name, "-j", "ACCEPT").Run()
+	if err != nil {
+		return err
 	}
 	return nil
 }
