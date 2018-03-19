@@ -83,6 +83,7 @@ spec:
   resources:
     cpu: 4
     memory: 8G
+  bios: legacy
 `,
 
 			expected: placemat.Node{
@@ -105,6 +106,7 @@ spec:
 						CPU    string
 						Memory string
 					}{CPU: "4", Memory: "8G"},
+					BIOS: placemat.LegacyBIOS,
 				},
 			},
 		},

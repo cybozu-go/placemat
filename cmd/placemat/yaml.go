@@ -31,6 +31,7 @@ type nodeSpec struct {
 		CPU    string `yaml:"cpu"`
 		Memory string `yaml:"memory"`
 	} `yaml:"resources"`
+	BIOS string `yaml:"bios"`
 }
 
 type nodeConfig struct {
@@ -58,6 +59,12 @@ var recreatePolicyConfig = map[string]placemat.VolumeRecreatePolicy{
 	"IfNotPresent": placemat.RecreateIfNotPresent,
 	"Always":       placemat.RecreateAlways,
 	"Never":        placemat.RecreateNever,
+}
+
+var biosConfig = map[string]placemat.BIOSMode{
+	"":       placemat.LegacyBIOS,
+	"legacy": placemat.LegacyBIOS,
+	"uefi":   placemat.UEFI,
 }
 
 func unmarshalNode(data []byte) (*placemat.Node, error) {
@@ -136,6 +143,7 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 	}
 	res.Resources.CPU = ns.Resources.CPU
 	res.Resources.Memory = ns.Resources.Memory
+	res.BIOS = biosConfig[ns.BIOS]
 
 	return res, nil
 }
