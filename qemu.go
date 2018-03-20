@@ -88,6 +88,18 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 	if err != nil {
 		return err
 	}
+	for _, t := range []string{"filter", "nat"} {
+		err = cmd.CommandContext(ctx,
+			"iptables", "-t", "filter", "-N", "PLACEMAT", "-t", t).Run()
+		if err != nil {
+			return err
+		}
+	}
+	err = cmd.CommandContext(ctx,
+		"iptables", "-t", "nat", "-A", "POSTROUTING", "-j", "PLACEMAT").Run()
+	if err != nil {
+		return err
+	}
 	for _, addr := range nt.Spec.Addresses {
 		err := cmd.CommandContext(ctx, "ip", "addr", "add", addr, "dev", nt.Name).Run()
 		if err != nil {
@@ -105,19 +117,14 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 			iptables = "ip6tables"
 		}
 		err = cmd.CommandContext(ctx,
-			iptables, "-t", "nat", "-A", "POSTROUTING", "-j", "MASQUERADE", "--source", ipNet.String(), "!", "--destination", ipNet.String()).Run()
+			iptables, "-t", "nat", "-A", "PLACEMAT", "-j", "MASQUERADE", "--source", ipNet.String(), "!", "--destination", ipNet.String()).Run()
 		if err != nil {
 			return err
 		}
 	}
 	// Create custom chain
 	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "filter", "-N", "PLACEMAT").Run()
-	if err != nil {
-		return err
-	}
-	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "filter", "-A", "FORWARD", "-j", "PLACEMAT").Run()
+		"iptables", "-t", "filter", "-A", "FORWARD", "-j", "PLACEMAT", "-t", "filter").Run()
 	if err != nil {
 		return err
 	}
@@ -143,6 +150,11 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 	}
 	err = cmd.CommandContext(ctx,
 		"iptables", "-t", "filter", "-D", "FORWARD", "-j", "PLACEMAT").Run()
+	if err != nil {
+		return err
+	}
+	err = cmd.CommandContext(ctx,
+		"iptables", "-t", "nat", "-D", "POSTROUTING", "-j", "PLACEMAT").Run()
 	if err != nil {
 		return err
 	}
