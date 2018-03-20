@@ -117,9 +117,20 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 
 // DestroyNetwork destroys a bridge by the name
 func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
-	c := cmd.CommandContext(ctx, "ip", "link", "delete", name, "type", "bridge")
+	err := cmd.CommandContext(ctx, "ip", "link", "delete", name, "type", "bridge").Run()
+	if err != nil {
+		return err
+	}
 	log.Info("Destroying network", map[string]interface{}{"name": name})
-	return c.Run()
+	err = cmd.CommandContext(ctx, "iptables", "-F", "-t", "filter").Run()
+	if err != nil {
+		return err
+	}
+	err = cmd.CommandContext(ctx, "iptables", "-F", "-t", "nat").Run()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func createEmptyVolume(ctx context.Context, p string, size string) error {
