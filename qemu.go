@@ -210,6 +210,7 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	}
 	if q.NoGraphic {
 		p := q.socketPath(n.Name)
+		defer os.Remove(p)
 		params = append(params, "-nographic")
 		params = append(params, "-serial", "unix:"+p+",server,nowait")
 	}
