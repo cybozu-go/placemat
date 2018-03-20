@@ -110,15 +110,25 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 			return err
 		}
 	}
-	// Give access to the bridge network
+	// Create custom chain
 	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "filter", "-A", "FORWARD", "-i", nt.Name, "-j", "ACCEPT").Run()
+		"iptables", "-t", "filter", "-N", "PLACEMAT").Run()
 	if err != nil {
 		return err
 	}
 	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "filter", "-A", "FORWARD", "-o", nt.Name, "-j", "ACCEPT").Run()
-	return err
+		"iptables", "-t", "filter", "-A", "FORWARD", "-j", "PLACEMAT").Run()
+	if err != nil {
+		return err
+	}
+	// Give access to the bridge network
+	err = cmd.CommandContext(ctx,
+		"iptables", "-t", "filter", "-A", "PLACEMAT", "-i", nt.Name, "-j", "ACCEPT").Run()
+	if err != nil {
+		return err
+	}
+	return cmd.CommandContext(ctx,
+		"iptables", "-t", "filter", "-A", "PLACEMAT", "-o", nt.Name, "-j", "ACCEPT").Run()
 }
 
 func isIPv4(ip net.IP) bool {
@@ -131,8 +141,24 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
+	err = cmd.CommandContext(ctx,
+		"iptables", "-t", "filter", "-D", "FORWARD", "-j", "PLACEMAT").Run()
+	if err != nil {
+		return err
+	}
+	for _, t := range []string{"filter", "nat"} {
+		err = cmd.CommandContext(ctx, "iptables", "-F", "PLACEMAT", "-t", t).Run()
+		if err != nil {
+			return err
+		}
+		err = cmd.CommandContext(ctx, "iptables", "-X", "PLACEMAT", "-t", t).Run()
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Info("Destroying network", map[string]interface{}{"name": name})
-	return cmd.CommandContext(ctx, "iptables", "-F", "-t", "nat").Run()
+	return nil
 }
 
 func createEmptyVolume(ctx context.Context, p string, size string) error {
