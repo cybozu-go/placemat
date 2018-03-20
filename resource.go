@@ -17,7 +17,8 @@ const (
 // BIOSMode represents a bios mode
 type BIOSMode int
 
-// BIOS mode, BIOSLegacy is legacy bios mode (default), and BIOSUEIF uses OVMF.
+// BIOS mode, For LegacyBIOS, QEMU launch a vm with no options about bios. For
+// UEIF, QEMU launch a vm with OVMF.
 const (
 	LegacyBIOS = iota
 	UEFI
