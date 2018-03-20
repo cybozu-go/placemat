@@ -95,8 +95,11 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 		}
 		// Add MASQUERADE rule for traffics from vm addresses
 		_, ipv4Net, err := net.ParseCIDR(addr)
+		if err != nil {
+			return err
+		}
 		err = cmd.CommandContext(ctx,
-			"iptables", "-t", "nat", "-A", "POSTROUTING", "-j", "MASQUERADE", "--source", ipv4Net.String()).Run()
+			"iptables", "-t", "nat", "-A", "POSTROUTING", "-j", "MASQUERADE", "--source", ipv4Net.String(), "!", "--destination", ipv4Net.String()).Run()
 		if err != nil {
 			return err
 		}
@@ -109,10 +112,7 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 	}
 	err = cmd.CommandContext(ctx,
 		"iptables", "-t", "filter", "-A", "FORWARD", "-o", nt.Name, "-j", "ACCEPT").Run()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // DestroyNetwork destroys a bridge by the name
@@ -127,10 +127,7 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 		return err
 	}
 	err = cmd.CommandContext(ctx, "iptables", "-F", "-t", "nat").Run()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func createEmptyVolume(ctx context.Context, p string, size string) error {
