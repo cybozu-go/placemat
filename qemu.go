@@ -8,11 +8,11 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/cybozu-go/cmd"
@@ -78,42 +78,37 @@ func (q QemuProvider) VolumeExists(ctx context.Context, node, vol string) (bool,
 }
 
 // CreateNetwork creates a bridge by the Network
-func (q QemuProvider) CreateNetwork(ctx context.Context, net *Network) error {
-	log.Info("Creating network", map[string]interface{}{"name": net.Name, "spec": net})
-	err := cmd.CommandContext(ctx, "ip", "link", "add", net.Name, "type", "bridge").Run()
+func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
+	log.Info("Creating network", map[string]interface{}{"name": nt.Name, "spec": nt})
+	err := cmd.CommandContext(ctx, "ip", "link", "add", nt.Name, "type", "bridge").Run()
 	if err != nil {
 		return err
 	}
-	err = cmd.CommandContext(ctx, "ip", "link", "set", net.Name, "up").Run()
+	err = cmd.CommandContext(ctx, "ip", "link", "set", nt.Name, "up").Run()
 	if err != nil {
 		return err
 	}
-	rep := regexp.MustCompile(`/.*`)
-	for _, addr := range net.Spec.Addresses {
-		err := cmd.CommandContext(ctx, "ip", "addr", "add", addr, "dev", net.Name).Run()
+	for _, addr := range nt.Spec.Addresses {
+		err := cmd.CommandContext(ctx, "ip", "addr", "add", addr, "dev", nt.Name).Run()
 		if err != nil {
 			return err
 		}
-		//Bridge network via bridge's IP
-		bridgeIP := rep.ReplaceAllString(addr, "")
+		// Add MASQUERADE rule for traffics from vm addresses
+		_, ipv4Net, err := net.ParseCIDR(addr)
 		err = cmd.CommandContext(ctx,
-			"ip", "route", "add", bridgeIP, "dev", net.Name).Run()
-		if err != nil {
-			return err
-		}
-		err = cmd.CommandContext(ctx,
-			"iptables", "-t", "nat", "-A", "POSTROUTING", "-j", "MASQUERADE", "--source", addr).Run()
+			"iptables", "-t", "nat", "-A", "POSTROUTING", "-j", "MASQUERADE", "--source", ipv4Net.String()).Run()
 		if err != nil {
 			return err
 		}
 	}
+	// Give access to the bridge network
 	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "filter", "-A", "FORWARD", "-i", net.Name, "-j", "ACCEPT").Run()
+		"iptables", "-t", "filter", "-A", "FORWARD", "-i", nt.Name, "-j", "ACCEPT").Run()
 	if err != nil {
 		return err
 	}
 	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "filter", "-A", "FORWARD", "-o", net.Name, "-j", "ACCEPT").Run()
+		"iptables", "-t", "filter", "-A", "FORWARD", "-o", nt.Name, "-j", "ACCEPT").Run()
 	if err != nil {
 		return err
 	}
