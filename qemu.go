@@ -94,12 +94,18 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 			return err
 		}
 		// Add MASQUERADE rule for traffics from vm addresses
-		_, ipv4Net, err := net.ParseCIDR(addr)
+		ip, ipNet, err := net.ParseCIDR(addr)
 		if err != nil {
 			return err
 		}
+		var iptables string
+		if isIPv4(ip) {
+			iptables = "iptables"
+		} else {
+			iptables = "ip6tables"
+		}
 		err = cmd.CommandContext(ctx,
-			"iptables", "-t", "nat", "-A", "POSTROUTING", "-j", "MASQUERADE", "--source", ipv4Net.String(), "!", "--destination", ipv4Net.String()).Run()
+			iptables, "-t", "nat", "-A", "POSTROUTING", "-j", "MASQUERADE", "--source", ipNet.String(), "!", "--destination", ipNet.String()).Run()
 		if err != nil {
 			return err
 		}
@@ -115,6 +121,10 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 	return err
 }
 
+func isIPv4(ip net.IP) bool {
+	return ip.To4() != nil
+}
+
 // DestroyNetwork destroys a bridge by the name
 func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 	err := cmd.CommandContext(ctx, "ip", "link", "delete", name, "type", "bridge").Run()
@@ -122,12 +132,7 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 		return err
 	}
 	log.Info("Destroying network", map[string]interface{}{"name": name})
-	err = cmd.CommandContext(ctx, "iptables", "-F", "-t", "filter").Run()
-	if err != nil {
-		return err
-	}
-	err = cmd.CommandContext(ctx, "iptables", "-F", "-t", "nat").Run()
-	return err
+	return cmd.CommandContext(ctx, "iptables", "-F", "-t", "nat").Run()
 }
 
 func createEmptyVolume(ctx context.Context, p string, size string) error {
