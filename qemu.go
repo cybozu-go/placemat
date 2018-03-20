@@ -42,6 +42,9 @@ func init() {
 // qemu-system-x86_64 as a VM engine, and qemu-img to create image.
 type QemuProvider struct {
 	BaseDir string
+
+	NoGraphic bool
+	RunDir    string
 }
 
 func createTap(ctx context.Context, tap string, network string) error {
@@ -63,6 +66,10 @@ func createTap(ctx context.Context, tap string, network string) error {
 
 func deleteTap(ctx context.Context, tap string) error {
 	return cmd.CommandContext(ctx, "ip", "tuntap", "delete", tap, "mode", "tap").Run()
+}
+
+func (q QemuProvider) socketPath(host string) string {
+	return path.Join(q.RunDir, host+".socket")
 }
 
 func (q QemuProvider) volumePath(host, name string) string {
@@ -200,6 +207,11 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	}
 	if n.Spec.Resources.Memory != "" {
 		params = append(params, "-m", n.Spec.Resources.Memory)
+	}
+	if q.NoGraphic {
+		p := q.socketPath(n.Name)
+		params = append(params, "-nographic")
+		params = append(params, "-serial", "unix:"+p+",server,nowait")
 	}
 	err := cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
 	if err != nil {

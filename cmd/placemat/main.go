@@ -13,6 +13,15 @@ import (
 	"github.com/cybozu-go/placemat"
 )
 
+const (
+	defaultRunPath = "/tmp"
+)
+
+var (
+	runDir    = flag.String("run-dir", defaultRunPath, "run directory")
+	nographic = flag.Bool("nographic", false, "run QEMU with no graphic")
+)
+
 func loadClusterFromFile(p string) (*placemat.Cluster, error) {
 	f, err := os.Open(p)
 	if err != nil {
@@ -37,7 +46,9 @@ func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {
 
 func run(args []string) error {
 	qemu := placemat.QemuProvider{
-		BaseDir: ".",
+		BaseDir:   ".",
+		NoGraphic: *nographic,
+		RunDir:    *runDir,
 	}
 
 	cluster, err := loadClusterFromFiles(args)
