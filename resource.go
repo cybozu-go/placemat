@@ -18,7 +18,7 @@ const (
 type BIOSMode int
 
 // BIOS mode, For LegacyBIOS, QEMU launch a vm with no options about bios. For
-// UEIF, QEMU launch a vm with OVMF.
+// UEFI, QEMU launch a vm with OVMF.
 const (
 	LegacyBIOS BIOSMode = iota
 	UEFI
