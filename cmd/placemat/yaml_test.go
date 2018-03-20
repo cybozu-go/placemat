@@ -148,6 +148,26 @@ spec:
 		{
 			source: `
 kind: Node
+name: node1
+spec:
+  bios: None
+`,
+			expected: "invalid BIOS: None",
+		},
+		{
+			source: `
+kind: Node
+name: node1
+spec:
+  volumes:
+    - name: vol
+      recreatePolicy: Sometime
+`,
+			expected: "invalid RecreatePolicy: Sometime",
+		},
+		{
+			source: `
+kind: Node
 name: node4
 spec:
   volumes:
