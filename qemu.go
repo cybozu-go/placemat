@@ -243,6 +243,7 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		params = append(params, "-drive", "if=pflash,file="+defaultOVMFCodePath+",format=raw,readonly")
 		params = append(params, "-drive", "if=pflash,file="+p+",format=raw")
 	}
+	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	err := cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
 	if err != nil {
 		log.Error("QEMU exited with an error", map[string]interface{}{
