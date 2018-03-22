@@ -261,7 +261,7 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 			})
 		}
 	}
-	return nil
+	return err
 }
 
 func generateRandomMACForKVM() string {
