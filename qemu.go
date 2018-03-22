@@ -91,27 +91,21 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 		return err
 	}
 
-	err = createCustomChain(ctx, "PLACEMAT", tables)
+	err = createPlacematChain(ctx, tables)
+	if err != nil {
+		return err
+	}
+	err = addJumpRulesToPlacematChain(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "nat", "-A", "POSTROUTING", "-j", "PLACEMAT").Run()
-	if err != nil {
-		return err
-	}
 	for _, addr := range nt.Spec.Addresses {
 		err := cmd.CommandContext(ctx, "ip", "addr", "add", addr, "dev", nt.Name).Run()
 		if err != nil {
 			return err
 		}
 		addMasquerade(ctx, addr)
-	}
-	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "filter", "-A", "FORWARD", "-j", "PLACEMAT", "-t", "filter").Run()
-	if err != nil {
-		return err
 	}
 	// Give access to the bridge network
 	err = cmd.CommandContext(ctx,
@@ -121,6 +115,14 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 	}
 	return cmd.CommandContext(ctx,
 		"iptables", "-t", "filter", "-A", "PLACEMAT", "-o", nt.Name, "-j", "ACCEPT").Run()
+}
+
+func addJumpRulesToPlacematChain(ctx context.Context) error {
+	err := cmd.CommandContext(ctx, "iptables", "-t", "nat", "-A", "POSTROUTING", "-j", "PLACEMAT").Run()
+	if err != nil {
+		return err
+	}
+	return cmd.CommandContext(ctx, "iptables", "-t", "filter", "-A", "FORWARD", "-j", "PLACEMAT").Run()
 }
 
 func isIPv4(ip net.IP) bool {
@@ -142,10 +144,10 @@ func addMasquerade(ctx context.Context, addr string) error {
 		iptables, "-t", "nat", "-A", "PLACEMAT", "-j", "MASQUERADE", "--source", ipNet.String(), "!", "--destination", ipNet.String()).Run()
 }
 
-func createCustomChain(ctx context.Context, chainName string, tables []string) error {
+func createPlacematChain(ctx context.Context, tables []string) error {
 	for _, t := range tables {
 		err := cmd.CommandContext(ctx,
-			"iptables", "-t", "filter", "-N", chainName, "-t", t).Run()
+			"iptables", "-t", "filter", "-N", "PLACEMAT", "-t", t).Run()
 		if err != nil {
 			return err
 		}
@@ -180,7 +182,7 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 		}
 	}
 
-	log.Info("Destroying network", map[string]interface{}{"name": name})
+	log.Info("Destroyed network", map[string]interface{}{"name": name})
 	return nil
 }
 
