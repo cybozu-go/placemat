@@ -83,6 +83,7 @@ spec:
   resources:
     cpu: 4
     memory: 8G
+  bios: legacy
 `,
 
 			expected: placemat.Node{
@@ -105,6 +106,7 @@ spec:
 						CPU    string
 						Memory string
 					}{CPU: "4", Memory: "8G"},
+					BIOS: placemat.LegacyBIOS,
 				},
 			},
 		},
@@ -142,6 +144,26 @@ spec:
 		{
 			source:   `kind: Node`,
 			expected: "node name is empty",
+		},
+		{
+			source: `
+kind: Node
+name: node1
+spec:
+  bios: None
+`,
+			expected: "invalid BIOS: None",
+		},
+		{
+			source: `
+kind: Node
+name: node1
+spec:
+  volumes:
+    - name: vol
+      recreatePolicy: Sometime
+`,
+			expected: "invalid RecreatePolicy: Sometime",
 		},
 		{
 			source: `
