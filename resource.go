@@ -14,6 +14,16 @@ const (
 	RecreateNever
 )
 
+// BIOSMode represents a bios mode
+type BIOSMode int
+
+// BIOS mode, For LegacyBIOS, QEMU launch a vm with no options about bios. For
+// UEFI, QEMU launch a vm with OVMF.
+const (
+	LegacyBIOS BIOSMode = iota
+	UEFI
+)
+
 // NetworkSpec represents a network specification
 type NetworkSpec struct {
 	Addresses []string
@@ -51,6 +61,7 @@ type NodeSpec struct {
 	Interfaces []string
 	Volumes    []*VolumeSpec
 	Resources  ResourceSpec
+	BIOS       BIOSMode
 }
 
 // Node represents a node configuration

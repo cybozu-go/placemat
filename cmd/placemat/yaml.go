@@ -31,6 +31,7 @@ type nodeSpec struct {
 		CPU    string `yaml:"cpu"`
 		Memory string `yaml:"memory"`
 	} `yaml:"resources"`
+	BIOS string `yaml:"bios"`
 }
 
 type nodeConfig struct {
@@ -58,6 +59,12 @@ var recreatePolicyConfig = map[string]placemat.VolumeRecreatePolicy{
 	"IfNotPresent": placemat.RecreateIfNotPresent,
 	"Always":       placemat.RecreateAlways,
 	"Never":        placemat.RecreateNever,
+}
+
+var biosConfig = map[string]placemat.BIOSMode{
+	"":       placemat.LegacyBIOS,
+	"legacy": placemat.LegacyBIOS,
+	"uefi":   placemat.UEFI,
 }
 
 func unmarshalNode(data []byte) (*placemat.Node, error) {
@@ -101,6 +108,7 @@ func unmarshalNodeSet(data []byte) (*placemat.NodeSet, error) {
 
 func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 	var res placemat.NodeSpec
+	var ok bool
 	res.Interfaces = ns.Interfaces
 	if ns.Interfaces == nil {
 		res.Interfaces = []string{}
@@ -115,10 +123,9 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 		dst.Source = v.Source
 		dst.CloudConfig.UserData = v.CloudConfig.UserData
 		dst.CloudConfig.NetworkConfig = v.CloudConfig.NetworkConfig
-		var ok bool
 		dst.RecreatePolicy, ok = recreatePolicyConfig[v.RecreatePolicy]
 		if !ok {
-			return placemat.NodeSpec{}, fmt.Errorf("invalid RecreatePolicy: %s" + v.RecreatePolicy)
+			return placemat.NodeSpec{}, fmt.Errorf("invalid RecreatePolicy: " + v.RecreatePolicy)
 		}
 		count := 0
 		if v.Size != "" {
@@ -136,6 +143,10 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 	}
 	res.Resources.CPU = ns.Resources.CPU
 	res.Resources.Memory = ns.Resources.Memory
+	res.BIOS, ok = biosConfig[ns.BIOS]
+	if !ok {
+		return placemat.NodeSpec{}, fmt.Errorf("invalid BIOS: " + ns.BIOS)
+	}
 
 	return res, nil
 }

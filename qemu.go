@@ -18,6 +18,11 @@ import (
 	"github.com/cybozu-go/log"
 )
 
+const (
+	defaultOVMFCodePath = "/usr/share/OVMF/OVMF_CODE.fd"
+	defaultOVMFVarsPath = "/usr/share/OVMF/OVMF_VARS.fd"
+)
+
 var vhostNetSupported bool
 
 func init() {
@@ -74,6 +79,10 @@ func (q QemuProvider) socketPath(host string) string {
 
 func (q QemuProvider) volumePath(host, name string) string {
 	return path.Join(q.BaseDir, host+"_"+name+".img")
+}
+
+func (q QemuProvider) nvramPath(host string) string {
+	return path.Join(q.BaseDir, host+"_nvram.fd")
 }
 
 // VolumeExists checks if the volume exists
@@ -179,6 +188,14 @@ func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *Volume
 	return errors.New("invalid volume type")
 }
 
+func createNVRAM(ctx context.Context, p string) error {
+	_, err := os.Stat(p)
+	if !os.IsNotExist(err) {
+		return nil
+	}
+	return cmd.CommandContext(ctx, "cp", defaultOVMFVarsPath, p).Run()
+}
+
 // StartNode starts a QEMU vm
 func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	params := []string{"-enable-kvm"}
@@ -213,6 +230,18 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		defer os.Remove(p)
 		params = append(params, "-nographic")
 		params = append(params, "-serial", "unix:"+p+",server,nowait")
+	}
+	if n.Spec.BIOS == UEFI {
+		p := q.nvramPath(n.Name)
+		err := createNVRAM(ctx, p)
+		if err != nil {
+			log.Error("Failed to create nvram", map[string]interface{}{
+				"error": err,
+			})
+			return err
+		}
+		params = append(params, "-drive", "if=pflash,file="+defaultOVMFCodePath+",format=raw,readonly")
+		params = append(params, "-drive", "if=pflash,file="+p+",format=raw")
 	}
 	err := cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
 	if err != nil {
