@@ -119,19 +119,14 @@ func showDownloadProgress(ctx context.Context, totalSize int, fileName string) e
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			file, err := os.Open(fileName)
-			if err != nil {
-				log.Error("Failed to open the file", map[string]interface{}{"file": fileName, "error": err})
-				continue
-			}
-			stat, err := file.Stat()
+			stat, err := os.Stat(fileName)
 			if err != nil {
 				log.Error("Failed to get file statistics", map[string]interface{}{"file": fileName, "error": err})
 				continue
 			}
-			var progress = fmt.Sprintf("%.1f", float64(stat.Size())/float64(totalSize)*100)
+			var progress = fmt.Sprintf("%.1f%%", float64(stat.Size())/float64(totalSize)*100)
 
-			log.Info("Downloading...", map[string]interface{}{"file_name": fileName, "total_size": totalSize, "progress": progress})
+			log.Info("Downloading...", map[string]interface{}{"file_name": fileName,"current_size": stat.Size(), "total_size": totalSize, "progress": progress})
 		}
 	}
 	return nil
