@@ -126,7 +126,7 @@ func showDownloadProgress(ctx context.Context, totalSize int, fileName string) e
 			}
 			var progress = fmt.Sprintf("%.1f%%", float64(stat.Size())/float64(totalSize)*100)
 
-			log.Info("Downloading...", map[string]interface{}{"file_name": fileName,"current_size": stat.Size(), "total_size": totalSize, "progress": progress})
+			log.Info("Downloading...", map[string]interface{}{"file_name": fileName, "current_size": stat.Size(), "total_size": totalSize, "progress": progress})
 		}
 	}
 	return nil
