@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"math/rand"
 	"os"
@@ -11,6 +12,15 @@ import (
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat"
+)
+
+const (
+	defaultRunPath = "/tmp"
+)
+
+var (
+	runDir    = flag.String("run-dir", defaultRunPath, "run directory")
+	nographic = flag.Bool("nographic", false, "run QEMU with no graphic")
 )
 
 func loadClusterFromFile(p string) (*placemat.Cluster, error) {
@@ -35,12 +45,17 @@ func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {
 	return &cluster, nil
 }
 
-func run(args []string) error {
+func run(yamls []string) error {
+	if len(yamls) == 0 {
+		return errors.New("no YAML files specified")
+	}
 	qemu := placemat.QemuProvider{
-		BaseDir: ".",
+		BaseDir:   ".",
+		NoGraphic: *nographic,
+		RunDir:    *runDir,
 	}
 
-	cluster, err := loadClusterFromFiles(args)
+	cluster, err := loadClusterFromFiles(yamls)
 	if err != nil {
 		return err
 	}

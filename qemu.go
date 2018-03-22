@@ -49,6 +49,9 @@ func init() {
 // qemu-system-x86_64 as a VM engine, and qemu-img to create image.
 type QemuProvider struct {
 	BaseDir string
+
+	NoGraphic bool
+	RunDir    string
 }
 
 func createTap(ctx context.Context, tap string, network string) error {
@@ -70,6 +73,10 @@ func createTap(ctx context.Context, tap string, network string) error {
 
 func deleteTap(ctx context.Context, tap string) error {
 	return cmd.CommandContext(ctx, "ip", "tuntap", "delete", tap, "mode", "tap").Run()
+}
+
+func (q QemuProvider) socketPath(host string) string {
+	return path.Join(q.RunDir, host+".socket")
 }
 
 func (q QemuProvider) volumePath(host, name string) string {
@@ -252,6 +259,12 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	if n.Spec.Resources.Memory != "" {
 		params = append(params, "-m", n.Spec.Resources.Memory)
 	}
+	if q.NoGraphic {
+		p := q.socketPath(n.Name)
+		defer os.Remove(p)
+		params = append(params, "-nographic")
+		params = append(params, "-serial", "unix:"+p+",server,nowait")
+	}
 	if n.Spec.BIOS == UEFI {
 		p := q.nvramPath(n.Name)
 		err := createNVRAM(ctx, p)
@@ -264,6 +277,7 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		params = append(params, "-drive", "if=pflash,file="+defaultOVMFCodePath+",format=raw,readonly")
 		params = append(params, "-drive", "if=pflash,file="+p+",format=raw")
 	}
+	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	err := cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
 	if err != nil {
 		log.Error("QEMU exited with an error", map[string]interface{}{
@@ -281,7 +295,7 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 			})
 		}
 	}
-	return nil
+	return err
 }
 
 func generateRandomMACForKVM() string {
