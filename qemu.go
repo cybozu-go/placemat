@@ -22,6 +22,7 @@ import (
 var vhostNetSupported bool
 
 var tables = []string{"filter", "nat"}
+var iptablesCommands = []string{"iptables", "ip6tables"}
 
 func init() {
 	f, err := os.Open("/proc/modules")
@@ -108,21 +109,33 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 		addMasquerade(ctx, addr)
 	}
 	// Give access to the bridge network
-	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "filter", "-A", "PLACEMAT", "-i", nt.Name, "-j", "ACCEPT").Run()
-	if err != nil {
-		return err
+	for _, iptables := range iptablesCommands {
+		err = cmd.CommandContext(ctx,
+			iptables, "-t", "filter", "-A", "PLACEMAT", "-i", nt.Name, "-j", "ACCEPT").Run()
+		if err != nil {
+			return err
+		}
+		err = cmd.CommandContext(ctx,
+			iptables, "-t", "filter", "-A", "PLACEMAT", "-o", nt.Name, "-j", "ACCEPT").Run()
+		if err != nil {
+			return err
+		}
 	}
-	return cmd.CommandContext(ctx,
-		"iptables", "-t", "filter", "-A", "PLACEMAT", "-o", nt.Name, "-j", "ACCEPT").Run()
+	return nil
 }
 
 func addJumpRulesToPlacematChain(ctx context.Context) error {
-	err := cmd.CommandContext(ctx, "iptables", "-t", "nat", "-A", "POSTROUTING", "-j", "PLACEMAT").Run()
-	if err != nil {
-		return err
+	for _, iptables := range iptablesCommands {
+		err := cmd.CommandContext(ctx, iptables, "-t", "nat", "-A", "POSTROUTING", "-j", "PLACEMAT").Run()
+		if err != nil {
+			return err
+		}
+		err = cmd.CommandContext(ctx, iptables, "-t", "filter", "-A", "FORWARD", "-j", "PLACEMAT").Run()
+		if err != nil {
+			return err
+		}
 	}
-	return cmd.CommandContext(ctx, "iptables", "-t", "filter", "-A", "FORWARD", "-j", "PLACEMAT").Run()
+	return nil
 }
 
 func isIPv4(ip net.IP) bool {
@@ -134,22 +147,27 @@ func addMasquerade(ctx context.Context, addr string) error {
 	if err != nil {
 		return err
 	}
-	var iptables string
-	if isIPv4(ip) {
-		iptables = "iptables"
-	} else {
-		iptables = "ip6tables"
-	}
+
 	return cmd.CommandContext(ctx,
-		iptables, "-t", "nat", "-A", "PLACEMAT", "-j", "MASQUERADE", "--source", ipNet.String(), "!", "--destination", ipNet.String()).Run()
+		iptables(ip), "-t", "nat", "-A", "PLACEMAT", "-j", "MASQUERADE", "--source", ipNet.String(), "!", "--destination", ipNet.String()).Run()
+}
+
+func iptables(ip net.IP) string {
+	if isIPv4(ip) {
+		return "iptables"
+	} else {
+		return "ip6tables"
+	}
 }
 
 func createPlacematChain(ctx context.Context, tables []string) error {
-	for _, t := range tables {
-		err := cmd.CommandContext(ctx,
-			"iptables", "-t", "filter", "-N", "PLACEMAT", "-t", t).Run()
-		if err != nil {
-			return err
+	for _, iptables := range iptablesCommands {
+		for _, t := range tables {
+			err := cmd.CommandContext(ctx,
+				iptables, "-t", "filter", "-N", "PLACEMAT", "-t", t).Run()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -161,24 +179,26 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "filter", "-D", "FORWARD", "-j", "PLACEMAT").Run()
-	if err != nil {
-		return err
-	}
-	err = cmd.CommandContext(ctx,
-		"iptables", "-t", "nat", "-D", "POSTROUTING", "-j", "PLACEMAT").Run()
-	if err != nil {
-		return err
-	}
-	for _, t := range tables {
-		err = cmd.CommandContext(ctx, "iptables", "-F", "PLACEMAT", "-t", t).Run()
+	for _, iptables := range iptablesCommands {
+		err = cmd.CommandContext(ctx,
+			iptables, "-t", "filter", "-D", "FORWARD", "-j", "PLACEMAT").Run()
 		if err != nil {
 			return err
 		}
-		err = cmd.CommandContext(ctx, "iptables", "-X", "PLACEMAT", "-t", t).Run()
+		err = cmd.CommandContext(ctx,
+			iptables, "-t", "nat", "-D", "POSTROUTING", "-j", "PLACEMAT").Run()
 		if err != nil {
 			return err
+		}
+		for _, t := range tables {
+			err = cmd.CommandContext(ctx, iptables, "-F", "PLACEMAT", "-t", t).Run()
+			if err != nil {
+				return err
+			}
+			err = cmd.CommandContext(ctx, iptables, "-X", "PLACEMAT", "-t", t).Run()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
