@@ -106,7 +106,10 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 		if err != nil {
 			return err
 		}
-		addMasquerade(ctx, addr)
+		err = addMasquerade(ctx, addr)
+		if err != nil {
+			return err
+		}
 	}
 	// Give access to the bridge network
 	for _, iptables := range iptablesCommands {
@@ -155,16 +158,15 @@ func addMasquerade(ctx context.Context, addr string) error {
 func iptables(ip net.IP) string {
 	if isIPv4(ip) {
 		return "iptables"
-	} else {
-		return "ip6tables"
 	}
+	return "ip6tables"
 }
 
 func createPlacematChain(ctx context.Context, tables []string) error {
 	for _, iptables := range iptablesCommands {
 		for _, t := range tables {
 			err := cmd.CommandContext(ctx,
-				iptables, "-t", "filter", "-N", "PLACEMAT", "-t", t).Run()
+				iptables, "-N", "PLACEMAT", "-t", t).Run()
 			if err != nil {
 				return err
 			}
