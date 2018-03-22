@@ -12,7 +12,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -108,6 +110,33 @@ func createEmptyVolume(ctx context.Context, p string, size string) error {
 	return c.Run()
 }
 
+func showDownloadProgress(ctx context.Context, totalSize int, fileName string) error {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+			file, err := os.Open(fileName)
+			if err != nil {
+				log.Error("Failed to open the file", map[string]interface{}{"file": fileName, "error": err})
+				continue
+			}
+			stat, err := file.Stat()
+			if err != nil {
+				log.Error("Failed to get file statistics", map[string]interface{}{"file": fileName, "error": err})
+				continue
+			}
+			var progress = fmt.Sprintf("%.1f", float64(stat.Size())/float64(totalSize)*100)
+
+			log.Info("Downloading...", map[string]interface{}{"file_name": fileName, "total_size": totalSize, "progress": progress})
+		}
+	}
+	return nil
+}
+
 func createVolumeFromURL(ctx context.Context, path string, url string) error {
 	dir := filepath.Dir(path)
 	temp, err := ioutil.TempFile(dir, "temp-placemat-image-")
@@ -135,6 +164,16 @@ func createVolumeFromURL(ctx context.Context, path string, url string) error {
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to download: %s: %s", res.Status, url)
 	}
+
+	size, err := strconv.Atoi(res.Header.Get("Content-Length"))
+	if err != nil {
+		return err
+	}
+	env := cmd.NewEnvironment(ctx)
+	env.Go(func(ctx context.Context) error {
+		return showDownloadProgress(ctx, size, temp.Name())
+	})
+	defer env.Cancel(nil)
 
 	_, err = io.Copy(temp, res.Body)
 	if err != nil {
