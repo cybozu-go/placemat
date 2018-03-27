@@ -74,28 +74,22 @@ func startNodes(env *cmd.Environment, provider Provider, nodes []*Node) {
 	}
 }
 
-func handleDestroyNetwork(env *cmd.Environment, provider Provider, networks []*Network) {
+func destroyNetworks(provider Provider, networks []*Network) {
 	names := make([]string, len(networks))
 	for i, n := range networks {
 		names[i] = n.Name
 	}
-	env.Go(func(ctx context.Context) error {
-		<-ctx.Done()
-
-		for _, name := range names {
-			err := provider.DestroyNetwork(context.Background(), name)
-			if err != nil {
-				log.Info("Failed to destroy networks", map[string]interface{}{
-					"name":  name,
-					"error": err,
-				})
-			} else {
-				log.Info("Destroyed network", map[string]interface{}{"name": name})
-			}
-
+	for _, name := range names {
+		err := provider.DestroyNetwork(context.Background(), name)
+		if err != nil {
+			log.Error("Failed to destroy networks", map[string]interface{}{
+				"name":  name,
+				"error": err,
+			})
+		} else {
+			log.Info("Destroyed network", map[string]interface{}{"name": name})
 		}
-		return nil
-	})
+	}
 }
 
 // Run runs VMs described in cluster by provider
@@ -104,6 +98,7 @@ func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
 	if err != nil {
 		return err
 	}
+	defer destroyNetworks(provider, cluster.Networks)
 
 	nodes := interpretNodesFromNodeSet(cluster)
 	nodes = append(nodes, cluster.Nodes...)
@@ -114,7 +109,6 @@ func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
 
 	env := cmd.NewEnvironment(ctx)
 	startNodes(env, provider, nodes)
-	handleDestroyNetwork(env, provider, cluster.Networks)
 	env.Stop()
 	return env.Wait()
 }
