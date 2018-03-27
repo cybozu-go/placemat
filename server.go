@@ -56,6 +56,7 @@ func createNodeVolumes(ctx context.Context, provider Provider, nodes []*Node) er
 
 func createNetworks(ctx context.Context, provider Provider, networks []*Network) error {
 	for _, n := range networks {
+		log.Info("Creating network", map[string]interface{}{"name": n.Name})
 		err := provider.CreateNetwork(ctx, n)
 		if err != nil {
 			return err
@@ -88,6 +89,8 @@ func handleDestroyNetwork(env *cmd.Environment, provider Provider, networks []*N
 					"name":  name,
 					"error": err,
 				})
+			} else {
+				log.Info("Destroyed network", map[string]interface{}{"name": name})
 			}
 
 		}
