@@ -1,0 +1,47 @@
+#cloud-config
+hostname: localhost
+users:
+  - name: ubuntu
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    primary-group: ubuntu
+    groups: users, admin
+    lock_passwd: false
+    shell: /bin/bash
+    # password = "ubuntu"
+    passwd: "$6$rounds=4096$1IdWhyNg1$PXQGbjAa5OVPrKq0O2R6h3jN02RF5OowmKDYVVbKQTIwe3Pvv7wwXGKduOkaKEeO.tbe7hHjA2Zpc.9JsAN.i."
+
+write_files:
+  - path: /etc/ssh/sshd_config
+    content: |
+      Protocol 2
+
+  - path: /etc/dnsmasq.conf
+    content: |
+      log-queries
+      log-dhcp
+      interface=ens3
+      enable-tftp
+      tftp-root=/var/lib/dnsmasq
+      dhcp-range=set:ens3,172.16.0.12,172.16.0.15
+      dhcp-option=tag:ens3,option:router,172.16.0.1
+      dhcp-match=set:efi32,option:client-arch,6
+      dhcp-boot=tag:efi32,ipxe.efi
+      dhcp-match=set:efibc,option:client-arch,7
+      dhcp-boot=tag:efibc,ipxe.efi
+      dhcp-match=set:efi64,option:client-arch,9
+      dhcp-boot=tag:efi64,ipxe.efi
+      dhcp-userclass=set:ipxe,iPXE
+      dhcp-boot=tag:ipxe,http://172.16.0.11/ipxe
+
+  # create a directory
+  - path: "/var/lib/dnsmasq/.dummy"
+
+runcmd:
+  - [ curl, -sSL, -o, /var/lib/dnsmasq/ipxe.efi, "http://boot.ipxe.org/ipxe.efi"]
+  - [ curl, -sSL, -o, /var/www/assets/coreos/1576.5.0/coreos_production_pxe.vmlinuz, "https://stable.release.core-os.net/amd64-usr/current/coreos_production_pxe.vmlinuz"]
+  - [ curl, -sSL, -o, /var/www/assets/coreos/1576.5.0/coreos_production_pxe_image.cpio.gz, "https://stable.release.core-os.net/amd64-usr/current/coreos_production_pxe_image.cpio.gz"]
+  - [ systemctl, enable, dnsmasq.service ]
+  - [ systemctl, start, dnsmasq.service ]
+
+packages:
+  - dnsmasq
