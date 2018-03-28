@@ -68,6 +68,14 @@ func execCommands(ctx context.Context, commands [][]string) error {
 	return nil
 }
 
+func execCommandsForce(ctx context.Context, commands [][]string) error {
+	var err error
+	for _, cmds := range commands {
+		err = cmd.CommandContext(ctx, cmds[0], cmds[1:]...).Run()
+	}
+	return err
+}
+
 func createTap(ctx context.Context, tap string, network string) error {
 	log.Info("Creating TAP", map[string]interface{}{"name": tap})
 	cmds := [][]string{
@@ -101,7 +109,7 @@ func (q QemuProvider) VolumeExists(ctx context.Context, node, vol string) (bool,
 	return !os.IsNotExist(err), nil
 }
 
-// CreateNetwork creates a bridge by the Network
+// CreateNetwork creates a bridge and iptables rules by the Network
 func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 	err := createBridge(ctx, nt)
 	if err != nil {
@@ -167,7 +175,7 @@ func iptables(ip net.IP) string {
 	return "ip6tables"
 }
 
-// DestroyNetwork destroys a bridge by the name
+// DestroyNetwork destroys a bridge and iptables rules by the name
 func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 	cmds := [][]string{
 		{"ip", "link", "delete", name, "type", "bridge"},
@@ -186,7 +194,7 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 			)
 		}
 	}
-	return execCommands(ctx, cmds)
+	return execCommandsForce(ctx, cmds)
 }
 
 func createEmptyVolume(ctx context.Context, p string, size string) error {
