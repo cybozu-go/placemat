@@ -42,7 +42,7 @@ func run(args []string) error {
 
 	_, err := os.Stat(sock)
 	if os.IsNotExist(err) {
-		return errors.New(`unable to connecto to "` + host + `"`)
+		return errors.New(`unable to connect to "` + host + `"`)
 	}
 
 	cmd.Go(func(ctx context.Context) error {
