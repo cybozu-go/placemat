@@ -28,9 +28,6 @@ const (
 
 var vhostNetSupported bool
 
-var tables = []string{"filter", "nat"}
-var iptablesCommands = []string{"iptables", "ip6tables"}
-
 func init() {
 	f, err := os.Open("/proc/modules")
 	if err != nil {
@@ -139,11 +136,11 @@ func createBridge(ctx context.Context, nt *Network) error {
 
 func createNatRules(ctx context.Context, nt *Network) error {
 	cmds := [][]string{}
-	for _, iptables := range iptablesCommands {
-		for _, t := range tables {
-			cmds = append(cmds, []string{iptables, "-N", "PLACEMAT", "-t", t})
-		}
+	for _, iptables := range []string{"iptables", "ip6tables"} {
 		cmds = append(cmds,
+			[]string{iptables, "-N", "PLACEMAT", "-t", "filter"},
+			[]string{iptables, "-N", "PLACEMAT", "-t", "nat"},
+
 			[]string{iptables, "-t", "nat", "-A", "POSTROUTING", "-j", "PLACEMAT"},
 			[]string{iptables, "-t", "filter", "-A", "FORWARD", "-j", "PLACEMAT"},
 
@@ -181,18 +178,17 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
 		{"ip", "link", "delete", name, "type", "bridge"},
 	}
 
-	for _, iptables := range iptablesCommands {
+	for _, iptables := range []string{"iptables", "ip6tables"} {
 		cmds = append(cmds,
 			[]string{iptables, "-t", "filter", "-D", "FORWARD", "-j", "PLACEMAT"},
 			[]string{iptables, "-t", "nat", "-D", "POSTROUTING", "-j", "PLACEMAT"},
-		)
 
-		for _, t := range tables {
-			cmds = append(cmds,
-				[]string{iptables, "-F", "PLACEMAT", "-t", t},
-				[]string{iptables, "-X", "PLACEMAT", "-t", t},
-			)
-		}
+			[]string{iptables, "-F", "PLACEMAT", "-t", "filter"},
+			[]string{iptables, "-X", "PLACEMAT", "-t", "filter"},
+
+			[]string{iptables, "-F", "PLACEMAT", "-t", "nat"},
+			[]string{iptables, "-X", "PLACEMAT", "-t", "nat"},
+		)
 	}
 	return execCommandsForce(ctx, cmds)
 }
