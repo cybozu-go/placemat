@@ -28,9 +28,6 @@ const (
 
 var vhostNetSupported bool
 
-var tables = []string{"filter", "nat"}
-var iptablesCommands = []string{"iptables", "ip6tables"}
-
 func init() {
 	f, err := os.Open("/proc/modules")
 	if err != nil {
@@ -58,21 +55,32 @@ type QemuProvider struct {
 	RunDir    string
 }
 
+func execCommands(ctx context.Context, commands [][]string) error {
+	for _, cmds := range commands {
+		err := cmd.CommandContext(ctx, cmds[0], cmds[1:]...).Run()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func execCommandsForce(ctx context.Context, commands [][]string) error {
+	var err error
+	for _, cmds := range commands {
+		err = cmd.CommandContext(ctx, cmds[0], cmds[1:]...).Run()
+	}
+	return err
+}
+
 func createTap(ctx context.Context, tap string, network string) error {
 	log.Info("Creating TAP", map[string]interface{}{"name": tap})
-	err := cmd.CommandContext(ctx, "ip", "tuntap", "add", tap, "mode", "tap").Run()
-	if err != nil {
-		return err
+	cmds := [][]string{
+		{"ip", "tuntap", "add", tap, "mode", "tap"},
+		{"ip", "link", "set", tap, "master", network},
+		{"ip", "link", "set", tap, "up"},
 	}
-	err = cmd.CommandContext(ctx, "ip", "link", "set", tap, "master", network).Run()
-	if err != nil {
-		return err
-	}
-	err = cmd.CommandContext(ctx, "ip", "link", "set", tap, "master", network).Run()
-	if err != nil {
-		return err
-	}
-	return cmd.CommandContext(ctx, "ip", "link", "set", tap, "up").Run()
+	return execCommands(ctx, cmds)
 }
 
 func deleteTap(ctx context.Context, tap string) error {
@@ -98,79 +106,63 @@ func (q QemuProvider) VolumeExists(ctx context.Context, node, vol string) (bool,
 	return !os.IsNotExist(err), nil
 }
 
-// CreateNetwork creates a bridge by the Network
+// CreateNetwork creates a bridge and iptables rules by the Network
 func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
-	log.Info("Creating network", map[string]interface{}{"name": nt.Name, "spec": nt})
-	err := cmd.CommandContext(ctx, "ip", "link", "add", nt.Name, "type", "bridge").Run()
+	err := createBridge(ctx, nt)
 	if err != nil {
+		log.Error("Failed to create a bridge", map[string]interface{}{"naem": nt.Name, "error": err})
 		return err
 	}
-	err = cmd.CommandContext(ctx, "ip", "link", "set", nt.Name, "up").Run()
+	err = createNatRules(ctx, nt)
 	if err != nil {
+		log.Error("Failed to create NAT rules", map[string]interface{}{"naem": nt.Name, "error": err})
 		return err
-	}
-
-	err = createPlacematChain(ctx, tables)
-	if err != nil {
-		return err
-	}
-	err = addJumpRulesToPlacematChain(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, addr := range nt.Spec.Addresses {
-		err := cmd.CommandContext(ctx, "ip", "addr", "add", addr, "dev", nt.Name).Run()
-		if err != nil {
-			return err
-		}
-		err = addMasquerade(ctx, addr)
-		if err != nil {
-			return err
-		}
-	}
-	// Give access to the bridge network
-	for _, iptables := range iptablesCommands {
-		err = cmd.CommandContext(ctx,
-			iptables, "-t", "filter", "-A", "PLACEMAT", "-i", nt.Name, "-j", "ACCEPT").Run()
-		if err != nil {
-			return err
-		}
-		err = cmd.CommandContext(ctx,
-			iptables, "-t", "filter", "-A", "PLACEMAT", "-o", nt.Name, "-j", "ACCEPT").Run()
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
 
-func addJumpRulesToPlacematChain(ctx context.Context) error {
-	for _, iptables := range iptablesCommands {
-		err := cmd.CommandContext(ctx, iptables, "-t", "nat", "-A", "POSTROUTING", "-j", "PLACEMAT").Run()
-		if err != nil {
-			return err
-		}
-		err = cmd.CommandContext(ctx, iptables, "-t", "filter", "-A", "FORWARD", "-j", "PLACEMAT").Run()
-		if err != nil {
-			return err
-		}
+func createBridge(ctx context.Context, nt *Network) error {
+	cmds := [][]string{
+		{"ip", "link", "add", nt.Name, "type", "bridge"},
+		{"ip", "link", "set", nt.Name, "up"},
 	}
-	return nil
+	for _, addr := range nt.Spec.Addresses {
+		cmds = append(cmds,
+			[]string{"ip", "addr", "add", addr, "dev", nt.Name},
+		)
+	}
+	return execCommands(ctx, cmds)
+}
+
+func createNatRules(ctx context.Context, nt *Network) error {
+	cmds := [][]string{}
+	for _, iptables := range []string{"iptables", "ip6tables"} {
+		cmds = append(cmds,
+			[]string{iptables, "-N", "PLACEMAT", "-t", "filter"},
+			[]string{iptables, "-N", "PLACEMAT", "-t", "nat"},
+
+			[]string{iptables, "-t", "nat", "-A", "POSTROUTING", "-j", "PLACEMAT"},
+			[]string{iptables, "-t", "filter", "-A", "FORWARD", "-j", "PLACEMAT"},
+
+			[]string{iptables, "-t", "filter", "-A", "PLACEMAT", "-i", nt.Name, "-j", "ACCEPT"},
+			[]string{iptables, "-t", "filter", "-A", "PLACEMAT", "-o", nt.Name, "-j", "ACCEPT"},
+		)
+	}
+
+	for _, addr := range nt.Spec.Addresses {
+		ip, ipNet, err := net.ParseCIDR(addr)
+		if err != nil {
+			return err
+		}
+		cmds = append(cmds,
+			[]string{iptables(ip), "-t", "nat", "-A", "PLACEMAT", "-j", "MASQUERADE",
+				"--source", ipNet.String(), "!", "--destination", ipNet.String()})
+	}
+	return execCommands(ctx, cmds)
 }
 
 func isIPv4(ip net.IP) bool {
 	return ip.To4() != nil
-}
-
-func addMasquerade(ctx context.Context, addr string) error {
-	ip, ipNet, err := net.ParseCIDR(addr)
-	if err != nil {
-		return err
-	}
-
-	return cmd.CommandContext(ctx,
-		iptables(ip), "-t", "nat", "-A", "PLACEMAT", "-j", "MASQUERADE", "--source", ipNet.String(), "!", "--destination", ipNet.String()).Run()
 }
 
 func iptables(ip net.IP) string {
@@ -180,50 +172,25 @@ func iptables(ip net.IP) string {
 	return "ip6tables"
 }
 
-func createPlacematChain(ctx context.Context, tables []string) error {
-	for _, iptables := range iptablesCommands {
-		for _, t := range tables {
-			err := cmd.CommandContext(ctx,
-				iptables, "-N", "PLACEMAT", "-t", t).Run()
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// DestroyNetwork destroys a bridge by the name
+// DestroyNetwork destroys a bridge and iptables rules by the name
 func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
-	err := cmd.CommandContext(ctx, "ip", "link", "delete", name, "type", "bridge").Run()
-	if err != nil {
-		return err
-	}
-	for _, iptables := range iptablesCommands {
-		err = cmd.CommandContext(ctx,
-			iptables, "-t", "filter", "-D", "FORWARD", "-j", "PLACEMAT").Run()
-		if err != nil {
-			return err
-		}
-		err = cmd.CommandContext(ctx,
-			iptables, "-t", "nat", "-D", "POSTROUTING", "-j", "PLACEMAT").Run()
-		if err != nil {
-			return err
-		}
-		for _, t := range tables {
-			err = cmd.CommandContext(ctx, iptables, "-F", "PLACEMAT", "-t", t).Run()
-			if err != nil {
-				return err
-			}
-			err = cmd.CommandContext(ctx, iptables, "-X", "PLACEMAT", "-t", t).Run()
-			if err != nil {
-				return err
-			}
-		}
+	cmds := [][]string{
+		{"ip", "link", "delete", name, "type", "bridge"},
 	}
 
-	log.Info("Destroyed network", map[string]interface{}{"name": name})
-	return nil
+	for _, iptables := range []string{"iptables", "ip6tables"} {
+		cmds = append(cmds,
+			[]string{iptables, "-t", "filter", "-D", "FORWARD", "-j", "PLACEMAT"},
+			[]string{iptables, "-t", "nat", "-D", "POSTROUTING", "-j", "PLACEMAT"},
+
+			[]string{iptables, "-F", "PLACEMAT", "-t", "filter"},
+			[]string{iptables, "-X", "PLACEMAT", "-t", "filter"},
+
+			[]string{iptables, "-F", "PLACEMAT", "-t", "nat"},
+			[]string{iptables, "-X", "PLACEMAT", "-t", "nat"},
+		)
+	}
+	return execCommandsForce(ctx, cmds)
 }
 
 func createEmptyVolume(ctx context.Context, p string, size string) error {
