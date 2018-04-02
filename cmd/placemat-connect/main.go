@@ -52,7 +52,7 @@ func run(args []string) error {
 	cmd.Go(func(ctx context.Context) error {
 		time.Sleep(1 * time.Second)
 
-		cmd := exec.CommandContext(ctx, "screen", pty)
+		cmd := exec.CommandContext(ctx, "picocom", "-e", "[", pty)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
