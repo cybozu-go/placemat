@@ -56,12 +56,20 @@ type ResourceSpec struct {
 	Memory string
 }
 
+// SMBIOSSpec represents a manufacturer name, product name, and serial number in smbios
+type SMBIOSSpec struct {
+	Manufacturer string
+	Product      string
+	Serial       string
+}
+
 // NodeSpec represents a node specification
 type NodeSpec struct {
 	Interfaces []string
 	Volumes    []*VolumeSpec
 	Resources  ResourceSpec
 	BIOS       BIOSMode
+	SMBIOS     SMBIOSSpec
 }
 
 // Node represents a node configuration

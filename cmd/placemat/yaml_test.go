@@ -84,6 +84,10 @@ spec:
     cpu: 4
     memory: 8G
   bios: legacy
+  smbios:
+    manufacturer: QEMU
+    product: Mk2
+    serial: 1234abcd
 `,
 
 			expected: placemat.Node{
@@ -102,11 +106,9 @@ spec:
 							RecreatePolicy: placemat.RecreateAlways},
 						{Name: "data", Size: "20GB", RecreatePolicy: placemat.RecreateIfNotPresent},
 					},
-					Resources: struct {
-						CPU    string
-						Memory string
-					}{CPU: "4", Memory: "8G"},
-					BIOS: placemat.LegacyBIOS,
+					Resources: placemat.ResourceSpec{CPU: "4", Memory: "8G"},
+					BIOS:      placemat.LegacyBIOS,
+					SMBIOS:    placemat.SMBIOSSpec{Manufacturer: "QEMU", Product: "Mk2", Serial: "1234abcd"},
 				},
 			},
 		},
