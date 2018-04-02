@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -92,6 +93,65 @@ func TestIptables(t *testing.T) {
 	}
 }
 
-func TestStartNode(t *testing.T) {
-	// TODO add tests
+func TestStartNodeCmdParams(t *testing.T) {
+	cases := []struct {
+		n    Node
+		opts [][]string
+	}{
+		{
+			Node{
+				Name: "boot",
+				Spec: NodeSpec{
+					Interfaces: []string{"net1"},
+					SMBIOS: SMBIOSSpec{
+						Manufacturer: "cybozu",
+						Product:      "mk2",
+						Serial:       "1234abcd",
+					},
+					Volumes: []*VolumeSpec{
+						{Name: "system"},
+						{Name: "data"},
+					},
+					Resources: ResourceSpec{
+						CPU:    "2",
+						Memory: "2G",
+					},
+					BIOS: UEFI,
+				},
+			},
+			[][]string{
+				{"-netdev", "tap,id=net1,ifname=boot_net1,script=no,downscript=no,vhost=on"},
+				{"-smbios", "type=1,manufacturer=cybozu,product=mk2,serial=1234abcd"},
+				{"-drive", "if=virtio,cache=none,aio=native,file=/tmp/boot_system.img"},
+				{"-drive", "if=virtio,cache=none,aio=native,file=/tmp/boot_data.img"},
+				{"-smp", "2"},
+				{"-m", "2G"},
+				{"-drive", "if=pflash,file=" + defaultOVMFCodePath + ",format=raw,readonly"},
+				{"-drive", "if=pflash,file=/tmp/boot_nvram.fd,format=raw"},
+			},
+		},
+		{
+			Node{
+				Name: "worker",
+			},
+			[][]string{
+				{"-smbios", "type=1,serial=" + nodeSerial("worker")},
+			},
+		},
+	}
+
+	vhostNetSupported = true
+	q := QemuProvider{BaseDir: "/tmp", NoGraphic: false}
+
+	for _, c := range cases {
+		params := q.qemuParams(&c.n)
+		paramsZero := strings.Join(params, "\x00")
+		for _, o := range c.opts {
+			optZero := strings.Join(o, "\x00")
+			if !strings.Contains(paramsZero, optZero) {
+				t.Fatalf("%v does not contains %v", params, o)
+			}
+		}
+	}
+
 }

@@ -303,16 +303,15 @@ func createNVRAM(ctx context.Context, p string) error {
 	return cmd.CommandContext(ctx, "cp", defaultOVMFVarsPath, p).Run()
 }
 
-// StartNode starts a QEMU vm
-func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
+func nodeSerial(name string) string {
+	return fmt.Sprintf("%x", sha1.Sum([]byte(name)))
+}
+
+func (q QemuProvider) qemuParams(n *Node) []string {
 	params := []string{"-enable-kvm"}
 
 	for _, br := range n.Spec.Interfaces {
 		tap := n.Name + "_" + br
-		err := createTap(ctx, tap, br)
-		if err != nil {
-			return err
-		}
 		netdev := "tap,id=" + br + ",ifname=" + tap + ",script=no,downscript=no"
 		if vhostNetSupported {
 			netdev += ",vhost=on"
@@ -340,13 +339,6 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	}
 	if n.Spec.BIOS == UEFI {
 		p := q.nvramPath(n.Name)
-		err := createNVRAM(ctx, p)
-		if err != nil {
-			log.Error("Failed to create nvram", map[string]interface{}{
-				"error": err,
-			})
-			return err
-		}
 		params = append(params, "-drive", "if=pflash,file="+defaultOVMFCodePath+",format=raw,readonly")
 		params = append(params, "-drive", "if=pflash,file="+p+",format=raw")
 	}
@@ -361,9 +353,33 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	if n.Spec.SMBIOS.Serial != "" {
 		smbios += ",serial=" + n.Spec.SMBIOS.Serial
 	} else {
-		smbios += ",serial=" + fmt.Sprintf("%x", sha1.Sum([]byte(n.Name)))
+		smbios += ",serial=" + nodeSerial(n.Name)
 	}
 	params = append(params, "-smbios", smbios)
+	return params
+}
+
+// StartNode starts a QEMU vm
+func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
+	params := q.qemuParams(n)
+
+	for _, br := range n.Spec.Interfaces {
+		tap := n.Name + "_" + br
+		err := createTap(ctx, tap, br)
+		if err != nil {
+			return err
+		}
+	}
+	if n.Spec.BIOS == UEFI {
+		p := q.nvramPath(n.Name)
+		err := createNVRAM(ctx, p)
+		if err != nil {
+			log.Error("Failed to create nvram", map[string]interface{}{
+				"error": err,
+			})
+			return err
+		}
+	}
 
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	err := cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
