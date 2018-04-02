@@ -3,6 +3,7 @@ package placemat
 import (
 	"bufio"
 	"context"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
@@ -349,6 +350,21 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		params = append(params, "-drive", "if=pflash,file="+defaultOVMFCodePath+",format=raw,readonly")
 		params = append(params, "-drive", "if=pflash,file="+p+",format=raw")
 	}
+
+	smbios := "type=1"
+	if n.Spec.SMBIOS.Manufacturer != "" {
+		smbios += ",manufacturer=" + n.Spec.SMBIOS.Manufacturer
+	}
+	if n.Spec.SMBIOS.Product != "" {
+		smbios += ",product=" + n.Spec.SMBIOS.Product
+	}
+	if n.Spec.SMBIOS.Serial != "" {
+		smbios += ",serial=" + n.Spec.SMBIOS.Serial
+	} else {
+		smbios += ",serial=" + fmt.Sprintf("%x", sha1.Sum([]byte(n.Name)))
+	}
+	params = append(params, "-smbios", smbios)
+
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	err := cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
 	if err != nil {
