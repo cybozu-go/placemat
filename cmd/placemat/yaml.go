@@ -31,7 +31,12 @@ type nodeSpec struct {
 		CPU    string `yaml:"cpu"`
 		Memory string `yaml:"memory"`
 	} `yaml:"resources"`
-	BIOS string `yaml:"bios"`
+	BIOS   string `yaml:"bios"`
+	SMBIOS struct {
+		Manufacturer string `yaml:"manufacturer"`
+		ProductName  string `yaml:"product"`
+		SerialNumber string `yaml:"serial"`
+	} `yaml:"smbios"`
 }
 
 type nodeConfig struct {
@@ -147,6 +152,9 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 	if !ok {
 		return placemat.NodeSpec{}, fmt.Errorf("invalid BIOS: " + ns.BIOS)
 	}
+	res.SMBIOS.Manufacturer = ns.SMBIOS.Manufacturer
+	res.SMBIOS.Product = ns.SMBIOS.ProductName
+	res.SMBIOS.Serial = ns.SMBIOS.SerialNumber
 
 	return res, nil
 }
