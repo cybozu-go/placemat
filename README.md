@@ -150,6 +150,10 @@ spec:
   resources:
     cpu: 2
     memory: 4G
+  smbios:
+    manufacturer: cybozu
+    product: mk2
+    serial: 1234abcd
   bios: legacy
 ```
 
@@ -161,6 +165,7 @@ The properties in the `spec` are the following:
   - `cloud-config`:  Generate a disk for cloud-init to utilize [nocloud](http://cloudinit.readthedocs.io/en/latest/topics/datasources/nocloud.html), which allows the user to provide user-data and meta-data to the instance without running a network service.  `cloud-config` has two properties, `user-data` and `network-config`.
   - `source`:  Create a disk from URL via HTTP.
 - `resources`:  `cpu` and `memory` resources to allocate to the VM.
+- `smbios`: System Management BIOS (SMBIOS) values for `manufacturer`, `product`, and `serial`.  If `serial` is not set, a hash value of the node's name is used.
 - `bios`: BIOS mode of the VM.  If `uefi` is specified, the VM loads OVMF as BIOS.
 
 Placemat launch a `qemu-system-x86_64` process by a Node resource.  If `size`
