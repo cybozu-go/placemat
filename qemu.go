@@ -114,10 +114,12 @@ func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 		log.Error("Failed to create a bridge", map[string]interface{}{"naem": nt.Name, "error": err})
 		return err
 	}
-	err = createNatRules(ctx, nt)
-	if err != nil {
-		log.Error("Failed to create NAT rules", map[string]interface{}{"naem": nt.Name, "error": err})
-		return err
+	if nt.Spec.UseNAT {
+		err = createNatRules(ctx, nt)
+		if err != nil {
+			log.Error("Failed to create NAT rules", map[string]interface{}{"naem": nt.Name, "error": err})
+			return err
+		}
 	}
 	return nil
 }
@@ -174,22 +176,24 @@ func iptables(ip net.IP) string {
 }
 
 // DestroyNetwork destroys a bridge and iptables rules by the name
-func (q QemuProvider) DestroyNetwork(ctx context.Context, name string) error {
+func (q QemuProvider) DestroyNetwork(ctx context.Context, n *Network) error {
 	cmds := [][]string{
-		{"ip", "link", "delete", name, "type", "bridge"},
+		{"ip", "link", "delete", n.Name, "type", "bridge"},
 	}
 
-	for _, iptables := range []string{"iptables", "ip6tables"} {
-		cmds = append(cmds,
-			[]string{iptables, "-t", "filter", "-D", "FORWARD", "-j", "PLACEMAT"},
-			[]string{iptables, "-t", "nat", "-D", "POSTROUTING", "-j", "PLACEMAT"},
+	if n.Spec.UseNAT {
+		for _, iptables := range []string{"iptables", "ip6tables"} {
+			cmds = append(cmds,
+				[]string{iptables, "-t", "filter", "-D", "FORWARD", "-j", "PLACEMAT"},
+				[]string{iptables, "-t", "nat", "-D", "POSTROUTING", "-j", "PLACEMAT"},
 
-			[]string{iptables, "-F", "PLACEMAT", "-t", "filter"},
-			[]string{iptables, "-X", "PLACEMAT", "-t", "filter"},
+				[]string{iptables, "-F", "PLACEMAT", "-t", "filter"},
+				[]string{iptables, "-X", "PLACEMAT", "-t", "filter"},
 
-			[]string{iptables, "-F", "PLACEMAT", "-t", "nat"},
-			[]string{iptables, "-X", "PLACEMAT", "-t", "nat"},
-		)
+				[]string{iptables, "-F", "PLACEMAT", "-t", "nat"},
+				[]string{iptables, "-X", "PLACEMAT", "-t", "nat"},
+			)
+		}
 	}
 	return execCommandsForce(ctx, cmds)
 }

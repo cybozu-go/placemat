@@ -16,7 +16,7 @@ type Provider interface {
 
 	CreateNetwork(ctx context.Context, n *Network) error
 
-	DestroyNetwork(ctx context.Context, name string) error
+	DestroyNetwork(ctx context.Context, n *Network) error
 
 	StartNode(ctx context.Context, n *Node) error
 }
@@ -75,19 +75,15 @@ func startNodes(env *cmd.Environment, provider Provider, nodes []*Node) {
 }
 
 func destroyNetworks(provider Provider, networks []*Network) {
-	names := make([]string, len(networks))
-	for i, n := range networks {
-		names[i] = n.Name
-	}
-	for _, name := range names {
-		err := provider.DestroyNetwork(context.Background(), name)
+	for _, n := range networks {
+		err := provider.DestroyNetwork(context.Background(), n)
 		if err != nil {
 			log.Error("Failed to destroy networks", map[string]interface{}{
-				"name":  name,
+				"name":  n.Name,
 				"error": err,
 			})
 		} else {
-			log.Info("Destroyed network", map[string]interface{}{"name": name})
+			log.Info("Destroyed network", map[string]interface{}{"name": n.Name})
 		}
 	}
 }

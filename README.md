@@ -72,6 +72,8 @@ includes a VM node and a network bridge.
 kind: Network
 name: net0
 spec:
+  internal: false
+  use-nat: true
   addresses:
     - 172.16.0.1/24
 ---
@@ -113,17 +115,25 @@ Placemat creates a bridge network to local host machine by a Network resource.
 kind: Network
 name: my-net
 spec:
+  internal: false
+  use-nat: true
   addresses:
       - 10.0.0.0/22
 ```
 
-The property in the `spec` is the following:
+The properties in the `spec` are the following:
 
+- `internal`: Whether or not this network should be configured as an internal switch.  `true` or `false`.
+- `use-nat`: Whether or not this network requires NAT on host to reach the Internet.  `true` or `false`.
 - `addresses`: IP addresses to assign bridge which accessed from host
 
-The bridge network works as a virtual L2 network.  It connects each VMs and
-exposes it to the host machine as an interface.  Placemat also set-up SNAT to
-your host with `iptables`/`ip6tables` to reach to the internet.
+The bridge network works as a virtual L2 network.  It connects VMs to each other.
+If `internal` is false, it exposes it to the host machine as an interface.
+If `use-nat` is true, placemat also set-up SNAT to your host with `iptables`/`ip6tables`
+to reach to the internet.
+
+You need not (and cannot) specify `use-nat` or `addresses` if `internal` is true.
+You must specify at least 1 address if `internal` is false.
 
 ### Node resource
 

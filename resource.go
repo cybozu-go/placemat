@@ -26,6 +26,8 @@ const (
 
 // NetworkSpec represents a network specification
 type NetworkSpec struct {
+	Internal  bool
+	UseNAT    bool
 	Addresses []string
 }
 

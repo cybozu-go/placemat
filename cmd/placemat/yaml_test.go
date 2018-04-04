@@ -20,6 +20,8 @@ func TestUnmarshalNetwork(t *testing.T) {
 kind: Network
 name: net1
 spec:
+  internal: false
+  use-nat: true
   addresses:
     - 10.0.0.1
     - 10.0.0.2
@@ -27,6 +29,8 @@ spec:
 			expected: placemat.Network{
 				Name: "net1",
 				Spec: placemat.NetworkSpec{
+					Internal:  false,
+					UseNAT:    true,
 					Addresses: []string{"10.0.0.1", "10.0.0.2"},
 				},
 			},
@@ -36,10 +40,14 @@ spec:
 
 kind: Network
 name: net2
+spec:
+  internal: true
 `,
 			expected: placemat.Network{
 				Name: "net2",
-				Spec: placemat.NetworkSpec{},
+				Spec: placemat.NetworkSpec{
+					Internal: true,
+				},
 			},
 		},
 	}
@@ -53,6 +61,45 @@ name: net2
 			t.Errorf("%v != %v", *actual, c.expected)
 		}
 	}
+
+	errorCases := []struct {
+		source string
+
+		expected string
+	}{
+		{
+			source: `
+kind: Network
+name: net1
+spec:
+  internal: true
+  use-nat: true
+  addresses:
+    - 10.0.0.1
+    - 10.0.0.2
+`,
+			expected: "'use-nat' and 'addresses' are meaningless for internal network",
+		},
+		{
+			source: `
+kind: Network
+name: net2
+spec:
+  internal: false
+  use-nat: true
+  addresses:
+`,
+			expected: "addresses is empty for non-internal network",
+		},
+	}
+
+	for _, c := range errorCases {
+		_, err := unmarshalNetwork([]byte(c.source))
+		if err.Error() != c.expected {
+			t.Errorf("%v != %v", err.Error(), c.expected)
+		}
+	}
+
 }
 
 func TestUnmarshalNode(t *testing.T) {
@@ -250,6 +297,8 @@ func TestUnmarshalCluster(t *testing.T) {
 	yaml := `
 kind: Network
 name: net1
+spec:
+  internal: true
 ---
 kind: Node
 name: node1

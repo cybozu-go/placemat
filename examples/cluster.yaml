@@ -1,6 +1,8 @@
 kind: Network
 name: net0
 spec:
+  internal: false
+  use-nat: true
   addresses:
     - 172.16.0.1/24
 ---
