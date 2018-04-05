@@ -125,12 +125,12 @@ The properties in the `spec` are the following:
 
 - `internal`: Whether or not this network should be configured as an internal switch.  `true` or `false`.
 - `use-nat`: Whether or not this network requires NAT on host to reach the Internet.  `true` or `false`.
-- `addresses`: IP addresses to assign bridge which accessed from host
+- `addresses`: IP addresses to be assigned to the bridge which can be accessed from host.
 
 The bridge network works as a virtual L2 network.  It connects VMs to each other.
-If `internal` is false, it exposes it to the host machine as an interface.
-If `use-nat` is true, placemat also set-up SNAT to your host with `iptables`/`ip6tables`
-to reach to the internet.
+If `internal` is false, the bridge is exposed to the host OS as an interface.
+If `use-nat` is true, placemat configures SNAT for the packets from the bridge
+with iptables/ip6tables.
 
 You need not (and cannot) specify `use-nat` or `addresses` if `internal` is true.
 You must specify at least 1 address if `internal` is false.
