@@ -176,12 +176,12 @@ func iptables(ip net.IP) string {
 }
 
 // DestroyNetwork destroys a bridge and iptables rules by the name
-func (q QemuProvider) DestroyNetwork(ctx context.Context, n *Network) error {
+func (q QemuProvider) DestroyNetwork(ctx context.Context, nt *Network) error {
 	cmds := [][]string{
-		{"ip", "link", "delete", n.Name, "type", "bridge"},
+		{"ip", "link", "delete", nt.Name, "type", "bridge"},
 	}
 
-	if n.Spec.UseNAT {
+	if nt.Spec.UseNAT {
 		for _, iptables := range []string{"iptables", "ip6tables"} {
 			cmds = append(cmds,
 				[]string{iptables, "-t", "filter", "-D", "FORWARD", "-j", "PLACEMAT"},
