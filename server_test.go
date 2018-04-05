@@ -64,8 +64,8 @@ func (m *MockProvider) CreateNetwork(ctx context.Context, n *Network) error {
 	return nil
 }
 
-func (m *MockProvider) DestroyNetwork(ctx context.Context, name string) error {
-	m.networks[name] = struct{}{}
+func (m *MockProvider) DestroyNetwork(ctx context.Context, n *Network) error {
+	m.networks[n.Name] = struct{}{}
 	return nil
 }
 
