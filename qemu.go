@@ -55,6 +55,7 @@ type QemuProvider struct {
 	dataDir string
 }
 
+// SetupDataDir creates directories under dataDir for later use.
 func (q *QemuProvider) SetupDataDir(dataDir string) error {
 	fi, err := os.Stat(dataDir)
 	switch {
