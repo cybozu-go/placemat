@@ -1,4 +1,5 @@
-# Placemat
+Placemat
+========
 
 Placemat is a provisioning tool to deploy QEMU VMs and configure networks for a
 development environment.  A configuration of the VMs and networks is described
@@ -9,24 +10,35 @@ libvirt, or Docker.  The VMs and network configuration are constructed at the
 beginning of the placemat's process, and they are destructed at the end of the
 process with graceful shutdown.
 
-## Usage
+Usage
+-----
 
 This project provides two commands, `placemat` and `placemat-connect`.
 `placemat` command is a process to configure VMs, and `placemat-connect` is a
 client tool to connect to QEMU's serial console.
 
-```console
-$ placemat [-nographic] [-run-dir=/tmp] network.yml nodes.yml other.yml
-```
+### placemat command
 
-- `-nographic`: launch VMs without GUI console
-- `-run-dir`: the directory to store sockets for VMs' consoles
+```console
+$ placemat [OPTIONS] network.yml nodes.yml other.yml
+
+Options:
+  -nographic
+        run QEMU with no graphic
+  -run-dir string
+        run directory (default "/tmp")
+  -data-dir string
+        directory to store data (default "$HOME/placemat_data")
+```
 
 You can define configuration for each `resources` to YAML files, or define them
 to single files with a `---` separator.
 
-With `-nographic` option, VMs launch without GUI console.  Their serial
-consoles expose as pseudo terminals via a UNIX domain socket.
+### placemat-connect command
+
+If placemat starts with `-nographic` option, VMs will launch without GUI console.
+Their serial consoles expose as pseudo terminals via a UNIX domain socket.
+
 `placemat-connect` command can be used to connect them.
 
 ```console
@@ -35,7 +47,8 @@ $ placemat-connect [-run-dir=/tmp] your-vm-name
 
 - `-run-dir`: the directory specified by `run-dir` of `placemat` command
 
-## Getting started
+Getting started
+---------------
 
 ### Prerequisites
 
@@ -101,7 +114,8 @@ Then you can connect to a console of the VM by the following:
 $ sudo placemat-connect debian
 ```
 
-## Configures resources
+Configures resources
+--------------------
 
 The VMs and networks of placemat are described in YAML as *resources*.  There
 are three type of resources, Network resource, Node resource, and NodeSet
@@ -207,10 +221,12 @@ The properties in the `spec` are the following:
 The actual name of the node is `name` of the resource with suffix `-N` (where `N` is a unique number).
 The above example creates nodes named `worker-0`, `worker-1` and `worker-2`.
 
-## Examples
+Examples
+--------
 
 See [examples](examples).
 
-## License
+License
+-------
 
 MIT

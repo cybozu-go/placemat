@@ -16,11 +16,13 @@ import (
 
 const (
 	defaultRunPath = "/tmp"
+	defaultDataDir = "$HOME/placemat_data"
 )
 
 var (
-	runDir    = flag.String("run-dir", defaultRunPath, "run directory")
-	nographic = flag.Bool("nographic", false, "run QEMU with no graphic")
+	flgRunDir    = flag.String("run-dir", defaultRunPath, "run directory")
+	flgDataDir   = flag.String("data-dir", defaultDataDir, "directory to store data")
+	flgNoGraphic = flag.Bool("nographic", false, "run QEMU with no graphic")
 )
 
 func loadClusterFromFile(p string) (*placemat.Cluster, error) {
@@ -49,10 +51,15 @@ func run(yamls []string) error {
 	if len(yamls) == 0 {
 		return errors.New("no YAML files specified")
 	}
+
 	qemu := placemat.QemuProvider{
-		BaseDir:   ".",
-		NoGraphic: *nographic,
-		RunDir:    *runDir,
+		NoGraphic: *flgNoGraphic,
+		RunDir:    *flgRunDir,
+	}
+
+	err := qemu.SetupDataDir(os.ExpandEnv(*flgDataDir))
+	if err != nil {
+		return err
 	}
 
 	cluster, err := loadClusterFromFiles(yamls)

@@ -24,7 +24,11 @@ func TestVolumeExists(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	var qemu = QemuProvider{BaseDir: dir}
+	qemu := QemuProvider{}
+	err = qemu.SetupDataDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	touch(qemu.volumePath("host1", "volume1"))
 	exists, err := qemu.VolumeExists(context.Background(), "host1", "volume1")
@@ -51,7 +55,11 @@ func TestCreateVolume(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	var qemu = QemuProvider{BaseDir: dir}
+	qemu := QemuProvider{}
+	err = qemu.SetupDataDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	err = qemu.CreateVolume(context.Background(), "host1", &VolumeSpec{Name: "volume1", Size: "10G"})
 	if err != nil {
@@ -122,12 +130,12 @@ func TestStartNodeCmdParams(t *testing.T) {
 			[][]string{
 				{"-netdev", "tap,id=net1,ifname=boot_net1,script=no,downscript=no,vhost=on"},
 				{"-smbios", "type=1,manufacturer=cybozu,product=mk2,serial=1234abcd"},
-				{"-drive", "if=virtio,cache=none,aio=native,file=/tmp/boot_system.img"},
-				{"-drive", "if=virtio,cache=none,aio=native,file=/tmp/boot_data.img"},
+				{"-drive", "if=virtio,cache=none,aio=native,file=/tmp/volumes/boot_system.img"},
+				{"-drive", "if=virtio,cache=none,aio=native,file=/tmp/volumes/boot_data.img"},
 				{"-smp", "2"},
 				{"-m", "2G"},
 				{"-drive", "if=pflash,file=" + defaultOVMFCodePath + ",format=raw,readonly"},
-				{"-drive", "if=pflash,file=/tmp/boot_nvram.fd,format=raw"},
+				{"-drive", "if=pflash,file=/tmp/nvram/boot.fd,format=raw"},
 			},
 		},
 		{
@@ -141,7 +149,11 @@ func TestStartNodeCmdParams(t *testing.T) {
 	}
 
 	vhostNetSupported = true
-	q := QemuProvider{BaseDir: "/tmp", NoGraphic: false}
+	q := QemuProvider{NoGraphic: false}
+	err := q.SetupDataDir("/tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	for _, c := range cases {
 		params := q.qemuParams(&c.n)
