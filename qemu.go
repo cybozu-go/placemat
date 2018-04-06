@@ -6,14 +6,10 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"math/rand"
 	"net"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -51,6 +47,7 @@ func init() {
 type QemuProvider struct {
 	NoGraphic bool
 	RunDir    string
+	Cluster   *Cluster
 
 	dataDir string
 }
@@ -257,57 +254,6 @@ func showDownloadProgress(ctx context.Context, totalSize int, fileName string) e
 	return nil
 }
 
-func createVolumeFromURL(ctx context.Context, path string, url string) error {
-	dir := filepath.Dir(path)
-	temp, err := ioutil.TempFile(dir, "temp-placemat-image-")
-	if err != nil {
-		return err
-	}
-	defer temp.Close()
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	req = req.WithContext(ctx)
-
-	client := &cmd.HTTPClient{
-		Client:   &http.Client{},
-		Severity: log.LvDebug,
-	}
-	res, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download: %s: %s", res.Status, url)
-	}
-
-	size, err := strconv.Atoi(res.Header.Get("Content-Length"))
-	if err != nil {
-		return err
-	}
-	env := cmd.NewEnvironment(ctx)
-	env.Go(func(ctx context.Context) error {
-		return showDownloadProgress(ctx, size, temp.Name())
-	})
-	defer env.Cancel(nil)
-
-	_, err = io.Copy(temp, res.Body)
-	if err != nil {
-		return err
-	}
-	err = temp.Close()
-	if err != nil {
-		os.Remove(temp.Name())
-		return err
-	}
-
-	return os.Rename(temp.Name(), path)
-}
-
 func createVolumeFromCloudConfig(ctx context.Context, p string, spec CloudConfigSpec) error {
 	if spec.NetworkConfig == "" {
 		c := cmd.CommandContext(ctx, "cloud-localds", p, spec.UserData)
@@ -324,7 +270,7 @@ func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *Volume
 	if vol.Size != "" {
 		return createEmptyVolume(ctx, p, vol.Size)
 	} else if vol.Source != "" {
-		return createVolumeFromURL(ctx, p, vol.Source)
+		return vol.image.writeToFile(ctx, p)
 	} else if vol.CloudConfig.UserData != "" {
 		return createVolumeFromCloudConfig(ctx, p, vol.CloudConfig)
 	}
