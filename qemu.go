@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -50,10 +49,42 @@ func init() {
 // QemuProvider is an implementation of Provider interface.  It launches
 // qemu-system-x86_64 as a VM engine, and qemu-img to create image.
 type QemuProvider struct {
-	BaseDir string
-
 	NoGraphic bool
 	RunDir    string
+
+	dataDir string
+}
+
+func (q *QemuProvider) SetupDataDir(dataDir string) error {
+	fi, err := os.Stat(dataDir)
+	switch {
+	case err == nil:
+		if !fi.IsDir() {
+			return errors.New(dataDir + " is not a directory")
+		}
+	case os.IsNotExist(err):
+		err = os.MkdirAll(dataDir, 0755)
+		if err != nil {
+			return err
+		}
+	default:
+		return err
+	}
+
+	volumeDir := filepath.Join(dataDir, "volumes")
+	err = os.MkdirAll(volumeDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	nvramDir := filepath.Join(dataDir, "nvram")
+	err = os.MkdirAll(nvramDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	q.dataDir = dataDir
+	return nil
 }
 
 func execCommands(ctx context.Context, commands [][]string) error {
@@ -89,15 +120,15 @@ func deleteTap(ctx context.Context, tap string) error {
 }
 
 func (q QemuProvider) socketPath(host string) string {
-	return path.Join(q.RunDir, host+".socket")
+	return filepath.Join(q.RunDir, host+".socket")
 }
 
 func (q QemuProvider) volumePath(host, name string) string {
-	return path.Join(q.BaseDir, host+"_"+name+".img")
+	return filepath.Join(q.dataDir, "volumes", host+"_"+name+".img")
 }
 
 func (q QemuProvider) nvramPath(host string) string {
-	return path.Join(q.BaseDir, host+"_nvram.fd")
+	return filepath.Join(q.dataDir, "nvram", host+".fd")
 }
 
 // VolumeExists checks if the volume exists
