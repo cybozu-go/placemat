@@ -6,6 +6,11 @@ spec:
   addresses:
     - 172.16.0.1/24
 ---
+kind: Image
+name: ubuntu-image
+spec:
+  url: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+---
 kind: Node
 name: boot
 spec:
@@ -13,7 +18,7 @@ spec:
     - net0
   volumes:
     - name: ubuntu
-      source: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+      source: ubuntu-image
       recreatePolicy: IfNotPresent
     - name: seed
       cloud-config:
