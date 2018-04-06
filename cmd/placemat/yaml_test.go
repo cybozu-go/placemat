@@ -3,13 +3,98 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"net/url"
 	"reflect"
 	"testing"
 
 	"github.com/cybozu-go/placemat"
 )
 
-func TestUnmarshalNetwork(t *testing.T) {
+func testUnmarshalImage(t *testing.T) {
+	t.Parallel()
+
+	url, _ := url.Parse("https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img")
+
+	cases := []struct {
+		source   string
+		expected placemat.Image
+	}{
+		{
+			source: `
+kind: Image
+name: ubuntu-image
+spec:
+  url: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+`,
+			expected: placemat.Image{
+				Name: "ubuntu-image",
+				Spec: placemat.ImageSpec{
+					URL: url,
+				},
+			},
+		},
+		{
+			source: `
+kind: Image
+name: ubuntu-image
+spec:
+  file: /home/cybozu/ubuntu-18.04.img
+`,
+			expected: placemat.Image{
+				Name: "ubuntu-image",
+				Spec: placemat.ImageSpec{
+					File: "/home/cybozu/ubuntu-18.04.img",
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		actual, err := unmarshalImage([]byte(c.source))
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(*actual, c.expected) {
+			t.Errorf("%v != %v", *actual, c.expected)
+		}
+	}
+
+	errorCases := []string{
+		`
+kind: Image
+spec:
+  file: "/home/cybozu/ubuntu.img"
+`,
+		`
+kind: Image
+name: "empty-spec"
+spec:
+`,
+		`
+kind: Image
+name: "both-spec"
+spec:
+  file: "/home/cybozu/ubuntu.img"
+  url: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+`,
+		`
+kind: Image
+name: "invalid-url"
+spec:
+  url: $://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+`,
+	}
+
+	for _, c := range errorCases {
+		image, err := unmarshalImage([]byte(c))
+		if err == nil {
+			t.Errorf("%s should be error", image.Name)
+		}
+	}
+}
+
+func testUnmarshalNetwork(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		source string
 
@@ -102,7 +187,8 @@ spec:
 
 }
 
-func TestUnmarshalNode(t *testing.T) {
+func testUnmarshalNode(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		source string
 
@@ -240,7 +326,8 @@ spec:
 
 }
 
-func TestUnmarshalNodeSet(t *testing.T) {
+func testUnmarshalNodeSet(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		source   string
 		expected placemat.NodeSet
@@ -293,12 +380,18 @@ spec:
 
 }
 
-func TestUnmarshalCluster(t *testing.T) {
+func testUnmarshalCluster(t *testing.T) {
+	t.Parallel()
 	yaml := `
 kind: Network
 name: net1
 spec:
   internal: true
+---
+kind: Image
+name: ubuntu
+spec:
+  file: hoge
 ---
 kind: Node
 name: node1
@@ -317,6 +410,9 @@ name: nodeSet
 	if len(cluster.Networks) != 1 {
 		t.Error("len(cluster.Networks) != 1, ", len(cluster.Networks))
 	}
+	if len(cluster.Images) != 1 {
+		t.Error("len(cluster.Images) != 1, ", len(cluster.Images))
+	}
 	if len(cluster.Nodes) != 2 {
 		t.Error("len(cluster.Nodes) != 2, ", len(cluster.Nodes))
 	}
@@ -324,4 +420,12 @@ name: nodeSet
 		t.Error("len(cluster.NodeSets) != 1, ", len(cluster.NodeSets))
 	}
 
+}
+
+func TestYAML(t *testing.T) {
+	t.Run("image", testUnmarshalImage)
+	t.Run("network", testUnmarshalNetwork)
+	t.Run("node", testUnmarshalNode)
+	t.Run("nodeSet", testUnmarshalNodeSet)
+	t.Run("cluster", testUnmarshalCluster)
 }

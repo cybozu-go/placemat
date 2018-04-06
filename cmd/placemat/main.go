@@ -66,6 +66,10 @@ func run(yamls []string) error {
 	if err != nil {
 		return err
 	}
+	err = cluster.Resolve()
+	if err != nil {
+		return err
+	}
 
 	cmd.Go(func(ctx context.Context) error {
 		return placemat.Run(ctx, qemu, cluster)

@@ -1,5 +1,22 @@
 package placemat
 
+import (
+	"net/url"
+
+	"context"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+
+	"github.com/cybozu-go/cmd"
+	"github.com/cybozu-go/log"
+	"github.com/pkg/errors"
+)
+
 // VolumeRecreatePolicy represents a policy to recreate a volume
 type VolumeRecreatePolicy int
 
@@ -37,6 +54,18 @@ type Network struct {
 	Spec NetworkSpec
 }
 
+// ImageSpec represents an image specification
+type ImageSpec struct {
+	URL  *url.URL
+	File string
+}
+
+// Image represents an image configuration
+type Image struct {
+	Name string
+	Spec ImageSpec
+}
+
 // CloudConfigSpec represents a cloud-config configuration
 type CloudConfigSpec struct {
 	NetworkConfig string
@@ -50,6 +79,21 @@ type VolumeSpec struct {
 	Source         string
 	CloudConfig    CloudConfigSpec
 	RecreatePolicy VolumeRecreatePolicy
+	image          *Image
+}
+
+// Resolve resolves image source reference
+func (vs *VolumeSpec) Resolve(c *Cluster) error {
+	if vs.Source == "" {
+		return nil
+	}
+	for _, img := range c.Images {
+		if img.Name == vs.Source {
+			vs.image = img
+			return nil
+		}
+	}
+	return errors.New("no such image: " + vs.Source)
 }
 
 // ResourceSpec represents a resource specification
@@ -95,6 +139,7 @@ type NodeSet struct {
 // Cluster represents cluster configuration
 type Cluster struct {
 	Networks []*Network
+	Images   []*Image
 	Nodes    []*Node
 	NodeSets []*NodeSet
 }
@@ -104,5 +149,100 @@ func (c *Cluster) Append(other *Cluster) *Cluster {
 	c.Networks = append(c.Networks, other.Networks...)
 	c.Nodes = append(c.Nodes, other.Nodes...)
 	c.NodeSets = append(c.NodeSets, other.NodeSets...)
+	c.Images = append(c.Images, other.Images...)
 	return c
+}
+
+// Resolve resolves references between resources
+func (c *Cluster) Resolve() error {
+	for _, node := range c.Nodes {
+		for _, vs := range node.Spec.Volumes {
+			err := vs.Resolve(c)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for _, nodeSet := range c.NodeSets {
+		for _, vs := range nodeSet.Spec.Template.Volumes {
+			err := vs.Resolve(c)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (img *Image) writeToFile(ctx context.Context, destPath string) error {
+	if img.Spec.File != "" {
+		f, err := os.Open(img.Spec.File)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		defer destFile.Close()
+
+		_, err = io.Copy(destFile, f)
+		return err
+	}
+
+	return img.downloadImage(ctx, destPath)
+}
+
+func (img *Image) downloadImage(ctx context.Context, destPath string) error {
+	dir := filepath.Dir(destPath)
+	urlString := img.Spec.URL.String()
+	temp, err := ioutil.TempFile(dir, "temp-placemat-image-")
+	if err != nil {
+		return err
+	}
+	defer temp.Close()
+
+	req, err := http.NewRequest("GET", urlString, nil)
+	if err != nil {
+		return err
+	}
+	req = req.WithContext(ctx)
+
+	client := &cmd.HTTPClient{
+		Client:   &http.Client{},
+		Severity: log.LvDebug,
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download: %s: %s", res.Status, urlString)
+	}
+
+	size, err := strconv.Atoi(res.Header.Get("Content-Length"))
+	if err != nil {
+		return err
+	}
+	env := cmd.NewEnvironment(ctx)
+	env.Go(func(ctx context.Context) error {
+		return showDownloadProgress(ctx, size, temp.Name())
+	})
+	defer env.Cancel(nil)
+
+	_, err = io.Copy(temp, res.Body)
+	if err != nil {
+		return err
+	}
+	err = temp.Close()
+	if err != nil {
+		os.Remove(temp.Name())
+		return err
+	}
+
+	return os.Rename(temp.Name(), destPath)
 }

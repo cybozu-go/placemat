@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 
 	"github.com/cybozu-go/placemat"
 	k8sYaml "github.com/kubernetes/apimachinery/pkg/util/yaml"
@@ -58,6 +59,14 @@ type networkConfig struct {
 		Internal  bool     `yaml:"internal"`
 		UseNAT    bool     `yaml:"use-nat"`
 		Addresses []string `yaml:"addresses"`
+	} `yaml:"spec"`
+}
+
+type imageConfig struct {
+	Name string `yaml:"name"`
+	Spec struct {
+		URL  string `yaml:"url"`
+		File string `yaml:"file"`
 	} `yaml:"spec"`
 }
 
@@ -186,6 +195,37 @@ func unmarshalNetwork(data []byte) (*placemat.Network, error) {
 
 }
 
+func unmarshalImage(data []byte) (*placemat.Image, error) {
+	var dto imageConfig
+	err := yaml.Unmarshal(data, &dto)
+	if err != nil {
+		return nil, err
+	}
+	if dto.Name == "" {
+		return nil, errors.New("image name is empty")
+	}
+
+	if dto.Spec.URL == "" && dto.Spec.File == "" {
+		return nil, errors.New("either image.spec.url or image.spec.file must be specified")
+	}
+	if dto.Spec.URL != "" && dto.Spec.File != "" {
+		return nil, errors.New("only one of image.spec.url or image.spec.file can be specified")
+	}
+
+	var image placemat.Image
+
+	image.Name = dto.Name
+	if dto.Spec.URL != "" {
+		image.Spec.URL, err = url.Parse(dto.Spec.URL)
+		if err != nil {
+			return nil, err
+		}
+	}
+	image.Spec.File = dto.Spec.File
+
+	return &image, nil
+}
+
 func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 	var c baseConfig
 	var cluster placemat.Cluster
@@ -210,6 +250,12 @@ func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 				return nil, err
 			}
 			cluster.Networks = append(cluster.Networks, r)
+		case "Image":
+			r, err := unmarshalImage(data)
+			if err != nil {
+				return nil, err
+			}
+			cluster.Images = append(cluster.Images, r)
 		case "Node":
 			r, err := unmarshalNode(data)
 			if err != nil {
@@ -222,6 +268,8 @@ func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 				return &cluster, err
 			}
 			cluster.NodeSets = append(cluster.NodeSets, r)
+		default:
+			return nil, errors.New("unknown resource: " + c.Kind)
 		}
 	}
 	return &cluster, nil
