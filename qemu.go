@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -49,7 +48,8 @@ type QemuProvider struct {
 	RunDir    string
 	Cluster   *Cluster
 
-	dataDir string
+	dataDir    string
+	imageCache *cache
 }
 
 // SetupDataDir creates directories under dataDir for later use.
@@ -80,6 +80,14 @@ func (q *QemuProvider) SetupDataDir(dataDir string) error {
 	if err != nil {
 		return err
 	}
+
+	imageCacheDir := filepath.Join(dataDir, "image_cache")
+	err = os.MkdirAll(imageCacheDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	q.imageCache = &cache{dir: imageCacheDir}
 
 	q.dataDir = dataDir
 	return nil
@@ -232,28 +240,6 @@ func createEmptyVolume(ctx context.Context, p string, size string) error {
 	return c.Run()
 }
 
-func showDownloadProgress(ctx context.Context, totalSize int, fileName string) error {
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			stat, err := os.Stat(fileName)
-			if err != nil {
-				log.Error("Failed to get file statistics", map[string]interface{}{"file": fileName, "error": err})
-				continue
-			}
-			var progress = fmt.Sprintf("%.1f%%", float64(stat.Size())/float64(totalSize)*100)
-
-			log.Info("Downloading...", map[string]interface{}{"file_name": fileName, "current_size": stat.Size(), "total_size": totalSize, "progress": progress})
-		}
-	}
-	return nil
-}
-
 func createVolumeFromCloudConfig(ctx context.Context, p string, spec CloudConfigSpec) error {
 	if spec.NetworkConfig == "" {
 		c := cmd.CommandContext(ctx, "cloud-localds", p, spec.UserData)
@@ -270,7 +256,7 @@ func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *Volume
 	if vol.Size != "" {
 		return createEmptyVolume(ctx, p, vol.Size)
 	} else if vol.Source != "" {
-		return vol.image.writeToFile(ctx, p)
+		return vol.image.writeToFile(ctx, p, q.imageCache)
 	} else if vol.CloudConfig.UserData != "" {
 		return createVolumeFromCloudConfig(ctx, p, vol.CloudConfig)
 	}

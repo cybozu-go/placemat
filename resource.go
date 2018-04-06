@@ -6,10 +6,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/cybozu-go/cmd"
@@ -174,7 +172,7 @@ func (c *Cluster) Resolve() error {
 	return nil
 }
 
-func (img *Image) writeToFile(ctx context.Context, destPath string) error {
+func (img *Image) writeToFile(ctx context.Context, destPath string, c *cache) error {
 	if img.Spec.File != "" {
 		f, err := os.Open(img.Spec.File)
 		if err != nil {
@@ -192,17 +190,29 @@ func (img *Image) writeToFile(ctx context.Context, destPath string) error {
 		return err
 	}
 
-	return img.downloadImage(ctx, destPath)
+	return img.downloadImage(ctx, destPath, c)
 }
 
-func (img *Image) downloadImage(ctx context.Context, destPath string) error {
-	dir := filepath.Dir(destPath)
+func (img *Image) downloadImage(ctx context.Context, destPath string, c *cache) error {
 	urlString := img.Spec.URL.String()
-	temp, err := ioutil.TempFile(dir, "temp-placemat-image-")
-	if err != nil {
-		return err
+RETRY:
+	r, err := c.Get(urlString)
+	if err == nil {
+		defer r.Close()
+
+		d, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		defer d.Close()
+
+		_, err = io.Copy(d, r)
+		if err != nil {
+			return err
+		}
+
+		return d.Sync()
 	}
-	defer temp.Close()
 
 	req, err := http.NewRequest("GET", urlString, nil)
 	if err != nil {
@@ -228,21 +238,15 @@ func (img *Image) downloadImage(ctx context.Context, destPath string) error {
 	if err != nil {
 		return err
 	}
-	env := cmd.NewEnvironment(ctx)
-	env.Go(func(ctx context.Context) error {
-		return showDownloadProgress(ctx, size, temp.Name())
+
+	log.Info("Downloading image...", map[string]interface{}{
+		"size": size,
 	})
-	defer env.Cancel(nil)
 
-	_, err = io.Copy(temp, res.Body)
+	err = c.Put(urlString, res.Body)
 	if err != nil {
 		return err
 	}
-	err = temp.Close()
-	if err != nil {
-		os.Remove(temp.Name())
-		return err
-	}
 
-	return os.Rename(temp.Name(), destPath)
+	goto RETRY
 }

@@ -48,7 +48,7 @@ func (c *cache) Put(key string, data io.Reader) error {
 	return os.Rename(dstName, filepath.Join(c.dir, ek))
 }
 
-func (c *cache) Get(key string) (io.Reader, error) {
+func (c *cache) Get(key string) (io.ReadCloser, error) {
 	ek := escapeKey(key)
 	return os.Open(filepath.Join(c.dir, ek))
 }
