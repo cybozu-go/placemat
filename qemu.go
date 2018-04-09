@@ -278,6 +278,11 @@ func nodeSerial(name string) string {
 func (q QemuProvider) qemuParams(n *Node) []string {
 	params := []string{"-enable-kvm"}
 
+	if n.Spec.IgnitionFile != "" {
+		params = append(params, "-fw_cfg")
+		params = append(params, "opt/com.coreos/config,file="+n.Spec.IgnitionFile)
+	}
+
 	for _, br := range n.Spec.Interfaces {
 		tap := n.Name + "_" + br
 		netdev := "tap,id=" + br + ",ifname=" + tap + ",script=no,downscript=no"
