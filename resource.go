@@ -110,11 +110,12 @@ type SMBIOSSpec struct {
 
 // NodeSpec represents a node specification
 type NodeSpec struct {
-	Interfaces []string
-	Volumes    []*VolumeSpec
-	Resources  ResourceSpec
-	BIOS       BIOSMode
-	SMBIOS     SMBIOSSpec
+	Interfaces   []string
+	Volumes      []*VolumeSpec
+	IgnitionFile string
+	Resources    ResourceSpec
+	BIOS         BIOSMode
+	SMBIOS       SMBIOSSpec
 }
 
 // Node represents a node configuration

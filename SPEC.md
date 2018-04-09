@@ -75,6 +75,7 @@ spec:
     - name: data
       size: 10GB
       recreatePolicy: Never
+  ignition: my-node.ign
   resources:
     cpu: 2
     memory: 4G
@@ -92,6 +93,7 @@ The properties in the `spec` are the following:
   - `size`:  Create a new disk by disk `size`.
   - `cloud-config`:  Generate a disk for cloud-init to utilize [nocloud](http://cloudinit.readthedocs.io/en/latest/topics/datasources/nocloud.html), which allows the user to provide user-data and meta-data to the instance without running a network service.  `cloud-config` has two properties, `user-data` and `network-config`.
   - `source`:  Name of an image resource.
+- `ignition`: [Ignition file](https://coreos.com/ignition/docs/latest/configuration-v2_1.html).
 - `resources`:  `cpu` and `memory` resources to allocate to the VM.
 - `smbios`: System Management BIOS (SMBIOS) values for `manufacturer`, `product`, and `serial`.  If `serial` is not set, a hash value of the node's name is used.
 - `bios`: BIOS mode of the VM.  If `uefi` is specified, the VM loads OVMF as BIOS.

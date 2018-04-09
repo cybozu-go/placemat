@@ -28,7 +28,8 @@ type nodeSpec struct {
 		} `yaml:"cloud-config"`
 		RecreatePolicy string `yaml:"recreatePolicy"`
 	} `yaml:"volumes"`
-	Resources struct {
+	IgnitionFile string `yaml:"ignition"`
+	Resources    struct {
 		CPU    string `yaml:"cpu"`
 		Memory string `yaml:"memory"`
 	} `yaml:"resources"`
@@ -158,6 +159,7 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 			return res, errors.New("invalid volume type: must specify only one of 'size' or 'source' or 'cloud-config'")
 		}
 	}
+	res.IgnitionFile = ns.IgnitionFile
 	res.Resources.CPU = ns.Resources.CPU
 	res.Resources.Memory = ns.Resources.Memory
 	res.BIOS, ok = biosConfig[ns.BIOS]
