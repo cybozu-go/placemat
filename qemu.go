@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"os"
@@ -256,7 +257,27 @@ func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *Volume
 	if vol.Size != "" {
 		return createEmptyVolume(ctx, p, vol.Size)
 	} else if vol.Source != "" {
-		return vol.image.writeToFile(ctx, p, q.imageCache)
+		rc, err := vol.image.lookupFile(ctx, q.imageCache)
+		if err != nil {
+			return err
+		}
+		defer rc.Close()
+
+		if vol.image.Spec.CopyOnWrite {
+			c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-b", rc.name, p)
+			return c.Run()
+		}
+
+		d, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		defer d.Close()
+		_, err = io.Copy(d, rc.ReadCloser)
+		if err != nil {
+			return err
+		}
+		return d.Sync()
 	} else if vol.CloudConfig.UserData != "" {
 		return createVolumeFromCloudConfig(ctx, p, vol.CloudConfig)
 	}

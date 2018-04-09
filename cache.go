@@ -48,7 +48,17 @@ func (c *cache) Put(key string, data io.Reader) error {
 	return os.Rename(dstName, filepath.Join(c.dir, ek))
 }
 
-func (c *cache) Get(key string) (io.ReadCloser, error) {
+type namedReadCloser struct {
+	io.ReadCloser
+	name string
+}
+
+func (c *cache) Get(key string) (*namedReadCloser, error) {
 	ek := escapeKey(key)
-	return os.Open(filepath.Join(c.dir, ek))
+	filePath := filepath.Join(c.dir, ek)
+	rc, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	return &namedReadCloser{name: filePath, ReadCloser: rc}, nil
 }

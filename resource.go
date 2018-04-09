@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/cybozu-go/cmd"
@@ -175,63 +174,40 @@ func (c *Cluster) Resolve() error {
 	return nil
 }
 
-func (img *Image) writeToFile(ctx context.Context, destPath string, c *cache) error {
+func (img *Image) lookupFile(ctx context.Context, c *cache) (*namedReadCloser, error) {
 	if img.Spec.File != "" {
 		f, err := os.Open(img.Spec.File)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		defer f.Close()
 
-		destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return err
-		}
-		defer destFile.Close()
-
-		var src io.Reader = f
+		var src io.ReadCloser = f
 		if img.Spec.Decompressor != nil {
 			newSrc, err := img.Spec.Decompressor.Decompress(src)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			src = newSrc
 		}
 
-		_, err = io.Copy(destFile, src)
-		return err
+		return &namedReadCloser{name: img.Spec.File, ReadCloser: src}, nil
 	}
 
-	return img.downloadImage(ctx, destPath, c)
+	return img.downloadImage(ctx, c)
 }
 
-func (img *Image) downloadImage(ctx context.Context, destPath string, c *cache) error {
+func (img *Image) downloadImage(ctx context.Context, c *cache) (*namedReadCloser, error) {
 	urlString := img.Spec.URL.String()
 RETRY:
 	r, err := c.Get(urlString)
 	if err == nil {
-		defer r.Close()
-		if img.Spec.CopyOnWrite {
-			ek := escapeKey(urlString)
-			c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-b", filepath.Join(c.dir, ek), destPath)
-			return c.Run()
-		}
-
-		d, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return err
-		}
-		defer d.Close()
-		_, err = io.Copy(d, r)
-		if err != nil {
-			return err
-		}
-		return d.Sync()
+		return r, nil
 	}
 
 	req, err := http.NewRequest("GET", urlString, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req = req.WithContext(ctx)
 
@@ -241,17 +217,17 @@ RETRY:
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download: %s: %s", res.Status, urlString)
+		return nil, fmt.Errorf("failed to download: %s: %s", res.Status, urlString)
 	}
 
 	size, err := strconv.Atoi(res.Header.Get("Content-Length"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.Info("Downloading image...", map[string]interface{}{
@@ -262,14 +238,14 @@ RETRY:
 	if img.Spec.Decompressor != nil {
 		newSrc, err := img.Spec.Decompressor.Decompress(res.Body)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		src = newSrc
 	}
 
 	err = c.Put(urlString, src)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	goto RETRY

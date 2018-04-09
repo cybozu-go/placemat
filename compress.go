@@ -10,18 +10,27 @@ import (
 
 // Decompressor defines an interface to decompress data from io.Reader.
 type Decompressor interface {
-	Decompress(io.Reader) (io.Reader, error)
+	Decompress(closer io.ReadCloser) (io.ReadCloser, error)
 }
 
-type bzip2Decompressor struct{}
+type bzip2Decompressor struct {
+	io.Reader
+}
 
-func (d bzip2Decompressor) Decompress(r io.Reader) (io.Reader, error) {
-	return bzip2.NewReader(r), nil
+func (d *bzip2Decompressor) Read(p []byte) (n int, err error) {
+	return d.Read(p)
+}
+func (d *bzip2Decompressor) Close() error {
+	return nil
+}
+
+func (d bzip2Decompressor) Decompress(r io.ReadCloser) (io.ReadCloser, error) {
+	return &bzip2Decompressor{Reader: bzip2.NewReader(r)}, nil
 }
 
 type gzipDecompressor struct{}
 
-func (d gzipDecompressor) Decompress(r io.Reader) (io.Reader, error) {
+func (d gzipDecompressor) Decompress(r io.ReadCloser) (io.ReadCloser, error) {
 	return gzip.NewReader(r)
 }
 
