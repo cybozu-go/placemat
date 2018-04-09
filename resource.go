@@ -174,7 +174,7 @@ func (c *Cluster) Resolve() error {
 	return nil
 }
 
-func (img *Image) lookupFile(ctx context.Context, c *cache) (*namedReadCloser, error) {
+func (img *Image) lookupFile(ctx context.Context, c *cache) (*cachedReadCloser, error) {
 	if img.Spec.File != "" {
 		f, err := os.Open(img.Spec.File)
 		if err != nil {
@@ -191,13 +191,13 @@ func (img *Image) lookupFile(ctx context.Context, c *cache) (*namedReadCloser, e
 			src = newSrc
 		}
 
-		return &namedReadCloser{name: img.Spec.File, ReadCloser: src}, nil
+		return &cachedReadCloser{path: img.Spec.File, ReadCloser: src}, nil
 	}
 
 	return img.downloadImage(ctx, c)
 }
 
-func (img *Image) downloadImage(ctx context.Context, c *cache) (*namedReadCloser, error) {
+func (img *Image) downloadImage(ctx context.Context, c *cache) (*cachedReadCloser, error) {
 	urlString := img.Spec.URL.String()
 RETRY:
 	r, err := c.Get(urlString)

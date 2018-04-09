@@ -264,7 +264,7 @@ func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *Volume
 		defer rc.Close()
 
 		if vol.image.Spec.CopyOnWrite {
-			c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-b", rc.name, p)
+			c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-b", rc.path, p)
 			return c.Run()
 		}
 

@@ -48,17 +48,17 @@ func (c *cache) Put(key string, data io.Reader) error {
 	return os.Rename(dstName, filepath.Join(c.dir, ek))
 }
 
-type namedReadCloser struct {
+type cachedReadCloser struct {
 	io.ReadCloser
-	name string
+	path string
 }
 
-func (c *cache) Get(key string) (*namedReadCloser, error) {
+func (c *cache) Get(key string) (*cachedReadCloser, error) {
 	ek := escapeKey(key)
 	filePath := filepath.Join(c.dir, ek)
 	rc, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
-	return &namedReadCloser{name: filePath, ReadCloser: rc}, nil
+	return &cachedReadCloser{path: filePath, ReadCloser: rc}, nil
 }
