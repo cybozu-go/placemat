@@ -51,6 +51,7 @@ spec:
 
 - `url`: downloads an image file from specified url
 - `file`: a local file path
+- `compression`: optional field to specify decompress method.  Currently, "gzip" and "bzip2" are supported.
 
 ### Node resource
 

@@ -65,8 +65,9 @@ type networkConfig struct {
 type imageConfig struct {
 	Name string `yaml:"name"`
 	Spec struct {
-		URL  string `yaml:"url"`
-		File string `yaml:"file"`
+		URL               string `yaml:"url"`
+		File              string `yaml:"file"`
+		CompressionMethod string `yaml:"compression"`
 	} `yaml:"spec"`
 }
 
@@ -222,6 +223,12 @@ func unmarshalImage(data []byte) (*placemat.Image, error) {
 		}
 	}
 	image.Spec.File = dto.Spec.File
+
+	decompressor, err := placemat.NewDecompressor(dto.Spec.CompressionMethod)
+	if err != nil {
+		return nil, err
+	}
+	image.Spec.Decompressor = decompressor
 
 	return &image, nil
 }
