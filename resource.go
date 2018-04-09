@@ -54,8 +54,9 @@ type Network struct {
 
 // ImageSpec represents an image specification
 type ImageSpec struct {
-	URL  *url.URL
-	File string
+	URL          *url.URL
+	File         string
+	Decompressor Decompressor
 }
 
 // Image represents an image configuration
@@ -186,7 +187,16 @@ func (img *Image) writeToFile(ctx context.Context, destPath string, c *cache) er
 		}
 		defer destFile.Close()
 
-		_, err = io.Copy(destFile, f)
+		var src io.Reader = f
+		if img.Spec.Decompressor != nil {
+			newSrc, err := img.Spec.Decompressor.Decompress(src)
+			if err != nil {
+				return err
+			}
+			src = newSrc
+		}
+
+		_, err = io.Copy(destFile, src)
 		return err
 	}
 
@@ -206,7 +216,16 @@ RETRY:
 		}
 		defer d.Close()
 
-		_, err = io.Copy(d, r)
+		var src io.Reader = r
+		if img.Spec.Decompressor != nil {
+			newSrc, err := img.Spec.Decompressor.Decompress(src)
+			if err != nil {
+				return err
+			}
+			src = newSrc
+		}
+
+		_, err = io.Copy(d, src)
 		if err != nil {
 			return err
 		}
