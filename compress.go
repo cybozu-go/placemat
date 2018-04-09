@@ -10,7 +10,7 @@ import (
 
 // Decompressor defines an interface to decompress data from io.Reader.
 type Decompressor interface {
-	Decompress(closer io.ReadCloser) (io.ReadCloser, error)
+	Decompress(r io.ReadCloser) (io.ReadCloser, error)
 }
 
 type bzip2Decompressor struct {
