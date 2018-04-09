@@ -52,6 +52,7 @@ spec:
 - `url`: downloads an image file from specified url
 - `file`: a local file path
 - `compression`: optional field to specify decompress method.  Currently, "gzip" and "bzip2" are supported.
+- `copy-on-write`: create a copy-on-write image based on downloaded file. default is false.
 
 ### Node resource
 

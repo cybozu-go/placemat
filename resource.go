@@ -1,13 +1,13 @@
 package placemat
 
 import (
-	"net/url"
-
 	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/cybozu-go/cmd"
@@ -57,6 +57,7 @@ type ImageSpec struct {
 	URL          *url.URL
 	File         string
 	Decompressor Decompressor
+	CopyOnWrite  bool
 }
 
 // Image represents an image configuration
@@ -210,27 +211,21 @@ RETRY:
 	r, err := c.Get(urlString)
 	if err == nil {
 		defer r.Close()
+		if img.Spec.CopyOnWrite {
+			ek := escapeKey(urlString)
+			c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-b", filepath.Join(c.dir, ek), destPath)
+			return c.Run()
+		}
 
 		d, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
 			return err
 		}
 		defer d.Close()
-
-		var src io.Reader = r
-		if img.Spec.Decompressor != nil {
-			newSrc, err := img.Spec.Decompressor.Decompress(src)
-			if err != nil {
-				return err
-			}
-			src = newSrc
-		}
-
-		_, err = io.Copy(d, src)
+		_, err = io.Copy(d, r)
 		if err != nil {
 			return err
 		}
-
 		return d.Sync()
 	}
 
@@ -263,7 +258,16 @@ RETRY:
 		"size": size,
 	})
 
-	err = c.Put(urlString, res.Body)
+	var src io.Reader = res.Body
+	if img.Spec.Decompressor != nil {
+		newSrc, err := img.Spec.Decompressor.Decompress(res.Body)
+		if err != nil {
+			return err
+		}
+		src = newSrc
+	}
+
+	err = c.Put(urlString, src)
 	if err != nil {
 		return err
 	}
