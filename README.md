@@ -1,26 +1,60 @@
+[![CircleCI](https://circleci.com/gh/cybozu-go/placemat.svg?style=svg)](https://circleci.com/gh/cybozu-go/placemat)
+[![GoDoc](https://godoc.org/github.com/cybozu-go/placemat?status.svg)][godoc]
+[![Go Report Card](https://goreportcard.com/badge/github.com/cybozu-go/placemat)](https://goreportcard.com/report/github.com/cybozu-go/placemat)
+
 Placemat
 ========
 
-Placemat is a provisioning tool to deploy QEMU VMs and configure networks for a
-development environment.  A configuration of the VMs and networks is described
-as declarative YAML.
+Placemat is a tool to simulate data center networks and servers using QEMU/KVM
+and Linux networking stacks.  Placemat can simulate virtually *any* kind of
+network topologies to help tests and experiments for software usually used in
+a data center.
 
-Placemat's life-cycle is simple.  Placemat has no-daemon processes unlike
-libvirt, or Docker.  The VMs and network configuration are constructed at the
-beginning of the placemat's process, and they are destructed at the end of the
-process with graceful shutdown.
+Features
+--------
+
+* No daemons
+
+    Placemat is a single binary executable.  It just builds networks and
+    virtual machines when it starts, and destroys them when it terminates.
+    This simplicity makes placemat great for a continuous testing tool.
+
+* Declarative YAML
+
+    Networks, virtual machines, and other kind of resources are defined
+    in YAML files in a declarative fashion.  Users need not mind the order
+    of creation and/or destruction of resources.
+
+* Automation
+
+    Placemat supports [cloud-init][] and [ignition][] to automate
+    virtual machine initialization.  Files on the host machine can be
+    exported to guests as a [VVFAT drive](https://en.wikibooks.org/wiki/QEMU/Devices/Storage).
+    QEMU disk images can be downloaded from remote HTTP servers.
+
+    All of these help implementation of fully-automated tests.
+
+* UEFI
+
+    Not only traditional BIOS, but placemat VMs can be booted in UEFI
+    mode if [OVMF][] is installed.
 
 Usage
 -----
 
 This project provides two commands, `placemat` and `placemat-connect`.
-`placemat` command is a process to configure VMs, and `placemat-connect` is a
-client tool to connect to QEMU's serial console.
+`placemat` is the main tool to build networks and virtual machines.
+`placemat-connect` is a helper to connect to a serial console of
+a VM launched by `placemat`.
 
 ### placemat command
 
+`placemat` reads all YAML files specified in command-line arguments,
+then creates resources defined in YAML.  To destroy, just kill the
+process (by sending a signal or Control-C).
+
 ```console
-$ placemat [OPTIONS] network.yml nodes.yml other.yml
+$ placemat [OPTIONS] YAML [YAML ...]
 
 Options:
   -nographic
@@ -31,15 +65,12 @@ Options:
         directory to store data (default "$HOME/placemat_data")
 ```
 
-You can define configuration for each `resources` to YAML files, or define them
-to single files with a `---` separator.
-
 ### placemat-connect command
 
-If placemat starts with `-nographic` option, VMs will launch without GUI console.
-Their serial consoles expose as pseudo terminals via a UNIX domain socket.
+If placemat starts with `-nographic` option, VMs will have no graphic console.
+Instead, they have serial consoles exposed via UNIX domain sockets.
 
-`placemat-connect` command can be used to connect them.
+`placemat-connect` is a tool to connect to the serial console.
 
 ```console
 $ placemat-connect [-run-dir=/tmp] your-vm-name
@@ -52,18 +83,16 @@ Getting started
 
 ### Prerequisites
 
-Install following packages:
+- [QEMU][]
+- [OVMF][] (if UEFI boot is enabled)
+- [picocom](https://github.com/npat-efault/picocom) for `placemat-connect`
 
-- [QEMU](https://www.qemu.org/)
-- [OVMF](https://github.com/tianocore/tianocore.github.io/wiki/OVMF) (if UEFI boot is enabled)
-
-For Ubuntu or Debian, install them by apt package manager:
+For Ubuntu or Debian, you can install them as follows:
 
 ```console
 $ sudo apt-get update
-$ sudo apt-get install qemu-system-x86 qemu-utils ovmf
+$ sudo apt-get install qemu-system-x86 qemu-utils ovmf picocom
 ```
-
 
 ### Install placemat
 
@@ -81,15 +110,15 @@ See [examples](examples) how to write YAML files.
 To launch placemat from YAML files by the following:
 
 ```console
-$ sudo placemat -nographic cluster.yml
+$ sudo $GOPATH/bin/placemat -nographic cluster.yml
 ```
 
 Where `sudo` is required to create network bridge to your host.
 
-Then you can connect to a console of the VM by the following:
+You can connect to a serial console of a VM as follows:
 
 ```console
-$ sudo placemat-connect debian
+$ sudo $GOPATH/bin/placemat-connect VM
 ```
 
 Specification
@@ -101,3 +130,9 @@ License
 -------
 
 MIT
+
+[godoc]: https://godoc.org/github.com/cybozu-go/aptutil
+[cloud-init]: http://cloudinit.readthedocs.io/en/latest/index.html
+[ignition]: https://coreos.com/ignition/docs/latest/
+[QEMU]: https://www.qemu.org/
+[OVMF]: https://github.com/tianocore/tianocore.github.io/wiki/OVMF
