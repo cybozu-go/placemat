@@ -65,15 +65,18 @@ spec:
     - net0
   volumes:
     - kind: image
+      name: root
       spec:
         image: image-name
       recreatePolicy: IfNotPresent
     - kind: localds
+      name: seed
       spec:
         user-data: user-data.yml
         network-config: network.yml
       recreatePolicy: Always
     - kind: raw
+      name: data
       spec:
         size: 10GB
       recreatePolicy: Never
