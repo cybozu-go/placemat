@@ -7,6 +7,7 @@ import (
 	"flag"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/cybozu-go/cmd"
@@ -52,12 +53,28 @@ func run(yamls []string) error {
 		return errors.New("no YAML files specified")
 	}
 
+	// make all YAML paths absolute
+	for i, p := range yamls {
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			return err
+		}
+		yamls[i] = abs
+	}
+
+	err := os.Chdir(filepath.Dir(yamls[0]))
+	if err != nil {
+		log.Warn("cannot chdir to YAML directory", map[string]interface{}{
+			log.FnError: err.Error(),
+		})
+	}
+
 	qemu := &placemat.QemuProvider{
 		NoGraphic: *flgNoGraphic,
 		RunDir:    *flgRunDir,
 	}
 
-	err := qemu.SetupDataDir(os.ExpandEnv(*flgDataDir))
+	err = qemu.SetupDataDir(os.ExpandEnv(*flgDataDir))
 	if err != nil {
 		return err
 	}
