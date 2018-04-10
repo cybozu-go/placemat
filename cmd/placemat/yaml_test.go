@@ -203,16 +203,21 @@ spec:
     - br0
     - br1
   volumes:
-    - name: ubuntu
-      source: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+    - kind: image
+      name: ubuntu
       recreatePolicy: IfNotPresent
-    - name: seed
+      spec:
+        image: ubuntu-image
+    - kind: localds
+      name: seed
       recreatePolicy: Always
-      cloud-config: 
+      spec:
         network-config: network.yml
         user-data: user-data.yml
-    - name: data
-      size: 20GB
+    - kind: raw
+      name: data
+      spec:
+        size: 20GB
   resources:
     cpu: 4
     memory: 8G
@@ -227,17 +232,10 @@ spec:
 				Name: "node1",
 				Spec: placemat.NodeSpec{
 					Interfaces: []string{"br0", "br1"},
-					Volumes: []*placemat.VolumeSpec{
-						{Name: "ubuntu", Source: "https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img", RecreatePolicy: placemat.RecreateIfNotPresent},
-						{Name: "seed", CloudConfig: struct {
-							NetworkConfig string
-							UserData      string
-						}{
-							NetworkConfig: "network.yml",
-							UserData:      "user-data.yml",
-						},
-							RecreatePolicy: placemat.RecreateAlways},
-						{Name: "data", Size: "20GB", RecreatePolicy: placemat.RecreateIfNotPresent},
+					Volumes: []placemat.Volume{
+						placemat.NewImageVolume("ubuntu", placemat.RecreateIfNotPresent, "ubuntu-image"),
+						placemat.NewLocalDSVolume("seed", placemat.RecreateAlways, "user-data.yml", "network.yml"),
+						placemat.NewRawVolume("data", placemat.RecreateIfNotPresent, "20GB"),
 					},
 					Resources: placemat.ResourceSpec{CPU: "4", Memory: "8G"},
 					BIOS:      placemat.LegacyBIOS,
@@ -255,7 +253,7 @@ spec:
 				Name: "node2",
 				Spec: placemat.NodeSpec{
 					Interfaces: []string{},
-					Volumes:    []*placemat.VolumeSpec{},
+					Volumes:    []placemat.Volume{},
 				},
 			},
 		},
@@ -300,22 +298,6 @@ spec:
 `,
 			expected: "invalid RecreatePolicy: Sometime",
 		},
-		{
-			source: `
-kind: Node
-name: node4
-spec:
-  volumes:
-    - name: mixed
-      source: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
-      cloud-config: 
-        network-config: network.yml
-        user-data: user-data.yml
-      size: 20GB
-      recreatePolicy: IfNotPresent
-`,
-			expected: "invalid volume type: must specify only one of 'size' or 'source' or 'cloud-config'",
-		},
 	}
 	for _, c := range errorSources {
 		_, err := unmarshalNode([]byte(c.source))
@@ -342,8 +324,10 @@ spec:
     interfaces:
       - my-net
     volumes:
-      - name: data
-        size: 10GB
+      - kind: raw
+        name: data
+        spec:
+          size: 10GB
 `,
 			expected: placemat.NodeSet{
 				Name: "worker",
@@ -351,8 +335,8 @@ spec:
 					Replicas: 3,
 					Template: placemat.NodeSpec{
 						Interfaces: []string{"my-net"},
-						Volumes: []*placemat.VolumeSpec{
-							{Name: "data", Size: "10GB", RecreatePolicy: placemat.RecreateIfNotPresent},
+						Volumes: []placemat.Volume{
+							placemat.NewRawVolume("data", placemat.RecreateIfNotPresent, "10GB"),
 						},
 					},
 				},

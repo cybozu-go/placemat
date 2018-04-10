@@ -17,14 +17,17 @@ spec:
   interfaces:
     - net0
   volumes:
-    - name: ubuntu
-      source: ubuntu-image
+    - kind: image
+      name: root
       recreatePolicy: IfNotPresent
-    - name: seed
-      cloud-config:
+      spec:
+        image: ubuntu-image
+    - kind: localds
+      name: seed
+      recreatePolicy: Always
+      spec:
         user-data: user-data.yaml
         network-config: network-config.yaml
-      recreatePolicy: Always
   resources:
     cpu: 1
     memory: 2G
@@ -37,8 +40,10 @@ spec:
     interfaces:
       - net0
     volumes:
-      - name: data
-        size: 10G
+      - kind: raw
+        name: data
+        spec:
+          size: 10G
     resources:
       cpu: 1
       memory: 2G

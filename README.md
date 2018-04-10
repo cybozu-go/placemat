@@ -74,31 +74,9 @@ $ go get -u github.com/cybozu-go/placemat/cmd/placemat
 $ go get -u github.com/cybozu-go/placemat/cmd/placemat-connect
 ```
 
-### Create a configuration and run it
+### Run examples
 
-Placemat constructs VMs and networks by declarative  YAML configuration.  Create
-a following simple configuration into `cluster.yml`.  This configuration
-includes a VM node and a network bridge.
-
-```yaml
-# cluster.yaml
-kind: Network
-name: net0
-spec:
-  internal: false
-  use-nat: true
-  addresses:
-    - 172.16.0.1/24
----
-kind: Node
-name: debian
-spec:
-  interfaces:
-    - net0
-  volumes:
-    - name: debian
-      source: https://cdimage.debian.org/cdimage/openstack/9.4.0/debian-9.4.0-openstack-amd64.qcow2
-```
+See [examples](examples) how to write YAML files.
 
 To launch placemat from YAML files by the following:
 
@@ -118,11 +96,6 @@ Specification
 -------------
 
 See [SPEC](SPEC.md).
-
-Examples
---------
-
-See [examples](examples).
 
 License
 -------

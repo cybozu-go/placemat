@@ -10,15 +10,17 @@ import (
 
 // Provider represents a back-end of VM engine
 type Provider interface {
+	ImageCache() *cache
+
 	VolumeExists(ctx context.Context, node, vol string) (bool, error)
 
-	CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error
+	CreateVolume(context.Context, string, Volume) error
 
-	CreateNetwork(ctx context.Context, n *Network) error
+	CreateNetwork(context.Context, *Network) error
 
-	DestroyNetwork(ctx context.Context, n *Network) error
+	DestroyNetwork(context.Context, *Network) error
 
-	StartNode(ctx context.Context, n *Node) error
+	StartNode(context.Context, *Node) error
 }
 
 func interpretNodesFromNodeSet(cluster *Cluster) []*Node {
@@ -37,12 +39,12 @@ func interpretNodesFromNodeSet(cluster *Cluster) []*Node {
 func createNodeVolumes(ctx context.Context, provider Provider, nodes []*Node) error {
 	for _, n := range nodes {
 		for _, v := range n.Spec.Volumes {
-			exists, err := provider.VolumeExists(ctx, n.Name, v.Name)
+			exists, err := provider.VolumeExists(ctx, n.Name, v.Name())
 			if err != nil {
 				return err
 			}
-			if !(v.RecreatePolicy == RecreateAlways ||
-				v.RecreatePolicy == RecreateIfNotPresent && !exists) {
+			policy := v.RecreatePolicy()
+			if !(policy == RecreateAlways || policy == RecreateIfNotPresent && !exists) {
 				continue
 			}
 			err = provider.CreateVolume(ctx, n.Name, v)

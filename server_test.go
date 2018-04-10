@@ -24,13 +24,17 @@ func newMockProvider() *MockProvider {
 	}
 }
 
+func (m *MockProvider) ImageCache() *cache {
+	return nil
+}
+
 func (m *MockProvider) VolumeExists(ctx context.Context, node, vol string) (bool, error) {
 	_, ok := m.volumes[node+"/"+vol]
 	return ok, nil
 }
 
-func (m *MockProvider) CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error {
-	m.volumes[node+"/"+vol.Name] = struct{}{}
+func (m *MockProvider) CreateVolume(ctx context.Context, node string, v Volume) error {
+	m.volumes[node+"/"+v.Name()] = struct{}{}
 	return nil
 }
 
@@ -70,13 +74,12 @@ func (m *MockProvider) DestroyNetwork(ctx context.Context, n *Network) error {
 }
 
 func TestRun(t *testing.T) {
+	vol1 := NewRawVolume("vol1", RecreateAlways, "10GB")
+	vol2 := NewRawVolume("vol2", RecreateAlways, "20GB")
 	spec := &Cluster{}
-
 	spec.Nodes = []*Node{
-		{Name: "host1", Spec: NodeSpec{Volumes: []*VolumeSpec{
-			{Name: "vol1", Size: "10GB"}}}},
-		{Name: "host2", Spec: NodeSpec{Volumes: []*VolumeSpec{
-			{Name: "vol1", Size: "10GB"}, {Name: "vol2", Size: "20GB"}}}},
+		{Name: "host1", Spec: NodeSpec{Volumes: []Volume{vol1}}},
+		{Name: "host2", Spec: NodeSpec{Volumes: []Volume{vol1, vol2}}},
 	}
 	spec.Networks = []*Network{
 		&Network{Name: "net1"},
@@ -112,12 +115,7 @@ func TestRun(t *testing.T) {
 
 func getNodeSet(replicas int) []*NodeSet {
 	template := NodeSpec{
-		Volumes: []*VolumeSpec{
-			{
-				Name: "template-vol",
-				Size: "10GB",
-			},
-		},
+		Volumes: []Volume{NewRawVolume("template-vol", RecreateAlways, "10GB")},
 	}
 	return []*NodeSet{
 		{

@@ -52,6 +52,11 @@ type QemuProvider struct {
 	imageCache *cache
 }
 
+// ImageCache returns a *cache for cloud images.
+func (q *QemuProvider) ImageCache() *cache {
+	return q.imageCache
+}
+
 // SetupDataDir creates directories under dataDir for later use.
 func (q *QemuProvider) SetupDataDir(dataDir string) error {
 	fi, err := os.Stat(dataDir)
@@ -235,32 +240,12 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, nt *Network) error {
 	return execCommandsForce(ctx, cmds)
 }
 
-func createEmptyVolume(ctx context.Context, p string, size string) error {
-	c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, size)
-	return c.Run()
-}
-
-func createVolumeFromCloudConfig(ctx context.Context, p string, spec CloudConfigSpec) error {
-	if spec.NetworkConfig == "" {
-		c := cmd.CommandContext(ctx, "cloud-localds", p, spec.UserData)
-		return c.Run()
-	}
-	c := cmd.CommandContext(ctx, "cloud-localds", p, spec.UserData, "--network-config", spec.NetworkConfig)
-	return c.Run()
-}
-
 // CreateVolume creates a volume with specified options
-func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol *VolumeSpec) error {
-	p := q.volumePath(node, vol.Name)
-	log.Info("Creating volume", map[string]interface{}{"node": node, "volume": vol.Name})
-	if vol.Size != "" {
-		return createEmptyVolume(ctx, p, vol.Size)
-	} else if vol.Source != "" {
-		return vol.image.writeToFile(ctx, p, q.imageCache)
-	} else if vol.CloudConfig.UserData != "" {
-		return createVolumeFromCloudConfig(ctx, p, vol.CloudConfig)
-	}
-	return errors.New("invalid volume type")
+func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol Volume) error {
+	vname := vol.Name()
+	p := q.volumePath(node, vname)
+	log.Info("Creating volume", map[string]interface{}{"node": node, "volume": vname})
+	return vol.Create(ctx, p)
 }
 
 func createNVRAM(ctx context.Context, p string) error {
@@ -295,7 +280,7 @@ func (q QemuProvider) qemuParams(n *Node) []string {
 			fmt.Sprintf("virtio-net-pci,netdev=%s,romfile=,mac=%s", br, generateRandomMACForKVM()))
 	}
 	for _, v := range n.Spec.Volumes {
-		p := q.volumePath(n.Name, v.Name)
+		p := q.volumePath(n.Name, v.Name())
 		params = append(params, "-drive", "if=virtio,cache=none,aio=native,file="+p)
 	}
 	if n.Spec.Resources.CPU != "" {
