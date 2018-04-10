@@ -74,9 +74,14 @@ Instead, they have serial consoles exposed via UNIX domain sockets.
 
 ```console
 $ placemat-connect [-run-dir=/tmp] your-vm-name
+
+Options:
+  -run-dir
+        the directory specified for placemat by -run-dir.
 ```
 
-- `-run-dir`: the directory specified by `run-dir` of `placemat` command
+!!! note
+    To exit from the console, press Ctrl-Q, Ctrl-X in this order.
 
 Getting started
 ---------------
