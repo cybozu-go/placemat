@@ -80,8 +80,7 @@ Options:
         the directory specified for placemat by -run-dir.
 ```
 
-!!! note
-    To exit from the console, press Ctrl-Q, Ctrl-X in this order.
+**To exit** from the console, press Ctrl-Q, Ctrl-X in this order.
 
 Getting started
 ---------------
