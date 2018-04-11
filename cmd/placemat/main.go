@@ -52,7 +52,7 @@ func run(yamls []string) error {
 		return errors.New("no YAML files specified")
 	}
 
-	qemu := placemat.QemuProvider{
+	qemu := &placemat.QemuProvider{
 		NoGraphic: *flgNoGraphic,
 		RunDir:    *flgRunDir,
 	}
@@ -66,7 +66,7 @@ func run(yamls []string) error {
 	if err != nil {
 		return err
 	}
-	err = cluster.Resolve()
+	err = cluster.Resolve(qemu)
 	if err != nil {
 		return err
 	}

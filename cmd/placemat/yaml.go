@@ -19,14 +19,15 @@ type baseConfig struct {
 type nodeSpec struct {
 	Interfaces []string `yaml:"interfaces"`
 	Volumes    []struct {
-		Name        string `yaml:"name"`
-		Size        string `yaml:"size"`
-		Source      string `yaml:"source"`
-		CloudConfig struct {
+		Kind           string `yaml:"kind"`
+		Name           string `yaml:"name"`
+		RecreatePolicy string `yaml:"recreatePolicy"`
+		Spec           struct {
+			Image         string `yaml:"image"`
 			UserData      string `yaml:"user-data"`
 			NetworkConfig string `yaml:"network-config"`
-		} `yaml:"cloud-config"`
-		RecreatePolicy string `yaml:"recreatePolicy"`
+			Size          string `yaml:"size"`
+		} `yaml:"spec"`
 	} `yaml:"volumes"`
 	IgnitionFile string `yaml:"ignition"`
 	Resources    struct {
@@ -132,33 +133,36 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 	if ns.Interfaces == nil {
 		res.Interfaces = []string{}
 	}
-	res.Volumes = make([]*placemat.VolumeSpec, len(ns.Volumes))
+	res.Volumes = make([]placemat.Volume, len(ns.Volumes))
 	for i, v := range ns.Volumes {
-		dst := &placemat.VolumeSpec{}
-		res.Volumes[i] = dst
-
-		dst.Name = v.Name
-		dst.Size = v.Size
-		dst.Source = v.Source
-		dst.CloudConfig.UserData = v.CloudConfig.UserData
-		dst.CloudConfig.NetworkConfig = v.CloudConfig.NetworkConfig
-		dst.RecreatePolicy, ok = recreatePolicyConfig[v.RecreatePolicy]
+		policy, ok := recreatePolicyConfig[v.RecreatePolicy]
 		if !ok {
 			return placemat.NodeSpec{}, fmt.Errorf("invalid RecreatePolicy: " + v.RecreatePolicy)
 		}
-		count := 0
-		if v.Size != "" {
-			count++
+
+		var dst placemat.Volume
+
+		switch v.Kind {
+		case "image":
+			if v.Spec.Image == "" {
+				return placemat.NodeSpec{}, errors.New("image volume must specify an image name")
+			}
+			dst = placemat.NewImageVolume(v.Name, policy, v.Spec.Image)
+		case "localds":
+			if v.Spec.UserData == "" {
+				return placemat.NodeSpec{}, errors.New("localds volume must specify user-data")
+			}
+			dst = placemat.NewLocalDSVolume(v.Name, policy, v.Spec.UserData, v.Spec.NetworkConfig)
+		case "raw":
+			if v.Spec.Size == "" {
+				return placemat.NodeSpec{}, errors.New("raw volume must specify size")
+			}
+			dst = placemat.NewRawVolume(v.Name, policy, v.Spec.Size)
+		default:
+			return placemat.NodeSpec{}, errors.New("unknown volume kind: " + v.Kind)
 		}
-		if v.Source != "" {
-			count++
-		}
-		if v.CloudConfig.UserData != "" {
-			count++
-		}
-		if count != 1 {
-			return res, errors.New("invalid volume type: must specify only one of 'size' or 'source' or 'cloud-config'")
-		}
+
+		res.Volumes[i] = dst
 	}
 	res.IgnitionFile = ns.IgnitionFile
 	res.Resources.CPU = ns.Resources.CPU

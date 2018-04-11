@@ -61,7 +61,7 @@ func TestCreateVolume(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = qemu.CreateVolume(context.Background(), "host1", &VolumeSpec{Name: "volume1", Size: "10G"})
+	err = qemu.CreateVolume(context.Background(), "host1", NewRawVolume("volume1", RecreateNever, "10G"))
 	if err != nil {
 		t.Fatal("expected err != nil", err)
 	}
@@ -102,6 +102,9 @@ func TestIptables(t *testing.T) {
 }
 
 func TestStartNodeCmdParams(t *testing.T) {
+	systemVol := NewImageVolume("system", RecreateIfNotPresent, "ubuntu-image")
+	dataVol := NewRawVolume("data", RecreateAlways, "10GB")
+
 	cases := []struct {
 		n    Node
 		opts [][]string
@@ -116,9 +119,9 @@ func TestStartNodeCmdParams(t *testing.T) {
 						Product:      "mk2",
 						Serial:       "1234abcd",
 					},
-					Volumes: []*VolumeSpec{
-						{Name: "system"},
-						{Name: "data"},
+					Volumes: []Volume{
+						systemVol,
+						dataVol,
 					},
 					Resources: ResourceSpec{
 						CPU:    "2",

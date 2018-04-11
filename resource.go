@@ -1,6 +1,8 @@
 package placemat
 
 import (
+	"net/url"
+
 	"context"
 	"fmt"
 	"io"
@@ -61,8 +63,9 @@ type ImageSpec struct {
 
 // Image represents an image configuration
 type Image struct {
-	Name string
-	Spec ImageSpec
+	Name  string
+	Spec  ImageSpec
+	cache *cache
 }
 
 // CloudConfigSpec represents a cloud-config configuration
@@ -71,28 +74,116 @@ type CloudConfigSpec struct {
 	UserData      string
 }
 
-// VolumeSpec represents a volume specification
-type VolumeSpec struct {
-	Name           string
-	Size           string
-	Source         string
-	CloudConfig    CloudConfigSpec
-	RecreatePolicy VolumeRecreatePolicy
-	image          *Image
+// Volume defines the interface for Node volumes.
+type Volume interface {
+	Kind() string
+	Name() string
+	RecreatePolicy() VolumeRecreatePolicy
+	Resolve(*Cluster) error
+	Create(ctx context.Context, p string) error
 }
 
-// Resolve resolves image source reference
-func (vs *VolumeSpec) Resolve(c *Cluster) error {
-	if vs.Source == "" {
-		return nil
+type baseVolume struct {
+	name   string
+	policy VolumeRecreatePolicy
+}
+
+func (v baseVolume) Name() string {
+	return v.name
+}
+
+func (v baseVolume) RecreatePolicy() VolumeRecreatePolicy {
+	return v.policy
+}
+
+type imageVolume struct {
+	baseVolume
+	imageName string
+	image     *Image
+}
+
+// NewImageVolume creates a volume for type "image".
+func NewImageVolume(name string, policy VolumeRecreatePolicy, imageName string) *imageVolume {
+	return &imageVolume{
+		baseVolume: baseVolume{name, policy},
+		imageName:  imageName,
 	}
+}
+
+func (v imageVolume) Kind() string {
+	return "image"
+}
+
+func (v *imageVolume) Resolve(c *Cluster) error {
 	for _, img := range c.Images {
-		if img.Name == vs.Source {
-			vs.image = img
+		if img.Name == v.imageName {
+			v.image = img
 			return nil
 		}
 	}
-	return errors.New("no such image: " + vs.Source)
+	return errors.New("no such image: " + v.imageName)
+}
+
+func (v imageVolume) Create(ctx context.Context, p string) error {
+	return v.image.writeToFile(ctx, p)
+}
+
+type localDSVolume struct {
+	baseVolume
+	userData      string
+	networkConfig string
+}
+
+// NewLocalDSVolume creates a volume for type "localds".
+func NewLocalDSVolume(name string, policy VolumeRecreatePolicy, u, n string) *localDSVolume {
+	return &localDSVolume{
+		baseVolume:    baseVolume{name, policy},
+		userData:      u,
+		networkConfig: n,
+	}
+}
+
+func (v localDSVolume) Kind() string {
+	return "localds"
+}
+
+func (v *localDSVolume) Resolve(c *Cluster) error {
+	return nil
+}
+
+func (v localDSVolume) Create(ctx context.Context, p string) error {
+	if v.networkConfig == "" {
+		c := cmd.CommandContext(ctx, "cloud-localds", p, v.userData)
+		return c.Run()
+	}
+
+	c := cmd.CommandContext(ctx, "cloud-localds", p, v.userData, "--network-config", v.networkConfig)
+	return c.Run()
+}
+
+type rawVolume struct {
+	baseVolume
+	size string
+}
+
+// NewRawVolume creates a volume for type "raw".
+func NewRawVolume(name string, policy VolumeRecreatePolicy, size string) *rawVolume {
+	return &rawVolume{
+		baseVolume: baseVolume{name, policy},
+		size:       size,
+	}
+}
+
+func (v rawVolume) Kind() string {
+	return "raw"
+}
+
+func (v *rawVolume) Resolve(c *Cluster) error {
+	return nil
+}
+
+func (v rawVolume) Create(ctx context.Context, p string) error {
+	return cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, v.size).Run()
 }
 
 // ResourceSpec represents a resource specification
@@ -111,7 +202,7 @@ type SMBIOSSpec struct {
 // NodeSpec represents a node specification
 type NodeSpec struct {
 	Interfaces   []string
-	Volumes      []*VolumeSpec
+	Volumes      []Volume
 	IgnitionFile string
 	Resources    ResourceSpec
 	BIOS         BIOSMode
@@ -154,7 +245,7 @@ func (c *Cluster) Append(other *Cluster) *Cluster {
 }
 
 // Resolve resolves references between resources
-func (c *Cluster) Resolve() error {
+func (c *Cluster) Resolve(pv Provider) error {
 	for _, node := range c.Nodes {
 		for _, vs := range node.Spec.Volumes {
 			err := vs.Resolve(c)
@@ -170,6 +261,11 @@ func (c *Cluster) Resolve() error {
 				return err
 			}
 		}
+	}
+
+	ic := pv.ImageCache()
+	for _, img := range c.Images {
+		img.cache = ic
 	}
 	return nil
 }
@@ -199,6 +295,7 @@ func (img *Image) lookupFile(ctx context.Context, c *cache) (*cachedReadCloser, 
 
 func (img *Image) downloadImage(ctx context.Context, c *cache) (*cachedReadCloser, error) {
 	urlString := img.Spec.URL.String()
+	c := img.cache
 RETRY:
 	r, err := c.Get(urlString)
 	if err == nil {
