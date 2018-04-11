@@ -17,37 +17,6 @@ func touch(path string) error {
 	return f.Close()
 }
 
-func TestVolumeExists(t *testing.T) {
-	dir, err := ioutil.TempDir("", t.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-
-	qemu := QemuProvider{}
-	err = qemu.SetupDataDir(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	touch(qemu.volumePath("host1", "volume1"))
-	exists, err := qemu.VolumeExists(context.Background(), "host1", "volume1")
-	if err != nil {
-		t.Fatal("expected err != nil, ", err)
-	}
-	if !exists {
-		t.Fatal("expected exists")
-	}
-
-	exists, err = qemu.VolumeExists(context.Background(), "host1", "volume2")
-	if err != nil {
-		t.Fatal("expected err != nil, ", err)
-	}
-	if exists {
-		t.Fatal("expected not exists")
-	}
-}
-
 func TestCreateVolume(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
@@ -61,12 +30,12 @@ func TestCreateVolume(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = qemu.CreateVolume(context.Background(), "host1", NewRawVolume("volume1", RecreateNever, "10G"))
+	err = qemu.CreateVolume(context.Background(), "host1", NewRawVolume("volume1", RecreateAlways, "10G"))
 	if err != nil {
 		t.Fatal("expected err != nil", err)
 	}
 
-	_, err = os.Stat(qemu.volumePath("host1", "volume1"))
+	_, err = os.Stat(volumePath(qemu.dataDir, "host1", "volume1"))
 	if os.IsNotExist(err) {
 		t.Fatal("expected !os.IsNotExist(err), ", err)
 	}
@@ -103,7 +72,10 @@ func TestIptables(t *testing.T) {
 
 func TestStartNodeCmdParams(t *testing.T) {
 	systemVol := NewImageVolume("system", RecreateIfNotPresent, "ubuntu-image")
+	systemVol.path = "/tmp/volumes/boot_system.img"
 	dataVol := NewRawVolume("data", RecreateAlways, "10GB")
+	dataVol.path = "/tmp/volumes/boot_data.img"
+	// We need to give path here because volume's path is filled in Create() in normal execution.
 
 	cases := []struct {
 		n    Node

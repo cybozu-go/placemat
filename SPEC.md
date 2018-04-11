@@ -52,6 +52,44 @@ spec:
 - `file`: a local file path
 - `compression`: optional field to specify decompress method.  Currently, "gzip" and "bzip2" are supported.
 
+DataFolder resource
+-------------------
+
+Placemat can show files in a host's directory as a VFAT volume for VMs.
+It can also show files on the Internet by downloading them first, and/or files in a host by copying them first.
+
+A DataFolder resource represents a host's directory or a set of remote/local files to be shown.
+This resource will be referred from the `volumes` property in a Node resource.
+
+```yaml
+kind: DataFolder
+name: host-dir
+spec:
+  dir: /home/john/exported_dir
+```
+
+```yaml
+kind: DataFolder
+name: gathered-files
+spec:
+  files:
+    - name: ubuntu.img
+      url: https://example.com/docker_images/ubuntu_18.04
+    - name: copied_readme.txt
+      file: /home/john/README.txt
+```
+
+The properties in the `spec` are the following:
+
+- `dir`: Local directory name to be shown.
+- `files`: List of file specs.
+  - `name`: File name in the exported directory.
+  - `url`: URL of a remote file to be downloaded.
+  - `file`: Path to local file on host.
+
+You can only specify either `dir` or `files` for a DataDir resource.
+You can only specify either `url` or `file` for each file in `files`.
+
 Node resource
 -------------
 
@@ -80,6 +118,10 @@ spec:
       spec:
         size: 10GB
       recreatePolicy: Never
+    - kind: vvfat
+      name: host-data
+      spec:
+        folder: host-dir
   ignition: my-node.ign
   resources:
     cpu: 2
@@ -98,6 +140,7 @@ The properties in the `spec` are the following:
     - `image`: Image resource for QEMU disk image.
     - `localds`: [cloud-config](http://cloudinit.readthedocs.io/en/latest/topics/format.html#cloud-config-data) data.
     - `raw`: Raw (and empty) block device.
+    - `vvfat`: DataFolder resource for QEMU VVFAT volume.
 - `ignition`: [Ignition file](https://coreos.com/ignition/docs/latest/configuration-v2_1.html).
 - `resources`:  `cpu` and `memory` resources to allocate to the VM.
 - `smbios`: System Management BIOS (SMBIOS) values for `manufacturer`, `product`, and `serial`.  If `serial` is not set, a hash value of the node's name is used.
@@ -124,6 +167,15 @@ Attaches a RAW, empty block device.
 This volume type has the following parameter:
 
 * `size`: Disk size.  Required.
+
+### `vvfat` volume
+
+Attaches a QEMU [VVFAT](https://en.wikibooks.org/wiki/QEMU/Devices/Storage) volume.
+This volume type has the folloing parameter:
+
+* `folder`: `DataFolder` resource name.  Required.
+
+This volume type ignores `recreatePolicy` parameter.
 
 NodeSet resource
 ----------------

@@ -2,6 +2,7 @@ package placemat
 
 import (
 	"net/url"
+	"path/filepath"
 
 	"context"
 	"fmt"
@@ -66,6 +67,60 @@ type Image struct {
 	cache *cache
 }
 
+// DataFolderFile represents a file in a data folder
+type DataFolderFile struct {
+	Name string
+	URL  *url.URL
+	File string
+}
+
+// DataFolderSpec represents a data folder specification
+type DataFolderSpec struct {
+	Dir   string
+	Files []DataFolderFile
+}
+
+// DataFolder represents a data folder configuration
+type DataFolder struct {
+	Name        string
+	Spec        DataFolderSpec
+	cache       *cache
+	baseTempDir string
+}
+
+func (d *DataFolder) tempDir(ctx context.Context) (string, error) {
+	p := filepath.Join(d.baseTempDir, d.Name)
+	exists, err := pathExists(p)
+	if err != nil {
+		return "", err
+	}
+	if exists {
+		return p, nil
+	}
+
+	err = os.MkdirAll(p, 0755)
+	if err != nil {
+		return "", err
+	}
+
+	for _, file := range d.Spec.Files {
+		dstPath := filepath.Join(p, file.Name)
+		if file.File != "" {
+			err = writeToFile(ctx, file.File, dstPath, nil)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			err = downloadData(ctx, file.URL, dstPath, nil, d.cache)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	return p, nil
+}
+
 // CloudConfigSpec represents a cloud-config configuration
 type CloudConfigSpec struct {
 	NetworkConfig string
@@ -76,22 +131,43 @@ type CloudConfigSpec struct {
 type Volume interface {
 	Kind() string
 	Name() string
-	RecreatePolicy() VolumeRecreatePolicy
 	Resolve(*Cluster) error
-	Create(ctx context.Context, p string) error
+	Create(ctx context.Context, dataDir, node string) error
+	QemuArgs() []string
 }
 
 type baseVolume struct {
 	name   string
 	policy VolumeRecreatePolicy
+	path   string
 }
 
 func (v baseVolume) Name() string {
 	return v.name
 }
 
-func (v baseVolume) RecreatePolicy() VolumeRecreatePolicy {
-	return v.policy
+func volumePath(dataDir, node, name string) string {
+	return filepath.Join(dataDir, "volumes", node+"_"+name+".img")
+}
+
+func pathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err), nil
+}
+
+func (v baseVolume) needRecreate() (bool, error) {
+	exists, err := pathExists(v.path)
+	if err != nil {
+		return false, err
+	}
+	return (v.policy == RecreateAlways || v.policy == RecreateIfNotPresent && !exists), nil
+}
+
+func (v baseVolume) QemuArgs() []string {
+	return []string{
+		"-drive",
+		"if=virtio,cache=none,aio=native,file=" + v.path,
+	}
 }
 
 type imageVolume struct {
@@ -103,7 +179,7 @@ type imageVolume struct {
 // NewImageVolume creates a volume for type "image".
 func NewImageVolume(name string, policy VolumeRecreatePolicy, imageName string) *imageVolume {
 	return &imageVolume{
-		baseVolume: baseVolume{name, policy},
+		baseVolume: baseVolume{name: name, policy: policy},
 		imageName:  imageName,
 	}
 }
@@ -122,8 +198,19 @@ func (v *imageVolume) Resolve(c *Cluster) error {
 	return errors.New("no such image: " + v.imageName)
 }
 
-func (v imageVolume) Create(ctx context.Context, p string) error {
-	return v.image.writeToFile(ctx, p)
+func (v *imageVolume) Create(ctx context.Context, dataDir, node string) error {
+	v.path = volumePath(dataDir, node, v.name)
+	needRecreate, err := v.needRecreate()
+	if err != nil {
+		return err
+	}
+	if !needRecreate {
+		return nil
+	}
+	if v.image.Spec.File != "" {
+		return writeToFile(ctx, v.image.Spec.File, v.path, v.image.Spec.Decompressor)
+	}
+	return downloadData(ctx, v.image.Spec.URL, v.path, v.image.Spec.Decompressor, v.image.cache)
 }
 
 type localDSVolume struct {
@@ -135,7 +222,7 @@ type localDSVolume struct {
 // NewLocalDSVolume creates a volume for type "localds".
 func NewLocalDSVolume(name string, policy VolumeRecreatePolicy, u, n string) *localDSVolume {
 	return &localDSVolume{
-		baseVolume:    baseVolume{name, policy},
+		baseVolume:    baseVolume{name: name, policy: policy},
 		userData:      u,
 		networkConfig: n,
 	}
@@ -149,13 +236,22 @@ func (v *localDSVolume) Resolve(c *Cluster) error {
 	return nil
 }
 
-func (v localDSVolume) Create(ctx context.Context, p string) error {
+func (v *localDSVolume) Create(ctx context.Context, dataDir, node string) error {
+	v.path = volumePath(dataDir, node, v.name)
+	needRecreate, err := v.needRecreate()
+	if err != nil {
+		return err
+	}
+	if !needRecreate {
+		return nil
+	}
+
 	if v.networkConfig == "" {
-		c := cmd.CommandContext(ctx, "cloud-localds", p, v.userData)
+		c := cmd.CommandContext(ctx, "cloud-localds", v.path, v.userData)
 		return c.Run()
 	}
 
-	c := cmd.CommandContext(ctx, "cloud-localds", p, v.userData, "--network-config", v.networkConfig)
+	c := cmd.CommandContext(ctx, "cloud-localds", v.path, v.userData, "--network-config", v.networkConfig)
 	return c.Run()
 }
 
@@ -167,7 +263,7 @@ type rawVolume struct {
 // NewRawVolume creates a volume for type "raw".
 func NewRawVolume(name string, policy VolumeRecreatePolicy, size string) *rawVolume {
 	return &rawVolume{
-		baseVolume: baseVolume{name, policy},
+		baseVolume: baseVolume{name: name, policy: policy},
 		size:       size,
 	}
 }
@@ -180,8 +276,65 @@ func (v *rawVolume) Resolve(c *Cluster) error {
 	return nil
 }
 
-func (v rawVolume) Create(ctx context.Context, p string) error {
-	return cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, v.size).Run()
+func (v *rawVolume) Create(ctx context.Context, dataDir, node string) error {
+	v.path = volumePath(dataDir, node, v.name)
+	needRecreate, err := v.needRecreate()
+	if err != nil {
+		return err
+	}
+	if !needRecreate {
+		return nil
+	}
+	return cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", v.path, v.size).Run()
+}
+
+type vvfatVolume struct {
+	baseVolume
+	folderName string
+	folder     *DataFolder
+}
+
+// NewVVFATVolume creates a volume for type "vvfat".
+func NewVVFATVolume(name string, policy VolumeRecreatePolicy, folderName string) *vvfatVolume {
+	return &vvfatVolume{
+		baseVolume: baseVolume{name: name, policy: policy},
+		folderName: folderName,
+	}
+}
+
+func (v vvfatVolume) Kind() string {
+	return "vvfat"
+}
+
+func (v *vvfatVolume) Resolve(c *Cluster) error {
+	for _, folder := range c.DataFolders {
+		if folder.Name == v.folderName {
+			v.folder = folder
+			return nil
+		}
+	}
+	return errors.New("no such data folder: " + v.folderName)
+}
+
+func (v *vvfatVolume) Create(ctx context.Context, dataDir, node string) error {
+	if v.folder.Spec.Dir != "" {
+		v.path = v.folder.Spec.Dir
+		return nil
+	}
+
+	d, err := v.folder.tempDir(ctx)
+	if err != nil {
+		return err
+	}
+	v.path = d
+	return nil
+}
+
+func (v vvfatVolume) QemuArgs() []string {
+	return []string{
+		"-drive",
+		"file=fat:32:" + v.path + ",format=raw,if=virtio",
+	}
 }
 
 // ResourceSpec represents a resource specification
@@ -227,10 +380,11 @@ type NodeSet struct {
 
 // Cluster represents cluster configuration
 type Cluster struct {
-	Networks []*Network
-	Images   []*Image
-	Nodes    []*Node
-	NodeSets []*NodeSet
+	Networks    []*Network
+	Images      []*Image
+	DataFolders []*DataFolder
+	Nodes       []*Node
+	NodeSets    []*NodeSet
 }
 
 // Append appends the other cluster into the receiver
@@ -239,6 +393,7 @@ func (c *Cluster) Append(other *Cluster) *Cluster {
 	c.Nodes = append(c.Nodes, other.Nodes...)
 	c.NodeSets = append(c.NodeSets, other.NodeSets...)
 	c.Images = append(c.Images, other.Images...)
+	c.DataFolders = append(c.DataFolders, other.DataFolders...)
 	return c
 }
 
@@ -265,44 +420,47 @@ func (c *Cluster) Resolve(pv Provider) error {
 	for _, img := range c.Images {
 		img.cache = ic
 	}
+
+	dc := pv.DataCache()
+	td := pv.TempDir()
+	for _, folder := range c.DataFolders {
+		folder.cache = dc
+		folder.baseTempDir = td
+	}
+
 	return nil
 }
 
-func (img *Image) writeToFile(ctx context.Context, destPath string) error {
-	if img.Spec.File != "" {
-		f, err := os.Open(img.Spec.File)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-
-		destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return err
-		}
-		defer destFile.Close()
-
-		var src io.Reader = f
-		if img.Spec.Decompressor != nil {
-			newSrc, err := img.Spec.Decompressor.Decompress(src)
-			if err != nil {
-				return err
-			}
-			src = newSrc
-		}
-
-		_, err = io.Copy(destFile, src)
+func writeToFile(ctx context.Context, srcPath, destPath string, decompressor Decompressor) error {
+	f, err := os.Open(srcPath)
+	if err != nil {
 		return err
 	}
+	defer f.Close()
 
-	return img.downloadImage(ctx, destPath)
+	destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	var src io.Reader = f
+	if decompressor != nil {
+		newSrc, err := decompressor.Decompress(src)
+		if err != nil {
+			return err
+		}
+		src = newSrc
+	}
+
+	_, err = io.Copy(destFile, src)
+	return err
 }
 
-func (img *Image) downloadImage(ctx context.Context, destPath string) error {
-	urlString := img.Spec.URL.String()
-	c := img.cache
+func downloadData(ctx context.Context, url *url.URL, destPath string, decompressor Decompressor, cache *cache) error {
+	urlString := url.String()
 RETRY:
-	r, err := c.Get(urlString)
+	r, err := cache.Get(urlString)
 	if err == nil {
 		defer r.Close()
 
@@ -313,8 +471,8 @@ RETRY:
 		defer d.Close()
 
 		var src io.Reader = r
-		if img.Spec.Decompressor != nil {
-			newSrc, err := img.Spec.Decompressor.Decompress(src)
+		if decompressor != nil {
+			newSrc, err := decompressor.Decompress(src)
 			if err != nil {
 				return err
 			}
@@ -354,11 +512,12 @@ RETRY:
 		return err
 	}
 
-	log.Info("Downloading image...", map[string]interface{}{
+	log.Info("Downloading data...", map[string]interface{}{
+		"url":  urlString,
 		"size": size,
 	})
 
-	err = c.Put(urlString, res.Body)
+	err = cache.Put(urlString, res.Body)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package placemat
 
 import (
 	"context"
+	"os"
 	"strconv"
 
 	"github.com/cybozu-go/cmd"
@@ -12,7 +13,9 @@ import (
 type Provider interface {
 	ImageCache() *cache
 
-	VolumeExists(ctx context.Context, node, vol string) (bool, error)
+	DataCache() *cache
+
+	TempDir() string
 
 	CreateVolume(context.Context, string, Volume) error
 
@@ -39,15 +42,7 @@ func interpretNodesFromNodeSet(cluster *Cluster) []*Node {
 func createNodeVolumes(ctx context.Context, provider Provider, nodes []*Node) error {
 	for _, n := range nodes {
 		for _, v := range n.Spec.Volumes {
-			exists, err := provider.VolumeExists(ctx, n.Name, v.Name())
-			if err != nil {
-				return err
-			}
-			policy := v.RecreatePolicy()
-			if !(policy == RecreateAlways || policy == RecreateIfNotPresent && !exists) {
-				continue
-			}
-			err = provider.CreateVolume(ctx, n.Name, v)
+			err := provider.CreateVolume(ctx, n.Name, v)
 			if err != nil {
 				return err
 			}
@@ -92,6 +87,16 @@ func destroyNetworks(provider Provider, networks []*Network) {
 
 // Run runs VMs described in cluster by provider
 func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
+	defer func() {
+		err := os.RemoveAll(provider.TempDir())
+		if err != nil {
+			log.Error("Failed to remove temporary directory", map[string]interface{}{
+				"dir":       provider.TempDir(),
+				log.FnError: err,
+			})
+		}
+	}()
+
 	err := createNetworks(ctx, provider, cluster.Networks)
 	if err != nil {
 		return err

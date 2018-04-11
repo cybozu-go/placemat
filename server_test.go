@@ -28,9 +28,12 @@ func (m *MockProvider) ImageCache() *cache {
 	return nil
 }
 
-func (m *MockProvider) VolumeExists(ctx context.Context, node, vol string) (bool, error) {
-	_, ok := m.volumes[node+"/"+vol]
-	return ok, nil
+func (m *MockProvider) DataCache() *cache {
+	return nil
+}
+
+func (m *MockProvider) TempDir() string {
+	return ""
 }
 
 func (m *MockProvider) CreateVolume(ctx context.Context, node string, v Volume) error {
