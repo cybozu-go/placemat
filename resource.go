@@ -1,8 +1,6 @@
 package placemat
 
 import (
-	"net/url"
-
 	"context"
 	"fmt"
 	"io"
@@ -125,7 +123,27 @@ func (v *imageVolume) Resolve(c *Cluster) error {
 }
 
 func (v imageVolume) Create(ctx context.Context, p string) error {
-	return v.image.writeToFile(ctx, p)
+	rc, err := v.image.lookupFile(ctx)
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	if v.image.Spec.CopyOnWrite {
+		c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-b", rc.path, p)
+		return c.Run()
+	}
+
+	d, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	_, err = io.Copy(d, rc.ReadCloser)
+	if err != nil {
+		return err
+	}
+	return d.Sync()
 }
 
 type localDSVolume struct {
@@ -270,7 +288,7 @@ func (c *Cluster) Resolve(pv Provider) error {
 	return nil
 }
 
-func (img *Image) lookupFile(ctx context.Context, c *cache) (*cachedReadCloser, error) {
+func (img *Image) lookupFile(ctx context.Context) (*cachedReadCloser, error) {
 	if img.Spec.File != "" {
 		f, err := os.Open(img.Spec.File)
 		if err != nil {
@@ -290,10 +308,10 @@ func (img *Image) lookupFile(ctx context.Context, c *cache) (*cachedReadCloser, 
 		return &cachedReadCloser{path: img.Spec.File, ReadCloser: src}, nil
 	}
 
-	return img.downloadImage(ctx, c)
+	return img.downloadImage(ctx)
 }
 
-func (img *Image) downloadImage(ctx context.Context, c *cache) (*cachedReadCloser, error) {
+func (img *Image) downloadImage(ctx context.Context) (*cachedReadCloser, error) {
 	urlString := img.Spec.URL.String()
 	c := img.cache
 RETRY:

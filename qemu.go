@@ -6,7 +6,6 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
-	"io"
 	"math/rand"
 	"net"
 	"os"
