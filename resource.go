@@ -1,12 +1,11 @@
 package placemat
 
 import (
-	"net/url"
-
 	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -57,6 +56,7 @@ type ImageSpec struct {
 	URL          *url.URL
 	File         string
 	Decompressor Decompressor
+	CopyOnWrite  bool
 }
 
 // Image represents an image configuration
@@ -123,7 +123,27 @@ func (v *imageVolume) Resolve(c *Cluster) error {
 }
 
 func (v imageVolume) Create(ctx context.Context, p string) error {
-	return v.image.writeToFile(ctx, p)
+	rc, err := v.image.lookupFile(ctx)
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	if v.image.Spec.CopyOnWrite {
+		c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-b", rc.path, p)
+		return c.Run()
+	}
+
+	d, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	_, err = io.Copy(d, rc.ReadCloser)
+	if err != nil {
+		return err
+	}
+	return d.Sync()
 }
 
 type localDSVolume struct {
@@ -268,70 +288,41 @@ func (c *Cluster) Resolve(pv Provider) error {
 	return nil
 }
 
-func (img *Image) writeToFile(ctx context.Context, destPath string) error {
+func (img *Image) lookupFile(ctx context.Context) (*cachedReadCloser, error) {
 	if img.Spec.File != "" {
 		f, err := os.Open(img.Spec.File)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		defer f.Close()
 
-		destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return err
-		}
-		defer destFile.Close()
-
-		var src io.Reader = f
+		var src io.ReadCloser = f
 		if img.Spec.Decompressor != nil {
 			newSrc, err := img.Spec.Decompressor.Decompress(src)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			src = newSrc
 		}
 
-		_, err = io.Copy(destFile, src)
-		return err
+		return &cachedReadCloser{path: img.Spec.File, ReadCloser: src}, nil
 	}
 
-	return img.downloadImage(ctx, destPath)
+	return img.downloadImage(ctx)
 }
 
-func (img *Image) downloadImage(ctx context.Context, destPath string) error {
+func (img *Image) downloadImage(ctx context.Context) (*cachedReadCloser, error) {
 	urlString := img.Spec.URL.String()
 	c := img.cache
 RETRY:
 	r, err := c.Get(urlString)
 	if err == nil {
-		defer r.Close()
-
-		d, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return err
-		}
-		defer d.Close()
-
-		var src io.Reader = r
-		if img.Spec.Decompressor != nil {
-			newSrc, err := img.Spec.Decompressor.Decompress(src)
-			if err != nil {
-				return err
-			}
-			src = newSrc
-		}
-
-		_, err = io.Copy(d, src)
-		if err != nil {
-			return err
-		}
-
-		return d.Sync()
+		return r, nil
 	}
 
 	req, err := http.NewRequest("GET", urlString, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req = req.WithContext(ctx)
 
@@ -341,26 +332,35 @@ RETRY:
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download: %s: %s", res.Status, urlString)
+		return nil, fmt.Errorf("failed to download: %s: %s", res.Status, urlString)
 	}
 
 	size, err := strconv.Atoi(res.Header.Get("Content-Length"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.Info("Downloading image...", map[string]interface{}{
 		"size": size,
 	})
 
-	err = c.Put(urlString, res.Body)
+	var src io.Reader = res.Body
+	if img.Spec.Decompressor != nil {
+		newSrc, err := img.Spec.Decompressor.Decompress(res.Body)
+		if err != nil {
+			return nil, err
+		}
+		src = newSrc
+	}
+
+	err = c.Put(urlString, src)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	goto RETRY
