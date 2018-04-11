@@ -333,7 +333,7 @@ func (v *vvfatVolume) Create(ctx context.Context, dataDir, node string) error {
 func (v vvfatVolume) QemuArgs() []string {
 	return []string{
 		"-drive",
-		"file=fat:32:" + v.path + ",format=raw,if=virtio",
+		"file=fat:16:" + v.path + ",format=raw,if=virtio",
 	}
 }
 
