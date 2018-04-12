@@ -49,6 +49,15 @@ func (c *cache) Put(key string, data io.Reader) error {
 }
 
 func (c *cache) Get(key string) (io.ReadCloser, error) {
+	return os.Open(c.Path(key))
+}
+
+func (c *cache) Contains(key string) bool {
+	_, err := os.Stat(c.Path(key))
+	return !os.IsNotExist(err)
+}
+
+func (c *cache) Path(key string) string {
 	ek := escapeKey(key)
-	return os.Open(filepath.Join(c.dir, ek))
+	return filepath.Join(c.dir, ek)
 }

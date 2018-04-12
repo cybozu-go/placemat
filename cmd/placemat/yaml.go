@@ -71,6 +71,7 @@ type imageConfig struct {
 		URL               string `yaml:"url"`
 		File              string `yaml:"file"`
 		CompressionMethod string `yaml:"compression"`
+		CopyOnWrite       bool   `yaml:"copy-on-write"`
 	} `yaml:"spec"`
 }
 
@@ -253,6 +254,7 @@ func unmarshalImage(data []byte) (*placemat.Image, error) {
 		return nil, err
 	}
 	image.Spec.Decompressor = decompressor
+	image.Spec.CopyOnWrite = dto.Spec.CopyOnWrite
 
 	return &image, nil
 }

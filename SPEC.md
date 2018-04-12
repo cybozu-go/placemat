@@ -51,6 +51,10 @@ spec:
 - `url`: downloads an image file from specified url
 - `file`: a local file path
 - `compression`: optional field to specify decompress method.  Currently, "gzip" and "bzip2" are supported.
+- `copy-on-write`: if `true`, create a copy-on-write image based on the specified `url` or `file`.
+Only the modified data will be stored in the created image file.
+if `false`, the file copied entirely from specified `url` or `file` will be used.
+default is `false`.
 
 DataFolder resource
 -------------------
