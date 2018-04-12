@@ -372,6 +372,8 @@ type NodeSpec struct {
 type Node struct {
 	Name string
 	Spec NodeSpec
+
+	params []string
 }
 
 // NodeSetSpec represents a node-set specification

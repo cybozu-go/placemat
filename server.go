@@ -21,6 +21,8 @@ type Provider interface {
 
 	DestroyNetwork(context.Context, *Network) error
 
+	PrepareNode(context.Context, *Node) error
+
 	StartNode(context.Context, *Node) error
 }
 
@@ -91,6 +93,13 @@ func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
 
 	nodes := interpretNodesFromNodeSet(cluster)
 	nodes = append(nodes, cluster.Nodes...)
+
+	for _, n := range nodes {
+		err = provider.PrepareNode(ctx, n)
+		if err != nil {
+			return err
+		}
+	}
 
 	env := cmd.NewEnvironment(ctx)
 	startNodes(env, provider, nodes)

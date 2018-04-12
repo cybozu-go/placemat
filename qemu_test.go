@@ -1,8 +1,6 @@
 package placemat
 
 import (
-	"context"
-	"io/ioutil"
 	"net"
 	"os"
 	"strings"
@@ -15,30 +13,6 @@ func touch(path string) error {
 		return err
 	}
 	return f.Close()
-}
-
-func TestCreateVolume(t *testing.T) {
-	dir, err := ioutil.TempDir("", t.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-
-	qemu := QemuProvider{}
-	err = qemu.SetupDataDir(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = qemu.CreateVolume(context.Background(), "host1", NewRawVolume("volume1", RecreateAlways, "10G"))
-	if err != nil {
-		t.Fatal("expected err != nil", err)
-	}
-
-	_, err = os.Stat(volumePath(qemu.dataDir, "host1", "volume1"))
-	if os.IsNotExist(err) {
-		t.Fatal("expected !os.IsNotExist(err), ", err)
-	}
 }
 
 func TestGenerateRandomMacForKVM(t *testing.T) {
@@ -72,10 +46,7 @@ func TestIptables(t *testing.T) {
 
 func TestStartNodeCmdParams(t *testing.T) {
 	systemVol := NewImageVolume("system", RecreateIfNotPresent, "ubuntu-image")
-	systemVol.path = "/tmp/volumes/boot_system.img"
 	dataVol := NewRawVolume("data", RecreateAlways, "10GB")
-	dataVol.path = "/tmp/volumes/boot_data.img"
-	// We need to give path here because volume's path is filled in Create() in normal execution.
 
 	cases := []struct {
 		n    Node
@@ -105,8 +76,6 @@ func TestStartNodeCmdParams(t *testing.T) {
 			[][]string{
 				{"-netdev", "tap,id=net1,ifname=boot_net1,script=no,downscript=no,vhost=on"},
 				{"-smbios", "type=1,manufacturer=cybozu,product=mk2,serial=1234abcd"},
-				{"-drive", "if=virtio,cache=none,aio=native,file=/tmp/volumes/boot_system.img"},
-				{"-drive", "if=virtio,cache=none,aio=native,file=/tmp/volumes/boot_data.img"},
 				{"-smp", "2"},
 				{"-m", "2G"},
 				{"-drive", "if=pflash,file=" + defaultOVMFCodePath + ",format=raw,readonly"},

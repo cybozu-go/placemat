@@ -327,11 +327,8 @@ func (q QemuProvider) qemuParams(n *Node) []string {
 	return params
 }
 
-// StartNode starts a QEMU vm
-func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
-	params := q.qemuParams(n)
-
-	// prepare volumes
+// PrepareNode prepare volumes for the node.
+func (q QemuProvider) PrepareNode(ctx context.Context, n *Node) error {
 	for _, vol := range n.Spec.Volumes {
 		vname := vol.Name()
 		log.Info("Creating volume", map[string]interface{}{"node": n.Name, "volume": vname})
@@ -345,8 +342,14 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 			return err
 		}
 
-		params = append(params, args...)
+		n.params = append(n.params, args...)
 	}
+	return nil
+}
+
+// StartNode starts a QEMU vm
+func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
+	params := append(n.params, q.qemuParams(n)...)
 
 	for _, br := range n.Spec.Interfaces {
 		tap := n.Name + "_" + br
