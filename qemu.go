@@ -262,13 +262,6 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, nt *Network) error {
 	return execCommandsForce(ctx, cmds)
 }
 
-// CreateVolume creates a volume with specified options
-func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol Volume) error {
-	vname := vol.Name()
-	log.Info("Creating volume", map[string]interface{}{"node": node, "volume": vname})
-	return vol.Create(ctx, q.dataDir, node)
-}
-
 func createNVRAM(ctx context.Context, p string) error {
 	_, err := os.Stat(p)
 	if !os.IsNotExist(err) {
@@ -299,9 +292,6 @@ func (q QemuProvider) qemuParams(n *Node) []string {
 		params = append(params, "-netdev", netdev)
 		params = append(params, "-device",
 			fmt.Sprintf("virtio-net-pci,netdev=%s,romfile=,mac=%s", br, generateRandomMACForKVM()))
-	}
-	for _, v := range n.Spec.Volumes {
-		params = append(params, v.QemuArgs()...)
 	}
 	if n.Spec.Resources.CPU != "" {
 		params = append(params, "-smp", n.Spec.Resources.CPU)
@@ -340,6 +330,23 @@ func (q QemuProvider) qemuParams(n *Node) []string {
 // StartNode starts a QEMU vm
 func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	params := q.qemuParams(n)
+
+	// prepare volumes
+	for _, vol := range n.Spec.Volumes {
+		vname := vol.Name()
+		log.Info("Creating volume", map[string]interface{}{"node": n.Name, "volume": vname})
+		p := filepath.Join(q.dataDir, "volumes", n.Name)
+		err := os.MkdirAll(p, 0755)
+		if err != nil {
+			return err
+		}
+		args, err := vol.Create(ctx, p)
+		if err != nil {
+			return err
+		}
+
+		params = append(params, args...)
+	}
 
 	for _, br := range n.Spec.Interfaces {
 		tap := n.Name + "_" + br

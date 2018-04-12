@@ -17,8 +17,6 @@ type Provider interface {
 
 	TempDir() string
 
-	CreateVolume(context.Context, string, Volume) error
-
 	CreateNetwork(context.Context, *Network) error
 
 	DestroyNetwork(context.Context, *Network) error
@@ -37,18 +35,6 @@ func interpretNodesFromNodeSet(cluster *Cluster) []*Node {
 		}
 	}
 	return nodes
-}
-
-func createNodeVolumes(ctx context.Context, provider Provider, nodes []*Node) error {
-	for _, n := range nodes {
-		for _, v := range n.Spec.Volumes {
-			err := provider.CreateVolume(ctx, n.Name, v)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 func createNetworks(ctx context.Context, provider Provider, networks []*Network) error {
@@ -105,10 +91,6 @@ func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
 
 	nodes := interpretNodesFromNodeSet(cluster)
 	nodes = append(nodes, cluster.Nodes...)
-	err = createNodeVolumes(ctx, provider, nodes)
-	if err != nil {
-		return err
-	}
 
 	env := cmd.NewEnvironment(ctx)
 	startNodes(env, provider, nodes)
