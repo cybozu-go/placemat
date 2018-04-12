@@ -55,11 +55,14 @@ spec:
 DataFolder resource
 -------------------
 
-Placemat can show files in a host's directory as a VFAT volume for VMs.
-It can also show files on the Internet by downloading them first, and/or files in a host by copying them first.
+A DataFolder resource represents a host's directory or a set of remote/local files to be shown to guest VMs.
+This resource can be referred from the `vvfat` type of volumes in Node resources.
 
-A DataFolder resource represents a host's directory or a set of remote/local files to be shown.
-This resource will be referred from the `volumes` property in a Node resource.
+VVFAT is a virtual device of QEMU that exports a directory of host OS to guests as a block device having a VFAT partition.
+The block device need to be mounted as a read-only VFAT filesystem in guests.
+
+Placemat can show files in a host's directory to guests via `vvfat` volumes.
+It can also show files on the Internet by downloading them into a temporary directory first, and/or scattered files in a host by copying them first.
 
 ```yaml
 kind: DataFolder
@@ -87,8 +90,8 @@ The properties in the `spec` are the following:
   - `url`: URL of a remote file to be downloaded.
   - `file`: Path to local file on host.
 
-You can only specify either `dir` or `files` for a DataDir resource.
-You can only specify either `url` or `file` for each file in `files`.
+You must specify only one of `dir` or `files` for a DataFolder resource.
+You must specify only one of `url` or `file` for each file in `files`.
 
 Node resource
 -------------
@@ -171,11 +174,18 @@ This volume type has the following parameter:
 ### `vvfat` volume
 
 Attaches a QEMU [VVFAT](https://en.wikibooks.org/wiki/QEMU/Devices/Storage) volume.
-This volume type has the folloing parameter:
+This volume type has the following parameter:
 
 * `folder`: `DataFolder` resource name.  Required.
 
 This volume type ignores `recreatePolicy` parameter.
+
+From the guest OS, this volume appears as a block device containing a VFAT partition.
+The partition need to be mounted read-only as follows:
+
+```console
+$ sudo mount -o ro /dev/vdb1 /mnt
+```
 
 NodeSet resource
 ----------------
