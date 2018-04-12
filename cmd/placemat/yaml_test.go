@@ -93,6 +93,107 @@ spec:
 	}
 }
 
+func testUnmarshalDataFolder(t *testing.T) {
+	t.Parallel()
+
+	url, _ := url.Parse("https://quay.io/cybozu/bird/bird.img")
+
+	cases := []struct {
+		source   string
+		expected placemat.DataFolder
+	}{
+		{
+			source: `
+kind: DataFolder
+name: containers
+spec:
+  dir: /home/cybozu/containers
+`,
+			expected: placemat.DataFolder{
+				Name: "containers",
+				Spec: placemat.DataFolderSpec{
+					Dir: "/home/cybozu/containers",
+				},
+			},
+		},
+		{
+			source: `
+kind: DataFolder
+name: containers
+spec:
+  files:
+    - name: bird.img
+      url: https://quay.io/cybozu/bird/bird.img
+    - name: ubuntu.img
+      file: /home/cybozu/containers/ubuntu18.04.img
+`,
+			expected: placemat.DataFolder{
+				Name: "containers",
+				Spec: placemat.DataFolderSpec{
+					Files: []placemat.DataFolderFile{
+						placemat.DataFolderFile{
+							Name: "bird.img",
+							URL:  url,
+						},
+						placemat.DataFolderFile{
+							Name: "ubuntu.img",
+							File: "/home/cybozu/containers/ubuntu18.04.img",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		actual, err := unmarshalDataFolder([]byte(c.source))
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(*actual, c.expected) {
+			t.Errorf("%v != %v", *actual, c.expected)
+		}
+	}
+
+	errorCases := []string{
+		`
+kind: DataFolder
+spec:
+  dir: "/home/cybozu/ubuntu"
+`,
+		`
+kind: DataFolder
+name: "empty-spec"
+spec:
+`,
+		`
+kind: DataFolder
+name: "both-spec"
+spec:
+  dir: "/home/cybozu/ubuntu"
+  files:
+    - name: "ubuntu.img"
+      file: "/home/cybozu/ubuntu/ubuntu.img"
+`,
+		`
+kind: DataFolder
+name: "both-location"
+spec:
+  files:
+    - name: "ubuntu.img"
+      file: "/home/cybozu/ubuntu/ubuntu.img"
+      url: "https://quay.io/cybozu/ubuntu/ubuntu.img"
+`,
+	}
+
+	for _, c := range errorCases {
+		dataFolder, err := unmarshalDataFolder([]byte(c))
+		if err == nil {
+			t.Errorf("%s should be error", dataFolder.Name)
+		}
+	}
+}
+
 func testUnmarshalNetwork(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -218,6 +319,10 @@ spec:
       name: data
       spec:
         size: 20GB
+    - kind: vvfat
+      name: hostdata
+      spec:
+        folder: containers
   resources:
     cpu: 4
     memory: 8G
@@ -236,6 +341,7 @@ spec:
 						placemat.NewImageVolume("ubuntu", placemat.RecreateIfNotPresent, "ubuntu-image"),
 						placemat.NewLocalDSVolume("seed", placemat.RecreateAlways, "user-data.yml", "network.yml"),
 						placemat.NewRawVolume("data", placemat.RecreateIfNotPresent, "20GB"),
+						placemat.NewVVFATVolume("hostdata", placemat.RecreateIfNotPresent, "containers"),
 					},
 					Resources: placemat.ResourceSpec{CPU: "4", Memory: "8G"},
 					BIOS:      placemat.LegacyBIOS,
@@ -377,6 +483,11 @@ name: ubuntu
 spec:
   file: hoge
 ---
+kind: DataFolder
+name: hostdata
+spec:
+  dir: /home/cybozu/ubuntu
+---
 kind: Node
 name: node1
 ---
@@ -397,6 +508,9 @@ name: nodeSet
 	if len(cluster.Images) != 1 {
 		t.Error("len(cluster.Images) != 1, ", len(cluster.Images))
 	}
+	if len(cluster.DataFolders) != 1 {
+		t.Error("len(cluster.DataFolders) != 1, ", len(cluster.DataFolders))
+	}
 	if len(cluster.Nodes) != 2 {
 		t.Error("len(cluster.Nodes) != 2, ", len(cluster.Nodes))
 	}
@@ -408,6 +522,7 @@ name: nodeSet
 
 func TestYAML(t *testing.T) {
 	t.Run("image", testUnmarshalImage)
+	t.Run("dataFolder", testUnmarshalDataFolder)
 	t.Run("network", testUnmarshalNetwork)
 	t.Run("node", testUnmarshalNode)
 	t.Run("nodeSet", testUnmarshalNodeSet)

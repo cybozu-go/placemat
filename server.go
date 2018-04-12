@@ -10,15 +10,13 @@ import (
 
 // Provider represents a back-end of VM engine
 type Provider interface {
-	ImageCache() *cache
+	Resolve(c *Cluster) error
 
-	VolumeExists(ctx context.Context, node, vol string) (bool, error)
-
-	CreateVolume(context.Context, string, Volume) error
+	Destroy(c *Cluster) error
 
 	CreateNetwork(context.Context, *Network) error
 
-	DestroyNetwork(context.Context, *Network) error
+	PrepareNode(context.Context, *Node) error
 
 	StartNode(context.Context, *Node) error
 }
@@ -34,26 +32,6 @@ func interpretNodesFromNodeSet(cluster *Cluster) []*Node {
 		}
 	}
 	return nodes
-}
-
-func createNodeVolumes(ctx context.Context, provider Provider, nodes []*Node) error {
-	for _, n := range nodes {
-		for _, v := range n.Spec.Volumes {
-			exists, err := provider.VolumeExists(ctx, n.Name, v.Name())
-			if err != nil {
-				return err
-			}
-			policy := v.RecreatePolicy()
-			if !(policy == RecreateAlways || policy == RecreateIfNotPresent && !exists) {
-				continue
-			}
-			err = provider.CreateVolume(ctx, n.Name, v)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 func createNetworks(ctx context.Context, provider Provider, networks []*Network) error {
@@ -76,33 +54,23 @@ func startNodes(env *cmd.Environment, provider Provider, nodes []*Node) {
 	}
 }
 
-func destroyNetworks(provider Provider, networks []*Network) {
-	for _, n := range networks {
-		err := provider.DestroyNetwork(context.Background(), n)
-		if err != nil {
-			log.Error("Failed to destroy networks", map[string]interface{}{
-				"name":  n.Name,
-				"error": err,
-			})
-		} else {
-			log.Info("Destroyed network", map[string]interface{}{"name": n.Name})
-		}
-	}
-}
-
 // Run runs VMs described in cluster by provider
 func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
+	defer provider.Destroy(cluster)
+
 	err := createNetworks(ctx, provider, cluster.Networks)
 	if err != nil {
 		return err
 	}
-	defer destroyNetworks(provider, cluster.Networks)
 
 	nodes := interpretNodesFromNodeSet(cluster)
 	nodes = append(nodes, cluster.Nodes...)
-	err = createNodeVolumes(ctx, provider, nodes)
-	if err != nil {
-		return err
+
+	for _, n := range nodes {
+		err = provider.PrepareNode(ctx, n)
+		if err != nil {
+			return err
+		}
 	}
 
 	env := cmd.NewEnvironment(ctx)

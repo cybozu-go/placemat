@@ -24,6 +24,7 @@ var (
 	flgRunDir    = flag.String("run-dir", defaultRunPath, "run directory")
 	flgDataDir   = flag.String("data-dir", defaultDataDir, "directory to store data")
 	flgNoGraphic = flag.Bool("nographic", false, "run QEMU with no graphic")
+	flgDebug     = flag.Bool("debug", false, "show QEMU's stdout and stderr")
 )
 
 func loadClusterFromFile(p string) (*placemat.Cluster, error) {
@@ -71,6 +72,7 @@ func run(yamls []string) error {
 
 	qemu := &placemat.QemuProvider{
 		NoGraphic: *flgNoGraphic,
+		Debug:     *flgDebug,
 		RunDir:    *flgRunDir,
 	}
 

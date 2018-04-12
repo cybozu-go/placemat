@@ -1,8 +1,6 @@
 package placemat
 
 import (
-	"context"
-	"io/ioutil"
 	"net"
 	"os"
 	"strings"
@@ -15,61 +13,6 @@ func touch(path string) error {
 		return err
 	}
 	return f.Close()
-}
-
-func TestVolumeExists(t *testing.T) {
-	dir, err := ioutil.TempDir("", t.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-
-	qemu := QemuProvider{}
-	err = qemu.SetupDataDir(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	touch(qemu.volumePath("host1", "volume1"))
-	exists, err := qemu.VolumeExists(context.Background(), "host1", "volume1")
-	if err != nil {
-		t.Fatal("expected err != nil, ", err)
-	}
-	if !exists {
-		t.Fatal("expected exists")
-	}
-
-	exists, err = qemu.VolumeExists(context.Background(), "host1", "volume2")
-	if err != nil {
-		t.Fatal("expected err != nil, ", err)
-	}
-	if exists {
-		t.Fatal("expected not exists")
-	}
-}
-
-func TestCreateVolume(t *testing.T) {
-	dir, err := ioutil.TempDir("", t.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-
-	qemu := QemuProvider{}
-	err = qemu.SetupDataDir(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = qemu.CreateVolume(context.Background(), "host1", NewRawVolume("volume1", RecreateNever, "10G"))
-	if err != nil {
-		t.Fatal("expected err != nil", err)
-	}
-
-	_, err = os.Stat(qemu.volumePath("host1", "volume1"))
-	if os.IsNotExist(err) {
-		t.Fatal("expected !os.IsNotExist(err), ", err)
-	}
 }
 
 func TestGenerateRandomMacForKVM(t *testing.T) {
@@ -133,8 +76,6 @@ func TestStartNodeCmdParams(t *testing.T) {
 			[][]string{
 				{"-netdev", "tap,id=net1,ifname=boot_net1,script=no,downscript=no,vhost=on"},
 				{"-smbios", "type=1,manufacturer=cybozu,product=mk2,serial=1234abcd"},
-				{"-drive", "if=virtio,cache=none,aio=native,file=/tmp/volumes/boot_system.img"},
-				{"-drive", "if=virtio,cache=none,aio=native,file=/tmp/volumes/boot_data.img"},
 				{"-smp", "2"},
 				{"-m", "2G"},
 				{"-drive", "if=pflash,file=" + defaultOVMFCodePath + ",format=raw,readonly"},

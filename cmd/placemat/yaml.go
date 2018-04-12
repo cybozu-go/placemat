@@ -27,6 +27,7 @@ type nodeSpec struct {
 			UserData      string `yaml:"user-data"`
 			NetworkConfig string `yaml:"network-config"`
 			Size          string `yaml:"size"`
+			Folder        string `yaml:"folder"`
 		} `yaml:"spec"`
 	} `yaml:"volumes"`
 	IgnitionFile string `yaml:"ignition"`
@@ -71,6 +72,18 @@ type imageConfig struct {
 		File              string `yaml:"file"`
 		CompressionMethod string `yaml:"compression"`
 	} `yaml:"spec"`
+}
+
+type dataFolderConfig struct {
+	Name string `yaml:"name"`
+	Spec struct {
+		Dir   string `yaml:"dir"`
+		Files []struct {
+			Name string `yaml:"name"`
+			URL  string `yaml:"url"`
+			File string `yaml:"file"`
+		} `yaml:"files"`
+	}
 }
 
 var recreatePolicyConfig = map[string]placemat.VolumeRecreatePolicy{
@@ -157,6 +170,11 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 				return placemat.NodeSpec{}, errors.New("raw volume must specify size")
 			}
 			dst = placemat.NewRawVolume(v.Name, policy, v.Spec.Size)
+		case "vvfat":
+			if v.Spec.Folder == "" {
+				return placemat.NodeSpec{}, errors.New("VVFAT volume must specify a folder name")
+			}
+			dst = placemat.NewVVFATVolume(v.Name, policy, v.Spec.Folder)
 		default:
 			return placemat.NodeSpec{}, errors.New("unknown volume kind: " + v.Kind)
 		}
@@ -239,6 +257,55 @@ func unmarshalImage(data []byte) (*placemat.Image, error) {
 	return &image, nil
 }
 
+func unmarshalDataFolder(data []byte) (*placemat.DataFolder, error) {
+	var dto dataFolderConfig
+	err := yaml.Unmarshal(data, &dto)
+	if err != nil {
+		return nil, err
+	}
+	if dto.Name == "" {
+		return nil, errors.New("data folder name is empty")
+	}
+
+	if dto.Spec.Dir == "" && len(dto.Spec.Files) == 0 {
+		return nil, errors.New("either datafolder.spec.dir or datafolder.spec.files must be specified")
+	}
+	if dto.Spec.Dir != "" && len(dto.Spec.Files) > 0 {
+		return nil, errors.New("only one of datafolder.spec.dir or datafolder.spec.files can be specified")
+	}
+
+	var dataFolder placemat.DataFolder
+
+	dataFolder.Name = dto.Name
+	dataFolder.Spec.Dir = dto.Spec.Dir
+	for _, file := range dto.Spec.Files {
+		dataFolderFile := placemat.DataFolderFile{}
+
+		if file.Name == "" {
+			return nil, errors.New("element of datafolder.spec.files must have name")
+		}
+		dataFolderFile.Name = file.Name
+
+		if file.URL == "" && file.File == "" {
+			return nil, errors.New("element of datafolder.spec.files must have either url or file")
+		}
+		if file.URL != "" && file.File != "" {
+			return nil, errors.New("element of datafolder.spec.files can have only one of url or file")
+		}
+		if file.URL != "" {
+			dataFolderFile.URL, err = url.Parse(file.URL)
+			if err != nil {
+				return nil, err
+			}
+		}
+		dataFolderFile.File = file.File
+
+		dataFolder.Spec.Files = append(dataFolder.Spec.Files, dataFolderFile)
+	}
+
+	return &dataFolder, nil
+}
+
 func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 	var c baseConfig
 	var cluster placemat.Cluster
@@ -269,6 +336,12 @@ func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 				return nil, err
 			}
 			cluster.Images = append(cluster.Images, r)
+		case "DataFolder":
+			r, err := unmarshalDataFolder(data)
+			if err != nil {
+				return nil, err
+			}
+			cluster.DataFolders = append(cluster.DataFolders, r)
 		case "Node":
 			r, err := unmarshalNode(data)
 			if err != nil {

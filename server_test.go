@@ -11,7 +11,7 @@ import (
 
 type MockProvider struct {
 	networks map[string]struct{}
-	volumes  map[string]struct{}
+	volumes  int
 	nodes    map[string]struct{}
 	mutex    sync.Mutex
 }
@@ -19,22 +19,25 @@ type MockProvider struct {
 func newMockProvider() *MockProvider {
 	return &MockProvider{
 		networks: make(map[string]struct{}),
-		volumes:  make(map[string]struct{}),
 		nodes:    make(map[string]struct{}),
 	}
 }
 
-func (m *MockProvider) ImageCache() *cache {
+func (m *MockProvider) Resolve(c *Cluster) error {
 	return nil
 }
 
-func (m *MockProvider) VolumeExists(ctx context.Context, node, vol string) (bool, error) {
-	_, ok := m.volumes[node+"/"+vol]
-	return ok, nil
+func (m *MockProvider) Destroy(c *Cluster) error {
+	for _, n := range c.Networks {
+		m.networks[n.Name] = struct{}{}
+	}
+	return nil
 }
 
-func (m *MockProvider) CreateVolume(ctx context.Context, node string, v Volume) error {
-	m.volumes[node+"/"+v.Name()] = struct{}{}
+func (m *MockProvider) PrepareNode(ctx context.Context, n *Node) error {
+	m.mutex.Lock()
+	m.volumes += len(n.Spec.Volumes)
+	m.mutex.Unlock()
 	return nil
 }
 
@@ -52,8 +55,8 @@ func TestInterpretNodesFromNodeSet(t *testing.T) {
 	spec.NodeSets = getNodeSet(expectedReplicas)
 
 	p := MockProvider{
-		volumes: make(map[string]struct{}),
-		nodes:   make(map[string]struct{}),
+		networks: make(map[string]struct{}),
+		nodes:    make(map[string]struct{}),
 	}
 	nodes := interpretNodesFromNodeSet(spec)
 	if len(nodes) != expectedReplicas {
@@ -64,11 +67,6 @@ func TestInterpretNodesFromNodeSet(t *testing.T) {
 }
 
 func (m *MockProvider) CreateNetwork(ctx context.Context, n *Network) error {
-	m.networks[n.Name] = struct{}{}
-	return nil
-}
-
-func (m *MockProvider) DestroyNetwork(ctx context.Context, n *Network) error {
 	m.networks[n.Name] = struct{}{}
 	return nil
 }
@@ -105,8 +103,8 @@ func TestRun(t *testing.T) {
 	if len(p.networks) != 2 {
 		t.Fatal("expected len(p.networks) != 2, ", len(p.networks))
 	}
-	if len(p.volumes) != 5 {
-		t.Fatal("expected len(p.volumes) != 5, ", len(p.volumes))
+	if p.volumes != 5 {
+		t.Fatal("expected p.volumes != 5, ", p.volumes)
 	}
 	if len(p.nodes) != 4 {
 		t.Fatal("expected len(p.nodes) != 4, ", len(p.nodes))

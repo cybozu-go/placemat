@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net"
 	"os"
@@ -45,16 +46,14 @@ func init() {
 // qemu-system-x86_64 as a VM engine, and qemu-img to create image.
 type QemuProvider struct {
 	NoGraphic bool
+	Debug     bool
 	RunDir    string
 	Cluster   *Cluster
 
 	dataDir    string
 	imageCache *cache
-}
-
-// ImageCache returns a *cache for cloud images.
-func (q *QemuProvider) ImageCache() *cache {
-	return q.imageCache
+	dataCache  *cache
+	tempDir    string
 }
 
 // SetupDataDir creates directories under dataDir for later use.
@@ -93,6 +92,25 @@ func (q *QemuProvider) SetupDataDir(dataDir string) error {
 	}
 
 	q.imageCache = &cache{dir: imageCacheDir}
+
+	dataCacheDir := filepath.Join(dataDir, "data_cache")
+	err = os.MkdirAll(dataCacheDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	q.dataCache = &cache{dir: dataCacheDir}
+
+	tempDir := filepath.Join(dataDir, "temp")
+	err = os.MkdirAll(tempDir, 0755)
+	if err != nil {
+		return err
+	}
+	myTempDir, err := ioutil.TempDir(tempDir, "")
+	if err != nil {
+		return err
+	}
+	q.tempDir = myTempDir
 
 	q.dataDir = dataDir
 	return nil
@@ -134,19 +152,49 @@ func (q QemuProvider) socketPath(host string) string {
 	return filepath.Join(q.RunDir, host+".socket")
 }
 
-func (q QemuProvider) volumePath(host, name string) string {
-	return filepath.Join(q.dataDir, "volumes", host+"_"+name+".img")
-}
-
 func (q QemuProvider) nvramPath(host string) string {
 	return filepath.Join(q.dataDir, "nvram", host+".fd")
 }
 
-// VolumeExists checks if the volume exists
-func (q QemuProvider) VolumeExists(ctx context.Context, node, vol string) (bool, error) {
-	p := q.volumePath(node, vol)
-	_, err := os.Stat(p)
-	return !os.IsNotExist(err), nil
+// Resolve resolves references between resources
+func (q QemuProvider) Resolve(c *Cluster) error {
+	ic := q.imageCache
+	for _, img := range c.Images {
+		img.cache = ic
+	}
+
+	dc := q.dataCache
+	td := q.tempDir
+	for _, folder := range c.DataFolders {
+		folder.cache = dc
+		folder.baseTempDir = td
+	}
+	return nil
+}
+
+// Destroy destroys a temporary directory and network settings
+func (q QemuProvider) Destroy(c *Cluster) error {
+	err := os.RemoveAll(q.tempDir)
+	if err != nil {
+		log.Error("Failed to remove temporary directory", map[string]interface{}{
+			"dir":       q.tempDir,
+			log.FnError: err,
+		})
+	}
+
+	for _, n := range c.Networks {
+		err := q.destroyNetwork(context.Background(), n)
+		if err != nil {
+			log.Error("Failed to destroy networks", map[string]interface{}{
+				"name":  n.Name,
+				"error": err,
+			})
+		} else {
+			log.Info("Destroyed network", map[string]interface{}{"name": n.Name})
+		}
+	}
+
+	return nil
 }
 
 // CreateNetwork creates a bridge and iptables rules by the Network
@@ -217,8 +265,8 @@ func iptables(ip net.IP) string {
 	return "ip6tables"
 }
 
-// DestroyNetwork destroys a bridge and iptables rules by the name
-func (q QemuProvider) DestroyNetwork(ctx context.Context, nt *Network) error {
+// destroyNetwork destroys a bridge and iptables rules by the name
+func (q QemuProvider) destroyNetwork(ctx context.Context, nt *Network) error {
 	cmds := [][]string{
 		{"ip", "link", "delete", nt.Name, "type", "bridge"},
 	}
@@ -238,14 +286,6 @@ func (q QemuProvider) DestroyNetwork(ctx context.Context, nt *Network) error {
 		}
 	}
 	return execCommandsForce(ctx, cmds)
-}
-
-// CreateVolume creates a volume with specified options
-func (q QemuProvider) CreateVolume(ctx context.Context, node string, vol Volume) error {
-	vname := vol.Name()
-	p := q.volumePath(node, vname)
-	log.Info("Creating volume", map[string]interface{}{"node": node, "volume": vname})
-	return vol.Create(ctx, p)
 }
 
 func createNVRAM(ctx context.Context, p string) error {
@@ -278,10 +318,6 @@ func (q QemuProvider) qemuParams(n *Node) []string {
 		params = append(params, "-netdev", netdev)
 		params = append(params, "-device",
 			fmt.Sprintf("virtio-net-pci,netdev=%s,romfile=,mac=%s", br, generateRandomMACForKVM()))
-	}
-	for _, v := range n.Spec.Volumes {
-		p := q.volumePath(n.Name, v.Name())
-		params = append(params, "-drive", "if=virtio,cache=none,aio=native,file="+p)
 	}
 	if n.Spec.Resources.CPU != "" {
 		params = append(params, "-smp", n.Spec.Resources.CPU)
@@ -317,9 +353,29 @@ func (q QemuProvider) qemuParams(n *Node) []string {
 	return params
 }
 
+// PrepareNode prepare volumes for the node.
+func (q QemuProvider) PrepareNode(ctx context.Context, n *Node) error {
+	for _, vol := range n.Spec.Volumes {
+		vname := vol.Name()
+		log.Info("Creating volume", map[string]interface{}{"node": n.Name, "volume": vname})
+		p := filepath.Join(q.dataDir, "volumes", n.Name)
+		err := os.MkdirAll(p, 0755)
+		if err != nil {
+			return err
+		}
+		args, err := vol.Create(ctx, p)
+		if err != nil {
+			return err
+		}
+
+		n.params = append(n.params, args...)
+	}
+	return nil
+}
+
 // StartNode starts a QEMU vm
 func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
-	params := q.qemuParams(n)
+	params := append(n.params, q.qemuParams(n)...)
 
 	for _, br := range n.Spec.Interfaces {
 		tap := n.Name + "_" + br
@@ -340,7 +396,12 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	}
 
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
-	err := cmd.CommandContext(ctx, "qemu-system-x86_64", params...).Run()
+	qemuCommand := cmd.CommandContext(ctx, "qemu-system-x86_64", params...)
+	if q.Debug {
+		qemuCommand.Stdout = os.Stdout
+		qemuCommand.Stderr = os.Stderr
+	}
+	err := qemuCommand.Run()
 	if err != nil {
 		log.Error("QEMU exited with an error", map[string]interface{}{
 			"error": err,
