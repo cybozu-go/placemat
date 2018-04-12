@@ -71,10 +71,6 @@ func (m *MockProvider) CreateNetwork(ctx context.Context, n *Network) error {
 	return nil
 }
 
-func (m *MockProvider) DestroyNetwork(ctx context.Context, n *Network) error {
-	return nil
-}
-
 func TestRun(t *testing.T) {
 	vol1 := NewRawVolume("vol1", RecreateAlways, "10GB")
 	vol2 := NewRawVolume("vol2", RecreateAlways, "20GB")
