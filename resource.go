@@ -57,7 +57,6 @@ type ImageSpec struct {
 	URL          *url.URL
 	File         string
 	Decompressor Decompressor
-	CopyOnWrite  bool
 }
 
 // Image represents an image configuration
@@ -177,15 +176,17 @@ func (v baseVolume) qemuArgs(p string) []string {
 
 type imageVolume struct {
 	baseVolume
-	imageName string
-	image     *Image
+	imageName   string
+	image       *Image
+	copyOnWrite bool
 }
 
 // NewImageVolume creates a volume for type "image".
-func NewImageVolume(name string, policy VolumeRecreatePolicy, imageName string) *imageVolume {
+func NewImageVolume(name string, policy VolumeRecreatePolicy, imageName string, cow bool) *imageVolume {
 	return &imageVolume{
-		baseVolume: baseVolume{name: name, policy: policy},
-		imageName:  imageName,
+		baseVolume:  baseVolume{name: name, policy: policy},
+		imageName:   imageName,
+		copyOnWrite: cow,
 	}
 }
 
@@ -212,7 +213,7 @@ func (v *imageVolume) Create(ctx context.Context, dataDir string) ([]string, err
 
 	if needRecreate {
 		if v.image.Spec.File != "" {
-			if v.image.Spec.CopyOnWrite {
+			if v.copyOnWrite {
 				err = createCoWImageFromBase(ctx, v.image.Spec.File, p)
 			} else {
 				err = writeToFile(v.image.Spec.File, p, v.image.Spec.Decompressor)
@@ -220,7 +221,7 @@ func (v *imageVolume) Create(ctx context.Context, dataDir string) ([]string, err
 		} else {
 			err = downloadData(ctx, v.image.Spec.URL, v.image.Spec.Decompressor, v.image.cache)
 			if err == nil {
-				if v.image.Spec.CopyOnWrite {
+				if v.copyOnWrite {
 					baseImage := v.image.cache.Path(v.image.Spec.URL.String())
 					err = createCoWImageFromBase(ctx, baseImage, p)
 				} else {

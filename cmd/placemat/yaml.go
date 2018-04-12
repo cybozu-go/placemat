@@ -28,6 +28,7 @@ type nodeSpec struct {
 			NetworkConfig string `yaml:"network-config"`
 			Size          string `yaml:"size"`
 			Folder        string `yaml:"folder"`
+			CopyOnWrite   bool   `yaml:"copy-on-write"`
 		} `yaml:"spec"`
 	} `yaml:"volumes"`
 	IgnitionFile string `yaml:"ignition"`
@@ -71,7 +72,6 @@ type imageConfig struct {
 		URL               string `yaml:"url"`
 		File              string `yaml:"file"`
 		CompressionMethod string `yaml:"compression"`
-		CopyOnWrite       bool   `yaml:"copy-on-write"`
 	} `yaml:"spec"`
 }
 
@@ -160,7 +160,7 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 			if v.Spec.Image == "" {
 				return placemat.NodeSpec{}, errors.New("image volume must specify an image name")
 			}
-			dst = placemat.NewImageVolume(v.Name, policy, v.Spec.Image)
+			dst = placemat.NewImageVolume(v.Name, policy, v.Spec.Image, v.Spec.CopyOnWrite)
 		case "localds":
 			if v.Spec.UserData == "" {
 				return placemat.NodeSpec{}, errors.New("localds volume must specify user-data")
@@ -254,7 +254,6 @@ func unmarshalImage(data []byte) (*placemat.Image, error) {
 		return nil, err
 	}
 	image.Spec.Decompressor = decompressor
-	image.Spec.CopyOnWrite = dto.Spec.CopyOnWrite
 
 	return &image, nil
 }
