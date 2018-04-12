@@ -1,14 +1,13 @@
 package placemat
 
 import (
-	"net/url"
-	"path/filepath"
-
 	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/cybozu-go/cmd"
@@ -108,7 +107,11 @@ func (d *DataFolder) setup(ctx context.Context) (string, error) {
 				return "", err
 			}
 		} else {
-			err = downloadData(ctx, file.URL, dstPath, nil, d.cache)
+			err = downloadData(ctx, file.URL, nil, d.cache)
+			if err != nil {
+				return "", err
+			}
+			err := copyDownloadedData(file.URL, dstPath, d.cache)
 			if err != nil {
 				return "", err
 			}
@@ -173,15 +176,17 @@ func (v baseVolume) qemuArgs(p string) []string {
 
 type imageVolume struct {
 	baseVolume
-	imageName string
-	image     *Image
+	imageName   string
+	image       *Image
+	copyOnWrite bool
 }
 
 // NewImageVolume creates a volume for type "image".
-func NewImageVolume(name string, policy VolumeRecreatePolicy, imageName string) *imageVolume {
+func NewImageVolume(name string, policy VolumeRecreatePolicy, imageName string, cow bool) *imageVolume {
 	return &imageVolume{
-		baseVolume: baseVolume{name: name, policy: policy},
-		imageName:  imageName,
+		baseVolume:  baseVolume{name: name, policy: policy},
+		imageName:   imageName,
+		copyOnWrite: cow,
 	}
 }
 
@@ -208,17 +213,33 @@ func (v *imageVolume) Create(ctx context.Context, dataDir string) ([]string, err
 
 	if needRecreate {
 		if v.image.Spec.File != "" {
-			err = writeToFile(v.image.Spec.File, p, v.image.Spec.Decompressor)
+			if v.copyOnWrite {
+				err = createCoWImageFromBase(ctx, v.image.Spec.File, p)
+			} else {
+				err = writeToFile(v.image.Spec.File, p, v.image.Spec.Decompressor)
+			}
 		} else {
-			err = downloadData(ctx, v.image.Spec.URL, p, v.image.Spec.Decompressor, v.image.cache)
+			err = downloadData(ctx, v.image.Spec.URL, v.image.Spec.Decompressor, v.image.cache)
+			if err == nil {
+				if v.copyOnWrite {
+					baseImage := v.image.cache.Path(v.image.Spec.URL.String())
+					err = createCoWImageFromBase(ctx, baseImage, p)
+				} else {
+					err = copyDownloadedData(v.image.Spec.URL, p, v.image.cache)
+				}
+			}
 		}
-
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return v.qemuArgs(p), nil
+}
+
+func createCoWImageFromBase(ctx context.Context, base, dest string) error {
+	c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-o", "backing_file="+base, dest)
+	return c.Run()
 }
 
 type localDSVolume struct {
@@ -455,34 +476,11 @@ func writeToFile(srcPath, destPath string, decomp Decompressor) error {
 	return err
 }
 
-func downloadData(ctx context.Context, u *url.URL, dest string, decomp Decompressor, c *cache) error {
+func downloadData(ctx context.Context, u *url.URL, decomp Decompressor, c *cache) error {
 	urlString := u.String()
-RETRY:
-	r, err := c.Get(urlString)
-	if err == nil {
-		defer r.Close()
 
-		d, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return err
-		}
-		defer d.Close()
-
-		var src io.Reader = r
-		if decomp != nil {
-			newSrc, err := decomp.Decompress(src)
-			if err != nil {
-				return err
-			}
-			src = newSrc
-		}
-
-		_, err = io.Copy(d, src)
-		if err != nil {
-			return err
-		}
-
-		return d.Sync()
+	if c.Contains(urlString) {
+		return nil
 	}
 
 	req, err := http.NewRequest("GET", urlString, nil)
@@ -515,10 +513,33 @@ RETRY:
 		"size": size,
 	})
 
-	err = c.Put(urlString, res.Body)
+	var src io.Reader = res.Body
+	if decomp != nil {
+		newSrc, err := decomp.Decompress(res.Body)
+		if err != nil {
+			return err
+		}
+		src = newSrc
+	}
+
+	return c.Put(urlString, src)
+
+}
+func copyDownloadedData(u *url.URL, dest string, c *cache) error {
+	r, err := c.Get(u.String())
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 
-	goto RETRY
+	d, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	_, err = io.Copy(d, r)
+	if err != nil {
+		return err
+	}
+	return d.Sync()
 }

@@ -338,7 +338,7 @@ spec:
 				Spec: placemat.NodeSpec{
 					Interfaces: []string{"br0", "br1"},
 					Volumes: []placemat.Volume{
-						placemat.NewImageVolume("ubuntu", placemat.RecreateIfNotPresent, "ubuntu-image"),
+						placemat.NewImageVolume("ubuntu", placemat.RecreateIfNotPresent, "ubuntu-image", false),
 						placemat.NewLocalDSVolume("seed", placemat.RecreateAlways, "user-data.yml", "network.yml"),
 						placemat.NewRawVolume("data", placemat.RecreateIfNotPresent, "20GB"),
 						placemat.NewVVFATVolume("hostdata", placemat.RecreateIfNotPresent, "containers"),

@@ -45,7 +45,7 @@ func TestIptables(t *testing.T) {
 }
 
 func TestStartNodeCmdParams(t *testing.T) {
-	systemVol := NewImageVolume("system", RecreateIfNotPresent, "ubuntu-image")
+	systemVol := NewImageVolume("system", RecreateIfNotPresent, "ubuntu-image", false)
 	dataVol := NewRawVolume("data", RecreateAlways, "10GB")
 
 	cases := []struct {
