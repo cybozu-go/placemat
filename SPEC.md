@@ -156,9 +156,9 @@ Attaches `Image` resource as a VM disk.
 This volume type has the following parameter:
 
 * `image`: `Image` resource name.  Required.
-* `copy-on-write`: if `true`, create a copy-on-write image based on the specified `url` or `file`.
+* `copy-on-write`: if `true`, create a copy-on-write image based on the specified `Image` resource.
 Only the modified data will be stored in the created image file.
-if `false`, the file copied entirely from specified `url` or `file` will be used.
+if `false`, the file copied entirely from specified `Image` resource will be used.
 default is `false`.
 
 ### `localds` volume
