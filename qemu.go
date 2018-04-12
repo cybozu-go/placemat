@@ -56,21 +56,6 @@ type QemuProvider struct {
 	tempDir    string
 }
 
-// ImageCache returns a *cache for cloud images.
-func (q *QemuProvider) ImageCache() *cache {
-	return q.imageCache
-}
-
-// DataCache returns a *cache for generic cloud data.
-func (q *QemuProvider) DataCache() *cache {
-	return q.dataCache
-}
-
-// TempDir returns a temporary directory name.
-func (q *QemuProvider) TempDir() string {
-	return q.tempDir
-}
-
 // SetupDataDir creates directories under dataDir for later use.
 func (q *QemuProvider) SetupDataDir(dataDir string) error {
 	fi, err := os.Stat(dataDir)
@@ -171,6 +156,47 @@ func (q QemuProvider) nvramPath(host string) string {
 	return filepath.Join(q.dataDir, "nvram", host+".fd")
 }
 
+// Resolve resolves references between resources
+func (q QemuProvider) Resolve(c *Cluster) error {
+	ic := q.imageCache
+	for _, img := range c.Images {
+		img.cache = ic
+	}
+
+	dc := q.dataCache
+	td := q.tempDir
+	for _, folder := range c.DataFolders {
+		folder.cache = dc
+		folder.baseTempDir = td
+	}
+	return nil
+}
+
+// Destroy destroys a temporary directory and network settings
+func (q QemuProvider) Destroy(c *Cluster) error {
+	err := os.RemoveAll(q.tempDir)
+	if err != nil {
+		log.Error("Failed to remove temporary directory", map[string]interface{}{
+			"dir":       q.tempDir,
+			log.FnError: err,
+		})
+	}
+
+	for _, n := range c.Networks {
+		err := q.destroyNetwork(context.Background(), n)
+		if err != nil {
+			log.Error("Failed to destroy networks", map[string]interface{}{
+				"name":  n.Name,
+				"error": err,
+			})
+		} else {
+			log.Info("Destroyed network", map[string]interface{}{"name": n.Name})
+		}
+	}
+
+	return nil
+}
+
 // CreateNetwork creates a bridge and iptables rules by the Network
 func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 	err := createBridge(ctx, nt)
@@ -239,8 +265,8 @@ func iptables(ip net.IP) string {
 	return "ip6tables"
 }
 
-// DestroyNetwork destroys a bridge and iptables rules by the name
-func (q QemuProvider) DestroyNetwork(ctx context.Context, nt *Network) error {
+// destroyNetwork destroys a bridge and iptables rules by the name
+func (q QemuProvider) destroyNetwork(ctx context.Context, nt *Network) error {
 	cmds := [][]string{
 		{"ip", "link", "delete", nt.Name, "type", "bridge"},
 	}

@@ -2,7 +2,6 @@ package placemat
 
 import (
 	"context"
-	"os"
 	"strconv"
 
 	"github.com/cybozu-go/cmd"
@@ -11,15 +10,11 @@ import (
 
 // Provider represents a back-end of VM engine
 type Provider interface {
-	ImageCache() *cache
+	Resolve(c *Cluster) error
 
-	DataCache() *cache
-
-	TempDir() string
+	Destroy(c *Cluster) error
 
 	CreateNetwork(context.Context, *Network) error
-
-	DestroyNetwork(context.Context, *Network) error
 
 	PrepareNode(context.Context, *Node) error
 
@@ -59,37 +54,14 @@ func startNodes(env *cmd.Environment, provider Provider, nodes []*Node) {
 	}
 }
 
-func destroyNetworks(provider Provider, networks []*Network) {
-	for _, n := range networks {
-		err := provider.DestroyNetwork(context.Background(), n)
-		if err != nil {
-			log.Error("Failed to destroy networks", map[string]interface{}{
-				"name":  n.Name,
-				"error": err,
-			})
-		} else {
-			log.Info("Destroyed network", map[string]interface{}{"name": n.Name})
-		}
-	}
-}
-
 // Run runs VMs described in cluster by provider
 func Run(ctx context.Context, provider Provider, cluster *Cluster) error {
-	defer func() {
-		err := os.RemoveAll(provider.TempDir())
-		if err != nil {
-			log.Error("Failed to remove temporary directory", map[string]interface{}{
-				"dir":       provider.TempDir(),
-				log.FnError: err,
-			})
-		}
-	}()
+	defer provider.Destroy(cluster)
 
 	err := createNetworks(ctx, provider, cluster.Networks)
 	if err != nil {
 		return err
 	}
-	defer destroyNetworks(provider, cluster.Networks)
 
 	nodes := interpretNodesFromNodeSet(cluster)
 	nodes = append(nodes, cluster.Nodes...)

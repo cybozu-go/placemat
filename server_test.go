@@ -23,16 +23,15 @@ func newMockProvider() *MockProvider {
 	}
 }
 
-func (m *MockProvider) ImageCache() *cache {
+func (m *MockProvider) Resolve(c *Cluster) error {
 	return nil
 }
 
-func (m *MockProvider) DataCache() *cache {
+func (m *MockProvider) Destroy(c *Cluster) error {
+	for _, n := range c.Networks {
+		m.networks[n.Name] = struct{}{}
+	}
 	return nil
-}
-
-func (m *MockProvider) TempDir() string {
-	return ""
 }
 
 func (m *MockProvider) PrepareNode(ctx context.Context, n *Node) error {
@@ -73,7 +72,6 @@ func (m *MockProvider) CreateNetwork(ctx context.Context, n *Network) error {
 }
 
 func (m *MockProvider) DestroyNetwork(ctx context.Context, n *Network) error {
-	m.networks[n.Name] = struct{}{}
 	return nil
 }
 
