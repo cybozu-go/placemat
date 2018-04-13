@@ -93,6 +93,11 @@ func (d *DataFolder) setup(ctx context.Context) (string, error) {
 		return d.dirPath, nil
 	}
 
+	if d.Spec.Dir != "" {
+		d.dirPath = d.Spec.Dir
+		return d.dirPath, nil
+	}
+
 	p := filepath.Join(d.baseTempDir, d.Name)
 	err := os.MkdirAll(p, 0755)
 	if err != nil {
