@@ -6,6 +6,7 @@ Following resources are available.
 
 * Network
 * Image
+* DataFolder
 * Node
 * NodeSet
 
