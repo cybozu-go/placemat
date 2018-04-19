@@ -201,13 +201,13 @@ func (q QemuProvider) Destroy(c *Cluster) error {
 func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 	err := createBridge(ctx, nt)
 	if err != nil {
-		log.Error("Failed to create a bridge", map[string]interface{}{"naem": nt.Name, "error": err})
+		log.Error("Failed to create a bridge", map[string]interface{}{"name": nt.Name, "error": err})
 		return err
 	}
 	if nt.Spec.UseNAT {
 		err = createNatRules(ctx, nt)
 		if err != nil {
-			log.Error("Failed to create NAT rules", map[string]interface{}{"naem": nt.Name, "error": err})
+			log.Error("Failed to create NAT rules", map[string]interface{}{"name": nt.Name, "error": err})
 			return err
 		}
 	}
