@@ -149,16 +149,16 @@ func deleteTap(ctx context.Context, tap string) error {
 	return cmd.CommandContext(ctx, "ip", "tuntap", "delete", tap, "mode", "tap").Run()
 }
 
-func (q QemuProvider) socketPath(host string) string {
+func (q *QemuProvider) socketPath(host string) string {
 	return filepath.Join(q.RunDir, host+".socket")
 }
 
-func (q QemuProvider) nvramPath(host string) string {
+func (q *QemuProvider) nvramPath(host string) string {
 	return filepath.Join(q.dataDir, "nvram", host+".fd")
 }
 
 // Resolve resolves references between resources
-func (q QemuProvider) Resolve(c *Cluster) error {
+func (q *QemuProvider) Resolve(c *Cluster) error {
 	ic := q.imageCache
 	for _, img := range c.Images {
 		img.cache = ic
@@ -209,7 +209,7 @@ func (q *QemuProvider) Destroy(c *Cluster) error {
 }
 
 // CreateNetwork creates a bridge and iptables rules by the Network
-func (q QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
+func (q *QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
 	err := createBridge(ctx, nt)
 	if err != nil {
 		log.Error("Failed to create a bridge", map[string]interface{}{"name": nt.Name, "error": err})
@@ -277,7 +277,7 @@ func iptables(ip net.IP) string {
 }
 
 // destroyNetwork destroys a bridge and iptables rules by the name
-func (q QemuProvider) destroyNetwork(ctx context.Context, nt *Network) error {
+func (q *QemuProvider) destroyNetwork(ctx context.Context, nt *Network) error {
 	cmds := [][]string{
 		{"ip", "link", "delete", nt.Name, "type", "bridge"},
 	}
@@ -311,7 +311,7 @@ func nodeSerial(name string) string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(name)))
 }
 
-func (q QemuProvider) qemuParams(n *Node) []string {
+func (q *QemuProvider) qemuParams(n *Node) []string {
 	params := []string{"-enable-kvm"}
 
 	if n.Spec.IgnitionFile != "" {
@@ -365,7 +365,7 @@ func (q QemuProvider) qemuParams(n *Node) []string {
 }
 
 // PrepareNode prepare volumes for the node.
-func (q QemuProvider) PrepareNode(ctx context.Context, n *Node) error {
+func (q *QemuProvider) PrepareNode(ctx context.Context, n *Node) error {
 	for _, vol := range n.Spec.Volumes {
 		vname := vol.Name()
 		log.Info("Creating volume", map[string]interface{}{"node": n.Name, "volume": vname})
