@@ -10,7 +10,7 @@ type tapNameGenerator struct {
 	id int
 }
 
-func (g *tapNameGenerator) New () string {
+func (g *tapNameGenerator) New() string {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -19,7 +19,7 @@ func (g *tapNameGenerator) New () string {
 	return name
 }
 
-func (g *tapNameGenerator) GeneratedNames () []string {
+func (g *tapNameGenerator) GeneratedNames() []string {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	rv := make([]string, g.id)

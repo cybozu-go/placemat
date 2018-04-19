@@ -45,10 +45,10 @@ func init() {
 // QemuProvider is an implementation of Provider interface.  It launches
 // qemu-system-x86_64 as a VM engine, and qemu-img to create image.
 type QemuProvider struct {
-	NoGraphic  bool
-	Debug      bool
-	RunDir     string
-	Cluster    *Cluster
+	NoGraphic bool
+	Debug     bool
+	RunDir    string
+	Cluster   *Cluster
 
 	tng        tapNameGenerator
 	dataDir    string
