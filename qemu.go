@@ -45,11 +45,12 @@ func init() {
 // QemuProvider is an implementation of Provider interface.  It launches
 // qemu-system-x86_64 as a VM engine, and qemu-img to create image.
 type QemuProvider struct {
-	NoGraphic bool
-	Debug     bool
-	RunDir    string
-	Cluster   *Cluster
+	NoGraphic  bool
+	Debug      bool
+	RunDir     string
+	Cluster    *Cluster
 
+	tng        tapNameGenerator
 	dataDir    string
 	imageCache *cache
 	dataCache  *cache
@@ -173,13 +174,23 @@ func (q QemuProvider) Resolve(c *Cluster) error {
 }
 
 // Destroy destroys a temporary directory and network settings
-func (q QemuProvider) Destroy(c *Cluster) error {
+func (q *QemuProvider) Destroy(c *Cluster) error {
 	err := os.RemoveAll(q.tempDir)
 	if err != nil {
 		log.Error("Failed to remove temporary directory", map[string]interface{}{
 			"dir":       q.tempDir,
 			log.FnError: err,
 		})
+	}
+
+	for _, tap := range q.tng.GeneratedNames() {
+		err := deleteTap(context.Background(), tap)
+		if err != nil {
+			log.Error("Failed to delete a TAP", map[string]interface{}{
+				"name":  tap,
+				"error": err,
+			})
+		}
 	}
 
 	for _, n := range c.Networks {
@@ -374,11 +385,11 @@ func (q QemuProvider) PrepareNode(ctx context.Context, n *Node) error {
 }
 
 // StartNode starts a QEMU vm
-func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
+func (q *QemuProvider) StartNode(ctx context.Context, n *Node) error {
 	params := append(n.params, q.qemuParams(n)...)
 
 	for _, br := range n.Spec.Interfaces {
-		tap := n.Name + "_" + br
+		tap := q.tng.New()
 		err := createTap(ctx, tap, br)
 		if err != nil {
 			return err
@@ -408,16 +419,6 @@ func (q QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		})
 	}
 
-	for _, br := range n.Spec.Interfaces {
-		tap := n.Name + "_" + br
-		err := deleteTap(context.Background(), tap)
-		if err != nil {
-			log.Error("Failed to delete a TAP", map[string]interface{}{
-				"name":  tap,
-				"error": err,
-			})
-		}
-	}
 	return err
 }
 
