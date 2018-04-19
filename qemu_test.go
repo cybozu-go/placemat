@@ -74,7 +74,6 @@ func TestStartNodeCmdParams(t *testing.T) {
 				},
 			},
 			[][]string{
-				{"-netdev", "tap,id=net1,ifname=boot_net1,script=no,downscript=no,vhost=on"},
 				{"-smbios", "type=1,manufacturer=cybozu,product=mk2,serial=1234abcd"},
 				{"-smp", "2"},
 				{"-m", "2G"},

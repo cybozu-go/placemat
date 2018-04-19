@@ -319,17 +319,6 @@ func (q *QemuProvider) qemuParams(n *Node) []string {
 		params = append(params, "opt/com.coreos/config,file="+n.Spec.IgnitionFile)
 	}
 
-	for _, br := range n.Spec.Interfaces {
-		tap := n.Name + "_" + br
-		netdev := "tap,id=" + br + ",ifname=" + tap + ",script=no,downscript=no"
-		if vhostNetSupported {
-			netdev += ",vhost=on"
-		}
-
-		params = append(params, "-netdev", netdev)
-		params = append(params, "-device",
-			fmt.Sprintf("virtio-net-pci,netdev=%s,romfile=,mac=%s", br, generateRandomMACForKVM()))
-	}
 	if n.Spec.Resources.CPU != "" {
 		params = append(params, "-smp", n.Spec.Resources.CPU)
 	}
@@ -394,7 +383,17 @@ func (q *QemuProvider) StartNode(ctx context.Context, n *Node) error {
 		if err != nil {
 			return err
 		}
+
+		netdev := "tap,id=" + br + ",ifname=" + tap + ",script=no,downscript=no"
+		if vhostNetSupported {
+			netdev += ",vhost=on"
+		}
+
+		params = append(params, "-netdev", netdev)
+		params = append(params, "-device",
+			fmt.Sprintf("virtio-net-pci,netdev=%s,romfile=,mac=%s", br, generateRandomMACForKVM()))
 	}
+
 	if n.Spec.BIOS == UEFI {
 		p := q.nvramPath(n.Name)
 		err := createNVRAM(ctx, p)
