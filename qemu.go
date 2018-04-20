@@ -86,22 +86,6 @@ func (q *QemuProvider) SetupDataDir(dataDir string) error {
 		return err
 	}
 
-	imageCacheDir := filepath.Join(dataDir, "image_cache")
-	err = os.MkdirAll(imageCacheDir, 0755)
-	if err != nil {
-		return err
-	}
-
-	q.imageCache = &cache{dir: imageCacheDir}
-
-	dataCacheDir := filepath.Join(dataDir, "data_cache")
-	err = os.MkdirAll(dataCacheDir, 0755)
-	if err != nil {
-		return err
-	}
-
-	q.dataCache = &cache{dir: dataCacheDir}
-
 	tempDir := filepath.Join(dataDir, "temp")
 	err = os.MkdirAll(tempDir, 0755)
 	if err != nil {
@@ -114,6 +98,42 @@ func (q *QemuProvider) SetupDataDir(dataDir string) error {
 	q.tempDir = myTempDir
 
 	q.dataDir = dataDir
+	return nil
+}
+
+// SetupCacheDir creates directories under cacheDir for later use.
+func (q *QemuProvider) SetupCacheDir(cacheDir string) error {
+	fi, err := os.Stat(cacheDir)
+	switch {
+	case err == nil:
+		if !fi.IsDir() {
+			return errors.New(cacheDir + " is not a directory")
+		}
+	case os.IsNotExist(err):
+		err = os.MkdirAll(cacheDir, 0755)
+		if err != nil {
+			return err
+		}
+	default:
+		return err
+	}
+
+	imageCacheDir := filepath.Join(cacheDir, "image_cache")
+	err = os.MkdirAll(imageCacheDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	q.imageCache = &cache{dir: imageCacheDir}
+
+	dataCacheDir := filepath.Join(cacheDir, "data_cache")
+	err = os.MkdirAll(dataCacheDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	q.dataCache = &cache{dir: dataCacheDir}
+
 	return nil
 }
 

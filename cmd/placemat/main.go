@@ -16,15 +16,17 @@ import (
 )
 
 const (
-	defaultRunPath = "/tmp"
-	defaultDataDir = "$HOME/placemat_data"
+	defaultRunPath  = "/tmp"
+	defaultCacheDir = ""
+	defaultDataDir  = "/var/scratch/placemat"
 )
 
 var (
-	flgRunDir    = flag.String("run-dir", defaultRunPath, "run directory")
-	flgDataDir   = flag.String("data-dir", defaultDataDir, "directory to store data")
-	flgNoGraphic = flag.Bool("nographic", false, "run QEMU with no graphic")
-	flgDebug     = flag.Bool("debug", false, "show QEMU's stdout and stderr")
+	flgRunDir   = flag.String("run-dir", defaultRunPath, "run directory")
+	flgCacheDir = flag.String("cache-dir", defaultCacheDir, "directory for cache data")
+	flgDataDir  = flag.String("data-dir", defaultDataDir, "directory to store data")
+	flgGraphic  = flag.Bool("graphic", false, "run QEMU with graphical console")
+	flgDebug    = flag.Bool("debug", false, "show QEMU's stdout and stderr")
 )
 
 func loadClusterFromFile(p string) (*placemat.Cluster, error) {
@@ -71,9 +73,22 @@ func run(yamls []string) error {
 	}
 
 	qemu := &placemat.QemuProvider{
-		NoGraphic: *flgNoGraphic,
+		NoGraphic: !*flgGraphic,
 		Debug:     *flgDebug,
 		RunDir:    *flgRunDir,
+	}
+
+	if *flgCacheDir == "" {
+		if os.Getenv("SUDO_USER") != "" {
+			*flgCacheDir = "/home/${SUDO_USER}/placemat_data"
+		} else {
+			*flgCacheDir = *flgDataDir
+		}
+	}
+
+	err = qemu.SetupCacheDir(os.ExpandEnv(*flgCacheDir))
+	if err != nil {
+		return err
 	}
 
 	err = qemu.SetupDataDir(os.ExpandEnv(*flgDataDir))
