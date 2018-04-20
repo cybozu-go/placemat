@@ -57,17 +57,23 @@ process (by sending a signal or Control-C).
 $ placemat [OPTIONS] YAML [YAML ...]
 
 Options:
-  -nographic
-        run QEMU with no graphic
+  -graphic
+        run QEMU with graphical console
   -run-dir string
         run directory (default "/tmp")
+  -cache-dir string
+        directory for cache data.
   -data-dir string
-        directory to store data (default "$HOME/placemat_data")
+        directory to store data (default "/var/scratch/placemat")
 ```
+
+If `-cache-dir` is not specified, the default will be `/home/${SUDO_USER}/placemat_data`
+if `sudo` is used for `placemat`.  If `sudo` is not used, cache directory will be
+the same as `-data-dir`.
 
 ### placemat-connect command
 
-If placemat starts with `-nographic` option, VMs will have no graphic console.
+If placemat starts without `-graphic` option, VMs will have no graphic console.
 Instead, they have serial consoles exposed via UNIX domain sockets.
 
 `placemat-connect` is a tool to connect to the serial console.
@@ -114,7 +120,7 @@ See [examples](examples) how to write YAML files.
 To launch placemat from YAML files by the following:
 
 ```console
-$ sudo $GOPATH/bin/placemat -nographic cluster.yml
+$ sudo $GOPATH/bin/placemat cluster.yml
 ```
 
 Where `sudo` is required to create network bridge to your host.
