@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/cybozu-go/cmd"
@@ -22,11 +22,11 @@ var (
 )
 
 func socketPath(host string) string {
-	return path.Join(*runDir, host+".socket")
+	return filepath.Join(*runDir, host+".socket")
 }
 
 func ptyPath(host string) string {
-	return path.Join("/tmp", "placemat_"+host)
+	return filepath.Join("/tmp", "placemat_"+host)
 }
 
 func run(args []string) error {
