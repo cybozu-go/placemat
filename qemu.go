@@ -50,15 +50,46 @@ type QemuProvider struct {
 	RunDir    string
 	Cluster   *Cluster
 
-	tng        tapNameGenerator
+	tng        nameGenerator
 	dataDir    string
 	imageCache *cache
 	dataCache  *cache
 	tempDir    string
 }
 
-// SetupDataDir creates directories under dataDir for later use.
-func (q *QemuProvider) SetupDataDir(dataDir string) error {
+// ImageCache implements Provier interface.
+func (q *QemuProvider) ImageCache() *cache {
+	return q.imageCache
+}
+
+// DataCache implements Provier interface.
+func (q *QemuProvider) DataCache() *cache {
+	return q.dataCache
+}
+
+// TempDir implements Provider interface.
+func (q *QemuProvider) TempDir() string {
+	return q.tempDir
+}
+
+// Setup initializes QemuProvider.
+func (q *QemuProvider) Setup(dataDir, cacheDir string) error {
+	q.tng.prefix = "pmtap"
+
+	err := q.setupDataDir(dataDir)
+	if err != nil {
+		return err
+	}
+
+	err = q.setupCacheDir(cacheDir)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (q *QemuProvider) setupDataDir(dataDir string) error {
 	fi, err := os.Stat(dataDir)
 	switch {
 	case err == nil:
@@ -101,8 +132,7 @@ func (q *QemuProvider) SetupDataDir(dataDir string) error {
 	return nil
 }
 
-// SetupCacheDir creates directories under cacheDir for later use.
-func (q *QemuProvider) SetupCacheDir(cacheDir string) error {
+func (q *QemuProvider) setupCacheDir(cacheDir string) error {
 	fi, err := os.Stat(cacheDir)
 	switch {
 	case err == nil:
@@ -177,22 +207,6 @@ func (q *QemuProvider) nvramPath(host string) string {
 	return filepath.Join(q.dataDir, "nvram", host+".fd")
 }
 
-// Resolve resolves references between resources
-func (q *QemuProvider) Resolve(c *Cluster) error {
-	ic := q.imageCache
-	for _, img := range c.Images {
-		img.cache = ic
-	}
-
-	dc := q.dataCache
-	td := q.tempDir
-	for _, folder := range c.DataFolders {
-		folder.cache = dc
-		folder.baseTempDir = td
-	}
-	return nil
-}
-
 // Destroy destroys a temporary directory and network settings
 func (q *QemuProvider) Destroy(c *Cluster) error {
 	err := os.RemoveAll(q.tempDir)
@@ -228,8 +242,7 @@ func (q *QemuProvider) Destroy(c *Cluster) error {
 	return nil
 }
 
-// CreateNetwork creates a bridge and iptables rules by the Network
-func (q *QemuProvider) CreateNetwork(ctx context.Context, nt *Network) error {
+func (q *QemuProvider) createNetwork(ctx context.Context, nt *Network) error {
 	err := createBridge(ctx, nt)
 	if err != nil {
 		log.Error("Failed to create a bridge", map[string]interface{}{"name": nt.Name, "error": err})
@@ -373,8 +386,7 @@ func (q *QemuProvider) qemuParams(n *Node) []string {
 	return params
 }
 
-// PrepareNode prepare volumes for the node.
-func (q *QemuProvider) PrepareNode(ctx context.Context, n *Node) error {
+func (q *QemuProvider) prepareNode(ctx context.Context, n *Node) error {
 	for _, vol := range n.Spec.Volumes {
 		vname := vol.Name()
 		log.Info("Creating volume", map[string]interface{}{"node": n.Name, "volume": vname})
@@ -393,8 +405,7 @@ func (q *QemuProvider) PrepareNode(ctx context.Context, n *Node) error {
 	return nil
 }
 
-// StartNode starts a QEMU vm
-func (q *QemuProvider) StartNode(ctx context.Context, n *Node) error {
+func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 	params := append(n.params, q.qemuParams(n)...)
 
 	for _, br := range n.Spec.Interfaces {
@@ -446,4 +457,34 @@ func generateRandomMACForKVM() string {
 	bytes := make([]byte, 3)
 	rand.Read(bytes)
 	return fmt.Sprintf("%s:%02x:%02x:%02x", vendorPrefix, bytes[0], bytes[1], bytes[2])
+}
+
+// Start implements Provider interface.
+func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
+	for _, n := range c.Networks {
+		log.Info("Creating network", map[string]interface{}{"name": n.Name})
+		err := q.createNetwork(ctx, n)
+		if err != nil {
+			return err
+		}
+	}
+
+	nodes := c.NodesFromNodeSets()
+	nodes = append(nodes, c.Nodes...)
+	for _, n := range nodes {
+		err := q.prepareNode(ctx, n)
+		if err != nil {
+			return err
+		}
+	}
+
+	env := cmd.NewEnvironment(ctx)
+	for _, n := range nodes {
+		node := n
+		env.Go(func(ctx context.Context) error {
+			return q.startNode(ctx, node)
+		})
+	}
+	env.Stop()
+	return env.Wait()
 }

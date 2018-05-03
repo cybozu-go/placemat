@@ -9,6 +9,7 @@ Following resources are available.
 * DataFolder
 * Node
 * NodeSet
+* Pod
 
 Network resource
 ----------------
@@ -56,14 +57,11 @@ spec:
 DataFolder resource
 -------------------
 
-A DataFolder resource represents a host's directory or a set of remote/local files to be shown to guest VMs.
-This resource can be referred from the `vvfat` type of volumes in Node resources.
+A DataFolder resource provides a virtual data folder to VMs and containers.
+The folder can simply be a host directory, or it can be a set of files from Internet or local host.
 
-VVFAT is a virtual device of QEMU that exports a directory of host OS to guests as a block device having a VFAT partition.
-The block device need to be mounted as a read-only VFAT filesystem in guests.
-
-Placemat can show files in a host's directory to guests via `vvfat` volumes.
-It can also show files on the Internet by downloading them into a temporary directory first, and/or scattered files in a host by copying them first.
+DataFolder can be referenced from Node resources as a `vvfat` volume type.
+DataFolder can also be referenced from Pod resources as a `host` volume type.
 
 ```yaml
 kind: DataFolder
@@ -219,3 +217,79 @@ The properties in the `spec` are the following:
 The actual name of the node is `name` of the resource with suffix `-N` (where `N` is a unique number).
 The above example creates nodes named `worker-0`, `worker-1` and `worker-2`.
 
+Pod Resource
+------------
+
+Placemat creates a [rkt][] pod by a Pod resource.
+A rkt pod is a set of containers sharing a network stack (namespace).
+
+Placemat prepares the network stack that consists of the given interfaces.
+Each network stack has its dedicated routing tables, iptables rules, etc.
+
+```yaml
+kind: Pod
+name: my-pod
+spec:
+  init-scripts:
+    - /path/to/script
+  interfaces:
+    - network: net0
+      addresses:
+        - 10.0.0.1/24
+  volumes:
+    - name: config
+      kind: host
+      folder: host-dir    # DataFolder resource name
+      readonly: true
+    - name: run
+      kind: empty
+      mode: "0700"
+      uid: 1000
+      gid: 1000
+  apps:
+    - name: bird
+      image: docker://quay.io/cybozu/bird:2.0
+      readonly-rootfs: true
+      user: 1000
+      group: 1000
+      exec: /bin/bash
+      args: ["-c", "env"]
+      env:
+        ENV1: abc
+        ENV2: def
+      mount:
+        - volume: config
+          target: /etc/bird
+        - volume: run
+          target: /run/bird
+      caps-retain:
+        - CAP_NET_ADMIN
+        - CAP_NET_BIND_SERVICE
+        - CAP_NET_RAW
+```
+
+Properties in `spec` are described in the following sub sections.
+
+### init-scripts
+
+These scripts will be executed to initialize environments before `rkt run`.
+
+### interfaces
+
+List of network interfaces assigned to Pod.
+Each interface will be attached to a Network resource specified by
+`network`, and have IP addresses listed in `addresses`.
+
+Interfaces will be named `eth0`, `eth1`, ... in the order of definition.
+
+### volumes
+
+Volumes attached to containers.
+See [Mounting Volumes in rkt manual](https://coreos.com/rkt/docs/latest/subcommands/run.html#mounting-volumes) for details.
+
+### apps
+
+In rkt, a container is called an app.  A pod have one or more apps.
+See [Options in rkt manual](https://coreos.com/rkt/docs/latest/subcommands/run.html#options) for details.
+
+[rkt]: https://coreos.com/rkt/

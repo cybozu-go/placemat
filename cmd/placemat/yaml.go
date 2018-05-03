@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 
 	"github.com/cybozu-go/placemat"
 	k8sYaml "github.com/kubernetes/apimachinery/pkg/util/yaml"
@@ -54,6 +55,41 @@ type nodeSetConfig struct {
 	Spec struct {
 		Replicas int      `yaml:"replicas"`
 		Template nodeSpec `yaml:"template"`
+	} `yaml:"spec"`
+}
+
+type podConfig struct {
+	Name string `yaml:"name"`
+	Spec struct {
+		InitScripts []string `yaml:"init-scripts"`
+		Interfaces  []struct {
+			Network   string   `yaml:"network"`
+			Addresses []string `yaml:"addresses"`
+		} `yaml:"interfaces"`
+		Volumes []struct {
+			Name     string `yaml:"name"`
+			Kind     string `yaml:"kind"`
+			Folder   string `yaml:"folder"`
+			ReadOnly bool   `yaml:"readonly"`
+			Mode     string `yaml:"mode"`
+			UID      string `yaml:"uid"`
+			GID      string `yaml:"gid"`
+		} `yaml:"volumes"`
+		Apps []struct {
+			Name           string            `yaml:"name"`
+			Image          string            `yaml:"image"`
+			ReadOnlyRootfs bool              `yaml:"readonly-rootfs"`
+			User           string            `yaml:"user"`
+			Group          string            `yaml:"group"`
+			Exec           string            `yaml:"exec"`
+			Args           []string          `yaml:"args"`
+			Env            map[string]string `yaml:"env"`
+			CapsRetain     []string          `yaml:"caps-retain"`
+			Mount          []struct {
+				Volume string `yaml:"volume"`
+				Target string `yaml:"target"`
+			} `yaml:"mount"`
+		} `yaml:"apps"`
 	} `yaml:"spec"`
 }
 
@@ -307,6 +343,82 @@ func unmarshalDataFolder(data []byte) (*placemat.DataFolder, error) {
 	return &dataFolder, nil
 }
 
+func unmarshalPod(data []byte) (*placemat.Pod, error) {
+	var n podConfig
+	err := yaml.Unmarshal(data, &n)
+	if err != nil {
+		return nil, err
+	}
+
+	var pod placemat.Pod
+
+	if len(n.Name) == 0 {
+		return nil, errors.New("pod name is empty")
+	}
+	pod.Name = n.Name
+
+	for _, script := range n.Spec.InitScripts {
+		_, err := os.Stat(script)
+		if err != nil {
+			return nil, err
+		}
+		pod.InitScripts = append(pod.InitScripts, script)
+	}
+
+	for _, iface := range n.Spec.Interfaces {
+		if len(iface.Network) == 0 {
+			return nil, errors.New("empty network name in pod " + n.Name)
+		}
+		pod.Interfaces = append(pod.Interfaces, struct {
+			NetworkName string
+			Addresses   []string
+		}{
+			iface.Network,
+			iface.Addresses,
+		})
+	}
+
+	for _, v := range n.Spec.Volumes {
+		pv, err := placemat.NewPodVolume(v.Name, v.Kind, v.Folder, v.Mode, v.UID, v.GID, v.ReadOnly)
+		if err != nil {
+			return nil, err
+		}
+		pod.Volumes = append(pod.Volumes, pv)
+	}
+
+	if len(n.Spec.Apps) == 0 {
+		return nil, errors.New("no app for pod " + n.Name)
+	}
+
+	for _, a := range n.Spec.Apps {
+		var app placemat.PodApp
+		if len(a.Name) == 0 {
+			return nil, errors.New("empty app name in pod " + n.Name)
+		}
+		app.Name = a.Name
+		if len(a.Image) == 0 {
+			return nil, errors.New("no container image for app " + a.Name)
+		}
+		app.Image = a.Image
+		app.ReadOnlyRootfs = a.ReadOnlyRootfs
+		app.User = a.User
+		app.Group = a.Group
+		app.Exec = a.Exec
+		app.Args = a.Args
+		app.Env = a.Env
+		app.CapsRetain = a.CapsRetain
+		for _, m := range a.Mount {
+			err := app.AddMountPoint(m.Volume, m.Target)
+			if err != nil {
+				return nil, err
+			}
+		}
+		pod.Apps = append(pod.Apps, &app)
+	}
+
+	return &pod, nil
+}
+
 func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 	var c baseConfig
 	var cluster placemat.Cluster
@@ -355,6 +467,12 @@ func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 				return &cluster, err
 			}
 			cluster.NodeSets = append(cluster.NodeSets, r)
+		case "Pod":
+			r, err := unmarshalPod(data)
+			if err != nil {
+				return nil, err
+			}
+			cluster.Pods = append(cluster.Pods, r)
 		default:
 			return nil, errors.New("unknown resource: " + c.Kind)
 		}

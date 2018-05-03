@@ -86,12 +86,7 @@ func run(yamls []string) error {
 		}
 	}
 
-	err = qemu.SetupCacheDir(os.ExpandEnv(*flgCacheDir))
-	if err != nil {
-		return err
-	}
-
-	err = qemu.SetupDataDir(os.ExpandEnv(*flgDataDir))
+	err = qemu.Setup(os.ExpandEnv(*flgDataDir), os.ExpandEnv(*flgCacheDir))
 	if err != nil {
 		return err
 	}
