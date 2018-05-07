@@ -3,7 +3,7 @@ package placemat
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
+	"strings"
 )
 
 // PodVolume is an interface of a volume for Pod.
@@ -53,7 +53,7 @@ func (v *hostPodVolume) Resolve(c *Cluster) error {
 }
 
 func (v *hostPodVolume) Spec() string {
-	return fmt.Sprintf("%s,kind=host,folder=%s,readOnly=%v", v.name, v.folderName, v.readOnly)
+	return fmt.Sprintf("%s,kind=host,source=%s,readOnly=%v", v.name, v.folder.Path(), v.readOnly)
 }
 
 func newHostPodVolume(name, folder string, readOnly bool) PodVolume {
@@ -78,7 +78,7 @@ func (v *emptyPodVolume) Resolve(c *Cluster) error {
 func (v *emptyPodVolume) Spec() string {
 	buf := make([]byte, 0, 32)
 	buf = append(buf, v.name...)
-	buf = append(buf, ",kind=empty"...)
+	buf = append(buf, ",kind=empty,readOnly=false"...)
 	if len(v.mode) > 0 {
 		buf = append(buf, ",mode="...)
 		buf = append(buf, v.mode...)
@@ -112,41 +112,41 @@ type PodApp struct {
 	MountPoints    []struct {
 		VolumeName string
 		Target     string
-		volume     PodVolume
 	}
 }
 
-// AddMountPoint adds a mount point to app.
-func (a *PodApp) AddMountPoint(volname, target string) error {
-	if len(volname) == 0 {
-		return errors.New("empty volume for app " + a.Name)
+func (a *PodApp) appendParams(params []string) []string {
+	params = append(params, []string{
+		a.Image, "--name", a.Name,
+	}...)
+	if a.ReadOnlyRootfs {
+		params = append(params, "--readonly-rootfs=true")
+	}
+	if len(a.User) > 0 {
+		params = append(params, "--user="+a.User)
+	}
+	if len(a.Group) > 0 {
+		params = append(params, "--group="+a.Group)
+	}
+	if len(a.Exec) > 0 {
+		params = append(params, []string{"--exec", a.Exec}...)
+	}
+	for k, v := range a.Env {
+		params = append(params, fmt.Sprintf("--set-env=%s=%s", k, v))
+	}
+	if len(a.CapsRetain) > 0 {
+		params = append(params, "--caps-retain="+strings.Join(a.CapsRetain, ","))
+	}
+	for _, mp := range a.MountPoints {
+		t := fmt.Sprintf("volume=%s,target=%s", mp.VolumeName, mp.Target)
+		params = append(params, []string{"--mount", t}...)
+	}
+	if len(a.Args) > 0 {
+		params = append(params, "--")
+		params = append(params, a.Args...)
 	}
 
-	if !filepath.IsAbs(target) {
-		return errors.New("bad mount target for app " + a.Name)
-	}
-
-	a.MountPoints = append(a.MountPoints, struct {
-		VolumeName string
-		Target     string
-		volume     PodVolume
-	}{
-		VolumeName: volname,
-		Target:     target,
-	})
-	return nil
-}
-
-func (a *PodApp) resolve(vm map[string]PodVolume) error {
-	for i := range a.MountPoints {
-		vn := a.MountPoints[i].VolumeName
-		v := vm[vn]
-		if v == nil {
-			return errors.New("no such pod volume: " + vn)
-		}
-		a.MountPoints[i].volume = v
-	}
-	return nil
+	return params
 }
 
 // Pod represents a pod resource.
@@ -174,21 +174,29 @@ func (p *Pod) resolve(c *Cluster) error {
 		}
 	}
 
-	vm := make(map[string]PodVolume)
 	for _, v := range p.Volumes {
 		err := v.Resolve(c)
-		if err != nil {
-			return err
-		}
-		vm[v.Name()] = v
-	}
-
-	for _, a := range p.Apps {
-		err := a.resolve(vm)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (p *Pod) appendParams(params []string) []string {
+	//params = append(params, []string{"--hostname", p.Name}...)
+	for _, v := range p.Volumes {
+		params = append(params, []string{"--volume", v.Spec()}...)
+	}
+
+	addDDD := false
+	for _, a := range p.Apps {
+		if addDDD {
+			params = append(params, "---")
+		}
+		params = a.appendParams(params)
+		addDDD = len(a.Args) > 0
+	}
+	return params
 }

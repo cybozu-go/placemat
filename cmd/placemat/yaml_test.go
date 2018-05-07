@@ -484,8 +484,13 @@ func testUnmarshalPod(t *testing.T) {
 			"FOO": "bar",
 		},
 		CapsRetain: []string{"CAP_NET_ADMIN", "CAP_NET_BIND_SERVICE", "CAP_NET_RAW"},
+		MountPoints: []struct {
+			VolumeName string
+			Target     string
+		}{
+			{"config", "/etc/bird"},
+		},
 	}
-	bird.AddMountPoint("config", "/etc/bird")
 	debug := &placemat.PodApp{
 		Name:  "debug",
 		Image: "docker://quay.io/cybozu/ubuntu-debug:18.04",

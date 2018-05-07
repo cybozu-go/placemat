@@ -10,8 +10,10 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -51,6 +53,7 @@ type QemuProvider struct {
 	Cluster   *Cluster
 
 	tng        nameGenerator
+	vng        nameGenerator
 	dataDir    string
 	imageCache *cache
 	dataCache  *cache
@@ -75,6 +78,7 @@ func (q *QemuProvider) TempDir() string {
 // Setup initializes QemuProvider.
 func (q *QemuProvider) Setup(dataDir, cacheDir string) error {
 	q.tng.prefix = "pmtap"
+	q.vng.prefix = "pmveth"
 
 	err := q.setupDataDir(dataDir)
 	if err != nil {
@@ -113,6 +117,12 @@ func (q *QemuProvider) setupDataDir(dataDir string) error {
 
 	nvramDir := filepath.Join(dataDir, "nvram")
 	err = os.MkdirAll(nvramDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	rktDir := filepath.Join(dataDir, "rkt")
+	err = os.MkdirAll(rktDir, 0755)
 	if err != nil {
 		return err
 	}
@@ -199,6 +209,50 @@ func deleteTap(ctx context.Context, tap string) error {
 	return cmd.CommandContext(ctx, "ip", "tuntap", "delete", tap, "mode", "tap").Run()
 }
 
+func createVeth(ctx context.Context, veth string, network string) error {
+	log.Info("Creating VETH pair", map[string]interface{}{"name": veth})
+	cmds := [][]string{
+		{"ip", "link", "add", veth, "type", "veth", "peer", "name", veth + "_"},
+		{"ip", "link", "set", veth + "_", "master", network, "up"},
+	}
+	return execCommands(ctx, cmds)
+}
+
+func deleteVeth(ctx context.Context, veth string) error {
+	return cmd.CommandContext(ctx, "ip", "link", "delete", veth+"_").Run()
+}
+
+func makePodNS(ctx context.Context, pod string, veths []string, ips map[string][]string) error {
+	log.Info("Creating Pod network namespace", map[string]interface{}{"pod": pod})
+	ns := "pm_" + pod
+	cmds := [][]string{
+		{"ip", "netns", "add", ns},
+		{"ip", "netns", "exec", ns, "ip", "link", "set", "lo", "up"},
+		// 127.0.0.1 is auto-assigned to lo.
+		//{"ip", "netns", "exec", ns, "ip", "a", "add", "127.0.0.1/8", "dev", "lo"},
+	}
+	for i, veth := range veths {
+		eth := fmt.Sprintf("eth%d", i)
+		cmds = append(cmds, []string{
+			"ip", "link", "set", veth, "netns", ns, "name", eth, "up",
+		})
+		for _, ip := range ips[veth] {
+			cmds = append(cmds, []string{
+				"ip", "netns", "exec", ns, "ip", "a", "add", ip, "dev", eth,
+			})
+		}
+	}
+	return execCommands(ctx, cmds)
+}
+
+func runInPodNS(ctx context.Context, pod string, script string) error {
+	return cmd.CommandContext(ctx, "ip", "netns", "exec", "pm_"+pod, script).Run()
+}
+
+func deletePodNS(ctx context.Context, pod string) error {
+	return cmd.CommandContext(ctx, "ip", "netns", "del", "pm_"+pod).Run()
+}
+
 func (q *QemuProvider) socketPath(host string) string {
 	return filepath.Join(q.RunDir, host+".socket")
 }
@@ -211,7 +265,7 @@ func (q *QemuProvider) nvramPath(host string) string {
 func (q *QemuProvider) Destroy(c *Cluster) error {
 	err := os.RemoveAll(q.tempDir)
 	if err != nil {
-		log.Error("Failed to remove temporary directory", map[string]interface{}{
+		log.Error("failed to remove temporary directory", map[string]interface{}{
 			"dir":       q.tempDir,
 			log.FnError: err,
 		})
@@ -220,9 +274,29 @@ func (q *QemuProvider) Destroy(c *Cluster) error {
 	for _, tap := range q.tng.GeneratedNames() {
 		err := deleteTap(context.Background(), tap)
 		if err != nil {
-			log.Error("Failed to delete a TAP", map[string]interface{}{
-				"name":  tap,
-				"error": err,
+			log.Error("failed to delete a TAP", map[string]interface{}{
+				"name":      tap,
+				log.FnError: err,
+			})
+		}
+	}
+
+	for _, veth := range q.vng.GeneratedNames() {
+		err := deleteVeth(context.Background(), veth)
+		if err != nil {
+			log.Error("failed to delete a VETH pair", map[string]interface{}{
+				"name":      veth,
+				log.FnError: err,
+			})
+		}
+	}
+
+	for _, pod := range c.Pods {
+		err := deletePodNS(context.Background(), pod.Name)
+		if err != nil {
+			log.Error("failed to delete Pod NS", map[string]interface{}{
+				"pod":       pod.Name,
+				log.FnError: err,
 			})
 		}
 	}
@@ -230,12 +304,10 @@ func (q *QemuProvider) Destroy(c *Cluster) error {
 	for _, n := range c.Networks {
 		err := q.destroyNetwork(context.Background(), n)
 		if err != nil {
-			log.Error("Failed to destroy networks", map[string]interface{}{
+			log.Error("failed to destroy networks", map[string]interface{}{
 				"name":  n.Name,
 				"error": err,
 			})
-		} else {
-			log.Info("Destroyed network", map[string]interface{}{"name": n.Name})
 		}
 	}
 
@@ -405,6 +477,29 @@ func (q *QemuProvider) prepareNode(ctx context.Context, n *Node) error {
 	return nil
 }
 
+func (q *QemuProvider) fetchImage(ctx context.Context, image string) error {
+	log.Info("fetching image", map[string]interface{}{
+		"image": image,
+	})
+	args := []string{
+		"--pull-policy=new",
+		"--insecure-options=image",
+		"fetch",
+		image,
+	}
+	return cmd.CommandContext(ctx, "rkt", args...).Run()
+}
+
+func (q *QemuProvider) preparePod(ctx context.Context, p *Pod) error {
+	for _, a := range p.Apps {
+		err := q.fetchImage(ctx, a.Image)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 	params := append(n.params, q.qemuParams(n)...)
 
@@ -459,11 +554,75 @@ func generateRandomMACForKVM() string {
 	return fmt.Sprintf("%s:%02x:%02x:%02x", vendorPrefix, bytes[0], bytes[1], bytes[2])
 }
 
+func (q *QemuProvider) startPod(ctx context.Context, p *Pod) error {
+	veths := make([]string, len(p.Interfaces))
+	ips := make(map[string][]string)
+	for i, iface := range p.Interfaces {
+		veth := q.vng.New()
+		err := createVeth(ctx, veth, iface.NetworkName)
+		if err != nil {
+			return err
+		}
+		veths[i] = veth
+		ips[veth] = iface.Addresses
+	}
+
+	err := makePodNS(ctx, p.Name, veths, ips)
+	if err != nil {
+		return err
+	}
+
+	for _, script := range p.InitScripts {
+		err := runInPodNS(ctx, p.Name, script)
+		if err != nil {
+			return err
+		}
+	}
+
+	params := []string{
+		"--insecure-options=all-run",
+		"run",
+		"--net=host",
+		"--stage1-from-dir=stage1-fly.aci",
+	}
+	params = p.appendParams(params)
+
+	log.Info("rkt run", map[string]interface{}{"name": p.Name, "params": params})
+	args := []string{
+		"netns", "exec", "pm_" + p.Name, "rkt",
+	}
+	args = append(args, params...)
+	rkt := exec.Command("ip", args...)
+	rkt.Stdout = os.Stdout
+	rkt.Stderr = os.Stderr
+	err = rkt.Start()
+	if err != nil {
+		log.Error("failed to start rkt", map[string]interface{}{
+			log.FnError: err,
+		})
+		return err
+	}
+
+	<-ctx.Done()
+	rkt.Process.Signal(syscall.SIGTERM)
+	return rkt.Wait()
+}
+
 // Start implements Provider interface.
 func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 	for _, n := range c.Networks {
 		log.Info("Creating network", map[string]interface{}{"name": n.Name})
 		err := q.createNetwork(ctx, n)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, df := range c.DataFolders {
+		log.Info("initializing data folder", map[string]interface{}{
+			"name": df.Name,
+		})
+		err := df.setup(ctx)
 		if err != nil {
 			return err
 		}
@@ -478,11 +637,24 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 		}
 	}
 
+	for _, p := range c.Pods {
+		err := q.preparePod(ctx, p)
+		if err != nil {
+			return err
+		}
+	}
+
 	env := cmd.NewEnvironment(ctx)
 	for _, n := range nodes {
 		node := n
 		env.Go(func(ctx context.Context) error {
 			return q.startNode(ctx, node)
+		})
+	}
+	for _, p := range c.Pods {
+		pod := p
+		env.Go(func(ctx context.Context) error {
+			return q.startPod(ctx, pod)
 		})
 	}
 	env.Stop()

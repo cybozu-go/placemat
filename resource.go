@@ -88,20 +88,28 @@ type DataFolder struct {
 	dirPath     string
 }
 
-func (d *DataFolder) setup(ctx context.Context) (string, error) {
-	if d.dirPath != "" {
-		return d.dirPath, nil
-	}
+// Path returns a filepath to the directory having folder contents.
+func (d *DataFolder) Path() string {
+	return d.dirPath
+}
 
-	if d.Spec.Dir != "" {
+func (d *DataFolder) setup(ctx context.Context) error {
+	if len(d.Spec.Dir) != 0 {
+		st, err := os.Stat(d.Spec.Dir)
+		if err != nil {
+			return err
+		}
+		if !st.IsDir() {
+			return errors.New(d.Spec.Dir + " is not a directory")
+		}
 		d.dirPath = d.Spec.Dir
-		return d.dirPath, nil
+		return nil
 	}
 
 	p := filepath.Join(d.baseTempDir, d.Name)
 	err := os.MkdirAll(p, 0755)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	for _, file := range d.Spec.Files {
@@ -109,22 +117,22 @@ func (d *DataFolder) setup(ctx context.Context) (string, error) {
 		if file.File != "" {
 			err = writeToFile(file.File, dstPath, nil)
 			if err != nil {
-				return "", err
+				return err
 			}
 		} else {
 			err = downloadData(ctx, file.URL, nil, d.cache)
 			if err != nil {
-				return "", err
+				return err
 			}
 			err := copyDownloadedData(file.URL, dstPath, d.cache)
 			if err != nil {
-				return "", err
+				return err
 			}
 		}
 	}
 
 	d.dirPath = p
-	return p, nil
+	return nil
 }
 
 // CloudConfigSpec represents a cloud-config configuration
@@ -357,11 +365,7 @@ func (v *vvfatVolume) Resolve(c *Cluster) error {
 }
 
 func (v *vvfatVolume) Create(ctx context.Context, _ string) ([]string, error) {
-	d, err := v.folder.setup(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return v.qemuArgs(d), nil
+	return v.qemuArgs(v.folder.Path()), nil
 }
 
 func (v vvfatVolume) qemuArgs(p string) []string {

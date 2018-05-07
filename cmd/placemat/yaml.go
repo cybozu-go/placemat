@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/cybozu-go/placemat"
 	k8sYaml "github.com/kubernetes/apimachinery/pkg/util/yaml"
@@ -358,6 +359,10 @@ func unmarshalPod(data []byte) (*placemat.Pod, error) {
 	pod.Name = n.Name
 
 	for _, script := range n.Spec.InitScripts {
+		script, err = filepath.Abs(script)
+		if err != nil {
+			return nil, err
+		}
 		_, err := os.Stat(script)
 		if err != nil {
 			return nil, err
@@ -408,10 +413,13 @@ func unmarshalPod(data []byte) (*placemat.Pod, error) {
 		app.Env = a.Env
 		app.CapsRetain = a.CapsRetain
 		for _, m := range a.Mount {
-			err := app.AddMountPoint(m.Volume, m.Target)
-			if err != nil {
-				return nil, err
-			}
+			app.MountPoints = append(app.MountPoints, struct {
+				VolumeName string
+				Target     string
+			}{
+				m.Volume,
+				m.Target,
+			})
 		}
 		pod.Apps = append(pod.Apps, &app)
 	}
