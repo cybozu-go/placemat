@@ -185,7 +185,7 @@ func (p *Pod) resolve(c *Cluster) error {
 }
 
 func (p *Pod) appendParams(params []string) []string {
-	//params = append(params, []string{"--hostname", p.Name}...)
+	params = append(params, []string{"--hostname", p.Name}...)
 	for _, v := range p.Volumes {
 		params = append(params, []string{"--volume", v.Spec()}...)
 	}
