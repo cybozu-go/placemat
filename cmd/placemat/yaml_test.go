@@ -467,7 +467,190 @@ spec:
 			t.Error("err == nil, ", err)
 		}
 	}
+}
 
+func testUnmarshalPod(t *testing.T) {
+	t.Parallel()
+
+	bird := &placemat.PodApp{
+		Name:           "bird",
+		Image:          "docker://quay.io/cybozu/bird:2.0",
+		ReadOnlyRootfs: true,
+		User:           "10000",
+		Group:          "10000",
+		Exec:           "/sbin/bird",
+		Args:           []string{"-d"},
+		Env: map[string]string{
+			"FOO": "bar",
+		},
+		CapsRetain: []string{"CAP_NET_ADMIN", "CAP_NET_BIND_SERVICE", "CAP_NET_RAW"},
+		MountPoints: []struct {
+			VolumeName string
+			Target     string
+		}{
+			{"config", "/etc/bird"},
+		},
+	}
+	debug := &placemat.PodApp{
+		Name:  "debug",
+		Image: "docker://quay.io/cybozu/ubuntu-debug:18.04",
+	}
+
+	configVol, err := placemat.NewPodVolume("config", "host", "host-dir", "", "", "", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runVol, err := placemat.NewPodVolume("run", "empty", "", "0700", "10000", "10000", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		source   string
+		expected *placemat.Pod
+	}{
+		{
+			`
+kind: Pod
+name: pod1
+`,
+			nil,
+		},
+		{
+			`
+kind: Pod
+name: pod1
+spec:
+  apps:
+    - name: bird
+      image: docker://quay.io/cybozu/bird:2.0
+      readonly-rootfs: true
+      user: 10000
+      group: 10000
+      exec: /sbin/bird
+      args: ["-d"]
+      env:
+        FOO: bar
+      mount:
+        - volume: config
+          target: /etc/bird
+      caps-retain:
+        - CAP_NET_ADMIN
+        - CAP_NET_BIND_SERVICE
+        - CAP_NET_RAW
+    - name: debug
+      image: docker://quay.io/cybozu/ubuntu-debug:18.04
+`,
+			&placemat.Pod{
+				Name: "pod1",
+				Apps: []*placemat.PodApp{bird, debug},
+			},
+		},
+		{
+			`
+kind: Pod
+name: pod1
+spec:
+  init-scripts:
+    - /etc/profile
+  apps:
+    - name: debug
+      image: docker://quay.io/cybozu/ubuntu-debug:18.04
+`,
+			&placemat.Pod{
+				Name:        "pod1",
+				InitScripts: []string{"/etc/profile"},
+				Apps:        []*placemat.PodApp{debug},
+			},
+		},
+		{
+			`
+kind: Pod
+name: pod1
+spec:
+  interfaces:
+    - network: net0
+      addresses:
+        - 10.0.0.1/24
+  apps:
+    - name: debug
+      image: docker://quay.io/cybozu/ubuntu-debug:18.04
+`,
+			&placemat.Pod{
+				Name: "pod1",
+				Interfaces: []struct {
+					NetworkName string
+					Addresses   []string
+				}{
+					{
+						"net0",
+						[]string{"10.0.0.1/24"},
+					},
+				},
+				Apps: []*placemat.PodApp{debug},
+			},
+		},
+		{
+			`
+kind: Pod
+name: pod1
+spec:
+  volumes:
+    - name: config
+      kind: host
+      folder: host-dir
+      readonly: true
+    - name: run
+      kind: empty
+      mode: "0700"
+      uid: 10000
+      gid: 10000
+  apps:
+    - name: debug
+      image: docker://quay.io/cybozu/ubuntu-debug:18.04
+`,
+			&placemat.Pod{
+				Name:    "pod1",
+				Volumes: []placemat.PodVolume{configVol, runVol},
+				Apps:    []*placemat.PodApp{debug},
+			},
+		},
+		{
+			`
+kind: Pod
+name: pod1
+spec:
+  volumes:
+    - name: config
+      kind: bad
+      folder: host-dir
+      readonly: true
+  apps:
+    - name: debug
+      image: docker://quay.io/cybozu/ubuntu-debug:18.04
+`,
+			nil,
+		},
+	}
+
+	for _, c := range cases {
+		actual, err := unmarshalPod([]byte(c.source))
+		if c.expected == nil {
+			if err == nil {
+				t.Error("unmarshal should fail for", c.source)
+			}
+			continue
+		}
+
+		if err != nil {
+			t.Error("unmarshal should not fail for", c.source, err)
+			continue
+		}
+
+		if !reflect.DeepEqual(actual, c.expected) {
+			t.Errorf("%#v != %#v", actual, c.expected)
+		}
+	}
 }
 
 func testUnmarshalCluster(t *testing.T) {
@@ -496,6 +679,13 @@ name: node2
 ---
 kind: NodeSet
 name: nodeSet
+---
+kind: Pod
+name: pod1
+spec:
+  apps:
+    - name: bird
+      image: docker://quay.io/cybozu/bird:2.0
 `
 
 	cluster, err := readYaml(bufio.NewReader(bytes.NewReader([]byte(yaml))))
@@ -517,7 +707,9 @@ name: nodeSet
 	if len(cluster.NodeSets) != 1 {
 		t.Error("len(cluster.NodeSets) != 1, ", len(cluster.NodeSets))
 	}
-
+	if len(cluster.Pods) != 1 {
+		t.Error("len(cluster.Pod) != 1,", len(cluster.Pods))
+	}
 }
 
 func TestYAML(t *testing.T) {
@@ -526,5 +718,6 @@ func TestYAML(t *testing.T) {
 	t.Run("network", testUnmarshalNetwork)
 	t.Run("node", testUnmarshalNode)
 	t.Run("nodeSet", testUnmarshalNodeSet)
+	t.Run("pod", testUnmarshalPod)
 	t.Run("cluster", testUnmarshalCluster)
 }

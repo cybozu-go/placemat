@@ -2,18 +2,9 @@ package placemat
 
 import (
 	"net"
-	"os"
 	"strings"
 	"testing"
 )
-
-func touch(path string) error {
-	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0666)
-	if err == nil {
-		return err
-	}
-	return f.Close()
-}
 
 func TestGenerateRandomMacForKVM(t *testing.T) {
 	sut := generateRandomMACForKVM()
@@ -92,11 +83,7 @@ func TestStartNodeCmdParams(t *testing.T) {
 	}
 
 	vhostNetSupported = true
-	q := QemuProvider{NoGraphic: false}
-	err := q.SetupDataDir("/tmp")
-	if err != nil {
-		t.Fatal(err)
-	}
+	q := QemuProvider{NoGraphic: false, dataDir: "/tmp"}
 
 	for _, c := range cases {
 		params := q.qemuParams(&c.n)

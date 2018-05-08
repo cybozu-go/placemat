@@ -96,12 +96,20 @@ Getting started
 - [QEMU][]
 - [OVMF][] (if UEFI boot is enabled)
 - [picocom](https://github.com/npat-efault/picocom) for `placemat-connect`
+- [rkt](https://coreos.com/rkt/) for `Pod` resource.
 
 For Ubuntu or Debian, you can install them as follows:
 
 ```console
 $ sudo apt-get update
 $ sudo apt-get install qemu-system-x86 qemu-utils ovmf picocom
+```
+
+As to rkt, obtain a deb (or rpm) package then install it as follows:
+
+```console
+$ wget https://github.com/rkt/rkt/releases/download/v1.30.0/rkt_1.30.0-1_amd64.deb
+$ sudo dpkg -i rkt_1.30.0-1_amd64.deb
 ```
 
 ### Install placemat
