@@ -603,8 +603,10 @@ func (q *QemuProvider) startPod(ctx context.Context, p *Pod) error {
 		return err
 	}
 
-	<-ctx.Done()
-	rkt.Process.Signal(syscall.SIGTERM)
+	go func() {
+		<-ctx.Done()
+		rkt.Process.Signal(syscall.SIGTERM)
+	}()
 	return rkt.Wait()
 }
 
