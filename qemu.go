@@ -554,7 +554,7 @@ func generateRandomMACForKVM() string {
 	return fmt.Sprintf("%s:%02x:%02x:%02x", vendorPrefix, bytes[0], bytes[1], bytes[2])
 }
 
-func (q *QemuProvider) startPod(ctx context.Context, p *Pod) error {
+func (q *QemuProvider) startPod(ctx context.Context, p *Pod, root string) error {
 	veths := make([]string, len(p.Interfaces))
 	ips := make(map[string][]string)
 	for i, iface := range p.Interfaces {
@@ -583,13 +583,12 @@ func (q *QemuProvider) startPod(ctx context.Context, p *Pod) error {
 		"--insecure-options=all-run",
 		"run",
 		"--net=host",
-		"--stage1-from-dir=stage1-fly.aci",
 	}
 	params = p.appendParams(params)
 
 	log.Info("rkt run", map[string]interface{}{"name": p.Name, "params": params})
 	args := []string{
-		"netns", "exec", "pm_" + p.Name, "rkt",
+		"netns", "exec", "pm_" + p.Name, "chroot", root, "rkt",
 	}
 	args = append(args, params...)
 	rkt := exec.Command("ip", args...)
@@ -603,13 +602,21 @@ func (q *QemuProvider) startPod(ctx context.Context, p *Pod) error {
 		return err
 	}
 
-	<-ctx.Done()
-	rkt.Process.Signal(syscall.SIGTERM)
+	go func() {
+		<-ctx.Done()
+		rkt.Process.Signal(syscall.SIGTERM)
+	}()
 	return rkt.Wait()
 }
 
 // Start implements Provider interface.
 func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
+	root, err := NewRootfs()
+	if err != nil {
+		return err
+	}
+	defer root.Destroy()
+
 	for _, n := range c.Networks {
 		log.Info("Creating network", map[string]interface{}{"name": n.Name})
 		err := q.createNetwork(ctx, n)
@@ -654,7 +661,7 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 	for _, p := range c.Pods {
 		pod := p
 		env.Go(func(ctx context.Context) error {
-			return q.startPod(ctx, pod)
+			return q.startPod(ctx, pod, root.Path())
 		})
 	}
 	env.Stop()
