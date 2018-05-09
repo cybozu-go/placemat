@@ -588,10 +588,10 @@ func (q *QemuProvider) startPod(ctx context.Context, p *Pod, root string) error 
 
 	log.Info("rkt run", map[string]interface{}{"name": p.Name, "params": params})
 	args := []string{
-		root, "ip", "netns", "exec", "pm_" + p.Name, "rkt",
+		"netns", "exec", "pm_" + p.Name, "chroot", root, "rkt",
 	}
 	args = append(args, params...)
-	rkt := exec.Command("chroot", args...)
+	rkt := exec.Command("ip", args...)
 	rkt.Stdout = os.Stdout
 	rkt.Stderr = os.Stderr
 	err = rkt.Start()

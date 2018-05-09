@@ -5,10 +5,10 @@
 Placemat
 ========
 
-Placemat is a tool to simulate data center networks and servers using QEMU/KVM
-and Linux networking stacks.  Placemat can simulate virtually *any* kind of
-network topologies to help tests and experiments for software usually used in
-a data center.
+Placemat is a tool to simulate data center networks and servers using [rkt][] Pods,
+QEMU/KVM virtual machines, and Linux networking stacks.  Placemat can simulate
+virtually *any* kind of network topologies to help tests and experiments for software
+usually used in data centers.
 
 Features
 --------
@@ -96,7 +96,7 @@ Getting started
 - [QEMU][]
 - [OVMF][] (if UEFI boot is enabled)
 - [picocom](https://github.com/npat-efault/picocom) for `placemat-connect`
-- [rkt](https://coreos.com/rkt/) for `Pod` resource.
+- [rkt][] for `Pod` resource.
 
 For Ubuntu or Debian, you can install them as follows:
 
@@ -125,19 +125,19 @@ $ go get -u github.com/cybozu-go/placemat/cmd/placemat-connect
 
 See [examples](examples) how to write YAML files.
 
-To launch placemat from YAML files by the following:
+To launch placemat from YAML files, run it with `sudo` as follows:
 
 ```console
 $ sudo $GOPATH/bin/placemat cluster.yml
 ```
 
-Where `sudo` is required to create network bridge to your host.
-
-You can connect to a serial console of a VM as follows:
+To connect to a serial console of a VM, use `placemat-connect`:
 
 ```console
 $ sudo $GOPATH/bin/placemat-connect VM
 ```
+
+This will launch `picocom`.  To exit, type `Ctrl-Q`, then `Ctrl-X`.
 
 Specification
 -------------
@@ -154,3 +154,4 @@ MIT
 [ignition]: https://coreos.com/ignition/docs/latest/
 [QEMU]: https://www.qemu.org/
 [OVMF]: https://github.com/tianocore/tianocore.github.io/wiki/OVMF
+[rkt]: https://coreos.com/rkt/

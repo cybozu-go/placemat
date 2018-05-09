@@ -10,6 +10,25 @@ import (
 	"github.com/cybozu-go/log"
 )
 
+var (
+	// cgroupV1ctrls helps identifying the v1 controllers.
+	// http://manpages.ubuntu.com/manpages/bionic/en/man7/cgroups.7.html
+	cgroupV1ctrls = map[string]bool{
+		"cpu":        true,
+		"cpuacct":    true,
+		"cpuset":     true,
+		"memory":     true,
+		"devices":    true,
+		"freezer":    true,
+		"net_cls":    true,
+		"blkio":      true,
+		"perf_event": true,
+		"net_prio":   true,
+		"hugetlb":    true,
+		"pids":       true,
+	}
+)
+
 func umount(mp string) error {
 	return exec.Command("umount", mp).Run()
 }
@@ -42,6 +61,37 @@ func mount(fs, dest, options string) error {
 	c.Stderr = os.Stderr
 	c.Stdout = os.Stdout
 	return c.Run()
+}
+
+func makeCgroupSymlinks(dest string, opts []string) error {
+	ctrls := make([]string, 0, 3)
+	for _, opt := range opts {
+		if cgroupV1ctrls[opt] {
+			ctrls = append(ctrls, opt)
+		}
+	}
+
+	if len(ctrls) < 2 {
+		return nil
+	}
+
+	dir := filepath.Dir(dest)
+	base := filepath.Base(dest)
+	for _, ctrl := range ctrls {
+		sym := filepath.Join(dir, ctrl)
+		_, err := os.Stat(sym)
+		if err == nil {
+			// something exists
+			continue
+		}
+
+		err = os.Symlink(base, sym)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Rootfs is a fake root filesystem in order to fool rkt
@@ -164,6 +214,10 @@ func NewRootfs() (*Rootfs, error) {
 				return nil, err
 			}
 			mountPoints = append(mountPoints, dest)
+		}
+
+		if fs == "cgroup" {
+			err = makeCgroupSymlinks(dest, opts)
 		}
 	}
 
