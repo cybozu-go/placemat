@@ -198,7 +198,7 @@ func NewRootfs() (*Rootfs, error) {
 		}
 
 		switch fs {
-		case "tmpfs", "proc", "sysfs", "securityfs", "cgroup", "debugfs", "fusectl", "configfs":
+		case "tmpfs", "proc", "sysfs", "securityfs", "cgroup", "cgroup2", "debugfs", "fusectl", "configfs":
 			err = mount(fs, dest, options)
 			if err != nil {
 				return nil, err
