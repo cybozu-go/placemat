@@ -218,6 +218,9 @@ func NewRootfs() (*Rootfs, error) {
 
 		if fs == "cgroup" {
 			err = makeCgroupSymlinks(dest, opts)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
