@@ -583,6 +583,7 @@ func (q *QemuProvider) startPod(ctx context.Context, p *Pod, root string) error 
 		"--insecure-options=all-run",
 		"run",
 		"--net=host",
+		"--dns=host",
 	}
 	params = p.appendParams(params)
 
