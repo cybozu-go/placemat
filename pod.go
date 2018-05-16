@@ -115,9 +115,11 @@ type PodApp struct {
 	}
 }
 
-func (a *PodApp) appendParams(params []string) []string {
+func (a *PodApp) appendParams(params []string, podname string) []string {
 	params = append(params, []string{
-		a.Image, "--name", a.Name,
+		a.Image,
+		"--name", a.Name,
+		"--user-label", "name=" + podname,
 	}...)
 	if a.ReadOnlyRootfs {
 		params = append(params, "--readonly-rootfs=true")
@@ -195,7 +197,7 @@ func (p *Pod) appendParams(params []string) []string {
 		if addDDD {
 			params = append(params, "---")
 		}
-		params = a.appendParams(params)
+		params = a.appendParams(params, p.Name)
 		addDDD = len(a.Args) > 0
 	}
 	return params
