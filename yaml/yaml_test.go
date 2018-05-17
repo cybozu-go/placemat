@@ -1,4 +1,4 @@
-package main
+package yaml
 
 import (
 	"bufio"
@@ -688,7 +688,7 @@ spec:
       image: docker://quay.io/cybozu/bird:2.0
 `
 
-	cluster, err := readYaml(bufio.NewReader(bytes.NewReader([]byte(yaml))))
+	cluster, err := ReadYaml(bufio.NewReader(bytes.NewReader([]byte(yaml))))
 	if err != nil {
 		t.Error(err)
 	}

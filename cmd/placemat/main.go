@@ -13,6 +13,7 @@ import (
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat"
+	"github.com/cybozu-go/placemat/yaml"
 )
 
 const (
@@ -35,7 +36,7 @@ func loadClusterFromFile(p string) (*placemat.Cluster, error) {
 		return nil, err
 	}
 	defer f.Close()
-	return readYaml(bufio.NewReader(f))
+	return yaml.ReadYaml(bufio.NewReader(f))
 }
 
 func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {

@@ -1,4 +1,4 @@
-package main
+package yaml
 
 import (
 	"bufio"
@@ -18,110 +18,165 @@ type baseConfig struct {
 	Kind string `yaml:"kind"`
 }
 
-type nodeSpec struct {
-	Interfaces []string `yaml:"interfaces"`
-	Volumes    []struct {
-		Kind           string `yaml:"kind"`
-		Name           string `yaml:"name"`
-		RecreatePolicy string `yaml:"recreatePolicy"`
-		Spec           struct {
-			Image         string `yaml:"image"`
-			UserData      string `yaml:"user-data"`
-			NetworkConfig string `yaml:"network-config"`
-			Size          string `yaml:"size"`
-			Folder        string `yaml:"folder"`
-			CopyOnWrite   bool   `yaml:"copy-on-write"`
-		} `yaml:"spec"`
-	} `yaml:"volumes"`
-	IgnitionFile string `yaml:"ignition"`
-	Resources    struct {
-		CPU    string `yaml:"cpu"`
-		Memory string `yaml:"memory"`
-	} `yaml:"resources"`
-	BIOS   string `yaml:"bios"`
-	SMBIOS struct {
-		Manufacturer string `yaml:"manufacturer"`
-		ProductName  string `yaml:"product"`
-		SerialNumber string `yaml:"serial"`
-	} `yaml:"smbios"`
+// NodeVolumeSpec represents a Node's Volume specification in YAML
+type NodeVolumeSpec struct {
+	Image         string `yaml:"image"`
+	UserData      string `yaml:"user-data"`
+	NetworkConfig string `yaml:"network-config"`
+	Size          string `yaml:"size"`
+	Folder        string `yaml:"folder"`
+	CopyOnWrite   bool   `yaml:"copy-on-write"`
 }
 
-type nodeConfig struct {
+// NodeVolumeConfig represents a Node's Volume definition in YAML
+type NodeVolumeConfig struct {
+	Kind           string         `yaml:"kind"`
+	Name           string         `yaml:"name"`
+	RecreatePolicy string         `yaml:"recreatePolicy"`
+	Spec           NodeVolumeSpec `yaml:"spec"`
+}
+
+// NodeResourceConfig represents a Node's Resource definition in YAML
+type NodeResourceConfig struct {
+	CPU    string `yaml:"cpu"`
+	Memory string `yaml:"memory"`
+}
+
+// SMBIOSConfig represents a Node's SMBIOS definition in YAML
+type SMBIOSConfig struct {
+	Manufacturer string `yaml:"manufacturer"`
+	ProductName  string `yaml:"product"`
+	SerialNumber string `yaml:"serial"`
+}
+
+// NodeSpec represents a Node specification in YAML
+type NodeSpec struct {
+	Interfaces   []string           `yaml:"interfaces"`
+	Volumes      []NodeVolumeConfig `yaml:"volumes"`
+	IgnitionFile string             `yaml:"ignition"`
+	Resources    NodeResourceConfig `yaml:"resources"`
+	BIOS         string             `yaml:"bios"`
+	SMBIOS       SMBIOSConfig       `yaml:"smbios"`
+}
+
+// NodeConfig represents a Node definition in YAML
+type NodeConfig struct {
+	Kind string   `yaml:"kind"`
 	Name string   `yaml:"name"`
-	Spec nodeSpec `yaml:"spec"`
+	Spec NodeSpec `yaml:"spec"`
 }
 
-type nodeSetConfig struct {
-	Name string `yaml:"name"`
-	Spec struct {
-		Replicas int      `yaml:"replicas"`
-		Template nodeSpec `yaml:"template"`
-	} `yaml:"spec"`
+// NodeSetSpec represents a NodeSet specification in YAML
+type NodeSetSpec struct {
+	Replicas int      `yaml:"replicas"`
+	Template NodeSpec `yaml:"template"`
 }
 
-type podConfig struct {
-	Name string `yaml:"name"`
-	Spec struct {
-		InitScripts []string `yaml:"init-scripts"`
-		Interfaces  []struct {
-			Network   string   `yaml:"network"`
-			Addresses []string `yaml:"addresses"`
-		} `yaml:"interfaces"`
-		Volumes []struct {
-			Name     string `yaml:"name"`
-			Kind     string `yaml:"kind"`
-			Folder   string `yaml:"folder"`
-			ReadOnly bool   `yaml:"readonly"`
-			Mode     string `yaml:"mode"`
-			UID      string `yaml:"uid"`
-			GID      string `yaml:"gid"`
-		} `yaml:"volumes"`
-		Apps []struct {
-			Name           string            `yaml:"name"`
-			Image          string            `yaml:"image"`
-			ReadOnlyRootfs bool              `yaml:"readonly-rootfs"`
-			User           string            `yaml:"user"`
-			Group          string            `yaml:"group"`
-			Exec           string            `yaml:"exec"`
-			Args           []string          `yaml:"args"`
-			Env            map[string]string `yaml:"env"`
-			CapsRetain     []string          `yaml:"caps-retain"`
-			Mount          []struct {
-				Volume string `yaml:"volume"`
-				Target string `yaml:"target"`
-			} `yaml:"mount"`
-		} `yaml:"apps"`
-	} `yaml:"spec"`
+// NodeSetConfig represents a NodeSet definition in YAML
+type NodeSetConfig struct {
+	Kind string      `yaml:"kind"`
+	Name string      `yaml:"name"`
+	Spec NodeSetSpec `yaml:"spec"`
 }
 
-type networkConfig struct {
-	Name string `yaml:"name"`
-	Spec struct {
-		Internal  bool     `yaml:"internal"`
-		UseNAT    bool     `yaml:"use-nat"`
-		Addresses []string `yaml:"addresses"`
-	} `yaml:"spec"`
+// PodInterfaceConfig represents a Pod's Interface definition in YAML
+type PodInterfaceConfig struct {
+	Network   string   `yaml:"network"`
+	Addresses []string `yaml:"addresses"`
 }
 
-type imageConfig struct {
-	Name string `yaml:"name"`
-	Spec struct {
-		URL               string `yaml:"url"`
-		File              string `yaml:"file"`
-		CompressionMethod string `yaml:"compression"`
-	} `yaml:"spec"`
+// PodVolumeConfig represents a Pod's Volume definition in YAML
+type PodVolumeConfig struct {
+	Name     string `yaml:"name"`
+	Kind     string `yaml:"kind"`
+	Folder   string `yaml:"folder"`
+	ReadOnly bool   `yaml:"readonly"`
+	Mode     string `yaml:"mode"`
+	UID      string `yaml:"uid"`
+	GID      string `yaml:"gid"`
 }
 
-type dataFolderConfig struct {
+// PodAppMountConfig represents a App's Mount definition in YAML
+type PodAppMountConfig struct {
+	Volume string `yaml:"volume"`
+	Target string `yaml:"target"`
+}
+
+// PodAppConfig represents a Pod's App definition in YAML
+type PodAppConfig struct {
+	Name           string              `yaml:"name"`
+	Image          string              `yaml:"image"`
+	ReadOnlyRootfs bool                `yaml:"readonly-rootfs"`
+	User           string              `yaml:"user"`
+	Group          string              `yaml:"group"`
+	Exec           string              `yaml:"exec"`
+	Args           []string            `yaml:"args"`
+	Env            map[string]string   `yaml:"env"`
+	CapsRetain     []string            `yaml:"caps-retain"`
+	Mount          []PodAppMountConfig `yaml:"mount"`
+}
+
+// PodSpec represents a Pod specification in YAML
+type PodSpec struct {
+	InitScripts []string             `yaml:"init-scripts"`
+	Interfaces  []PodInterfaceConfig `yaml:"interfaces"`
+	Volumes     []PodVolumeConfig    `yaml:"volumes"`
+	Apps        []PodAppConfig       `yaml:"apps"`
+}
+
+// PodConfig represents a Pod definition in YAML
+type PodConfig struct {
+	Kind string  `yaml:"kind"`
+	Name string  `yaml:"name"`
+	Spec PodSpec `yaml:"spec"`
+}
+
+// NetworkSpec represents a Network specification in YAML
+type NetworkSpec struct {
+	Internal  bool     `yaml:"internal"`
+	UseNAT    bool     `yaml:"use-nat"`
+	Addresses []string `yaml:"addresses"`
+}
+
+// NetworkConfig represents a Network definition in YAML
+type NetworkConfig struct {
+	Kind string      `yaml:"kind"`
+	Name string      `yaml:"name"`
+	Spec NetworkSpec `yaml:"spec"`
+}
+
+// ImageSpec represents a Image specification in YAML
+type ImageSpec struct {
+	URL               string `yaml:"url"`
+	File              string `yaml:"file"`
+	CompressionMethod string `yaml:"compression"`
+}
+
+// ImageConfig represents a Image definition in YAML
+type ImageConfig struct {
+	Kind string    `yaml:"kind"`
+	Name string    `yaml:"name"`
+	Spec ImageSpec `yaml:"spec"`
+}
+
+// DataFolderFileConfig represents a DataFolder's File definition in YAML
+type DataFolderFileConfig struct {
 	Name string `yaml:"name"`
-	Spec struct {
-		Dir   string `yaml:"dir"`
-		Files []struct {
-			Name string `yaml:"name"`
-			URL  string `yaml:"url"`
-			File string `yaml:"file"`
-		} `yaml:"files"`
-	}
+	URL  string `yaml:"url"`
+	File string `yaml:"file"`
+}
+
+// DataFolderSpec represents a DataFolder specification in YAML
+type DataFolderSpec struct {
+	Dir   string                 `yaml:"dir"`
+	Files []DataFolderFileConfig `yaml:"files"`
+}
+
+// DataFolderConfig represents a DataFolder definition in YAML
+type DataFolderConfig struct {
+	Kind string         `yaml:"kind"`
+	Name string         `yaml:"name"`
+	Spec DataFolderSpec `yaml:"spec"`
 }
 
 var recreatePolicyConfig = map[string]placemat.VolumeRecreatePolicy{
@@ -138,7 +193,7 @@ var biosConfig = map[string]placemat.BIOSMode{
 }
 
 func unmarshalNode(data []byte) (*placemat.Node, error) {
-	var n nodeConfig
+	var n NodeConfig
 	err := yaml.Unmarshal(data, &n)
 	if err != nil {
 		return nil, err
@@ -159,7 +214,7 @@ func unmarshalNode(data []byte) (*placemat.Node, error) {
 }
 
 func unmarshalNodeSet(data []byte) (*placemat.NodeSet, error) {
-	var nsc nodeSetConfig
+	var nsc NodeSetConfig
 	err := yaml.Unmarshal(data, &nsc)
 	if err != nil {
 		return nil, err
@@ -176,7 +231,7 @@ func unmarshalNodeSet(data []byte) (*placemat.NodeSet, error) {
 	return &nodeSet, err
 }
 
-func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
+func constructNodeSpec(ns NodeSpec) (placemat.NodeSpec, error) {
 	var res placemat.NodeSpec
 	var ok bool
 	res.Interfaces = ns.Interfaces
@@ -234,7 +289,7 @@ func constructNodeSpec(ns nodeSpec) (placemat.NodeSpec, error) {
 }
 
 func unmarshalNetwork(data []byte) (*placemat.Network, error) {
-	var n networkConfig
+	var n NetworkConfig
 	err := yaml.Unmarshal(data, &n)
 	if err != nil {
 		return nil, err
@@ -259,7 +314,7 @@ func unmarshalNetwork(data []byte) (*placemat.Network, error) {
 }
 
 func unmarshalImage(data []byte) (*placemat.Image, error) {
-	var dto imageConfig
+	var dto ImageConfig
 	err := yaml.Unmarshal(data, &dto)
 	if err != nil {
 		return nil, err
@@ -296,7 +351,7 @@ func unmarshalImage(data []byte) (*placemat.Image, error) {
 }
 
 func unmarshalDataFolder(data []byte) (*placemat.DataFolder, error) {
-	var dto dataFolderConfig
+	var dto DataFolderConfig
 	err := yaml.Unmarshal(data, &dto)
 	if err != nil {
 		return nil, err
@@ -345,7 +400,7 @@ func unmarshalDataFolder(data []byte) (*placemat.DataFolder, error) {
 }
 
 func unmarshalPod(data []byte) (*placemat.Pod, error) {
-	var n podConfig
+	var n PodConfig
 	err := yaml.Unmarshal(data, &n)
 	if err != nil {
 		return nil, err
@@ -427,7 +482,8 @@ func unmarshalPod(data []byte) (*placemat.Pod, error) {
 	return &pod, nil
 }
 
-func readYaml(r *bufio.Reader) (*placemat.Cluster, error) {
+// ReadYaml reads a yaml file and constructs placemat.Cluster
+func ReadYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 	var c baseConfig
 	var cluster placemat.Cluster
 	var y = k8sYaml.NewYAMLReader(r)
