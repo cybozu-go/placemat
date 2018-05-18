@@ -20,11 +20,11 @@ type baseConfig struct {
 
 // NodeVolumeSpec represents a Node's Volume specification in YAML
 type NodeVolumeSpec struct {
-	Image         string `yaml:"image"`
-	UserData      string `yaml:"user-data"`
-	NetworkConfig string `yaml:"network-config"`
-	Size          string `yaml:"size"`
-	Folder        string `yaml:"folder"`
+	Image         string `yaml:"image,omitempty"`
+	UserData      string `yaml:"user-data,omitempty"`
+	NetworkConfig string `yaml:"network-config,omitempty"`
+	Size          string `yaml:"size,omitempty"`
+	Folder        string `yaml:"folder,omitempty"`
 	CopyOnWrite   bool   `yaml:"copy-on-write"`
 }
 
@@ -32,31 +32,31 @@ type NodeVolumeSpec struct {
 type NodeVolumeConfig struct {
 	Kind           string         `yaml:"kind"`
 	Name           string         `yaml:"name"`
-	RecreatePolicy string         `yaml:"recreatePolicy"`
+	RecreatePolicy string         `yaml:"recreatePolicy,omitempty"`
 	Spec           NodeVolumeSpec `yaml:"spec"`
 }
 
 // NodeResourceConfig represents a Node's Resource definition in YAML
 type NodeResourceConfig struct {
-	CPU    string `yaml:"cpu"`
-	Memory string `yaml:"memory"`
+	CPU    string `yaml:"cpu,omitempty"`
+	Memory string `yaml:"memory,omitempty"`
 }
 
 // SMBIOSConfig represents a Node's SMBIOS definition in YAML
 type SMBIOSConfig struct {
-	Manufacturer string `yaml:"manufacturer"`
-	ProductName  string `yaml:"product"`
-	SerialNumber string `yaml:"serial"`
+	Manufacturer string `yaml:"manufacturer,omitempty"`
+	ProductName  string `yaml:"product,omitempty"`
+	SerialNumber string `yaml:"serial,omitempty"`
 }
 
 // NodeSpec represents a Node specification in YAML
 type NodeSpec struct {
-	Interfaces   []string           `yaml:"interfaces"`
-	Volumes      []NodeVolumeConfig `yaml:"volumes"`
-	IgnitionFile string             `yaml:"ignition"`
-	Resources    NodeResourceConfig `yaml:"resources"`
-	BIOS         string             `yaml:"bios"`
-	SMBIOS       SMBIOSConfig       `yaml:"smbios"`
+	Interfaces   []string           `yaml:"interfaces,omitempty"`
+	Volumes      []NodeVolumeConfig `yaml:"volumes,omitempty"`
+	IgnitionFile string             `yaml:"ignition,omitempty"`
+	Resources    NodeResourceConfig `yaml:"resources,omitempty"`
+	BIOS         string             `yaml:"bios,omitempty"`
+	SMBIOS       SMBIOSConfig       `yaml:"smbios,omitempty"`
 }
 
 // NodeConfig represents a Node definition in YAML
@@ -82,18 +82,18 @@ type NodeSetConfig struct {
 // PodInterfaceConfig represents a Pod's Interface definition in YAML
 type PodInterfaceConfig struct {
 	Network   string   `yaml:"network"`
-	Addresses []string `yaml:"addresses"`
+	Addresses []string `yaml:"addresses,omitempty"`
 }
 
 // PodVolumeConfig represents a Pod's Volume definition in YAML
 type PodVolumeConfig struct {
 	Name     string `yaml:"name"`
 	Kind     string `yaml:"kind"`
-	Folder   string `yaml:"folder"`
+	Folder   string `yaml:"folder,omitempty"`
 	ReadOnly bool   `yaml:"readonly"`
-	Mode     string `yaml:"mode"`
-	UID      string `yaml:"uid"`
-	GID      string `yaml:"gid"`
+	Mode     string `yaml:"mode,omitempty"`
+	UID      string `yaml:"uid,omitempty"`
+	GID      string `yaml:"gid,omitempty"`
 }
 
 // PodAppMountConfig represents a App's Mount definition in YAML
@@ -107,20 +107,20 @@ type PodAppConfig struct {
 	Name           string              `yaml:"name"`
 	Image          string              `yaml:"image"`
 	ReadOnlyRootfs bool                `yaml:"readonly-rootfs"`
-	User           string              `yaml:"user"`
-	Group          string              `yaml:"group"`
-	Exec           string              `yaml:"exec"`
-	Args           []string            `yaml:"args"`
-	Env            map[string]string   `yaml:"env"`
-	CapsRetain     []string            `yaml:"caps-retain"`
-	Mount          []PodAppMountConfig `yaml:"mount"`
+	User           string              `yaml:"user,omitempty"`
+	Group          string              `yaml:"group,omitempty"`
+	Exec           string              `yaml:"exec,omitempty"`
+	Args           []string            `yaml:"args,omitempty"`
+	Env            map[string]string   `yaml:"env,omitempty"`
+	CapsRetain     []string            `yaml:"caps-retain,omitempty"`
+	Mount          []PodAppMountConfig `yaml:"mount,omitempty"`
 }
 
 // PodSpec represents a Pod specification in YAML
 type PodSpec struct {
-	InitScripts []string             `yaml:"init-scripts"`
-	Interfaces  []PodInterfaceConfig `yaml:"interfaces"`
-	Volumes     []PodVolumeConfig    `yaml:"volumes"`
+	InitScripts []string             `yaml:"init-scripts,omitempty"`
+	Interfaces  []PodInterfaceConfig `yaml:"interfaces,omitempty"`
+	Volumes     []PodVolumeConfig    `yaml:"volumes,omitempty"`
 	Apps        []PodAppConfig       `yaml:"apps"`
 }
 
@@ -135,7 +135,7 @@ type PodConfig struct {
 type NetworkSpec struct {
 	Internal  bool     `yaml:"internal"`
 	UseNAT    bool     `yaml:"use-nat"`
-	Addresses []string `yaml:"addresses"`
+	Addresses []string `yaml:"addresses,omitempty"`
 }
 
 // NetworkConfig represents a Network definition in YAML
@@ -147,9 +147,9 @@ type NetworkConfig struct {
 
 // ImageSpec represents a Image specification in YAML
 type ImageSpec struct {
-	URL               string `yaml:"url"`
-	File              string `yaml:"file"`
-	CompressionMethod string `yaml:"compression"`
+	URL               string `yaml:"url,omitempty"`
+	File              string `yaml:"file,omitempty"`
+	CompressionMethod string `yaml:"compression,omitempty"`
 }
 
 // ImageConfig represents a Image definition in YAML
@@ -162,14 +162,14 @@ type ImageConfig struct {
 // DataFolderFileConfig represents a DataFolder's File definition in YAML
 type DataFolderFileConfig struct {
 	Name string `yaml:"name"`
-	URL  string `yaml:"url"`
-	File string `yaml:"file"`
+	URL  string `yaml:"url,omitempty"`
+	File string `yaml:"file,omitempty"`
 }
 
 // DataFolderSpec represents a DataFolder specification in YAML
 type DataFolderSpec struct {
-	Dir   string                 `yaml:"dir"`
-	Files []DataFolderFileConfig `yaml:"files"`
+	Dir   string                 `yaml:"dir,omitempty"`
+	Files []DataFolderFileConfig `yaml:"files,omitempty"`
 }
 
 // DataFolderConfig represents a DataFolder definition in YAML
