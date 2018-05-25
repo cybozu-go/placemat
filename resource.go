@@ -102,7 +102,11 @@ func (d *DataFolder) setup(ctx context.Context) error {
 		if !st.IsDir() {
 			return errors.New(d.Spec.Dir + " is not a directory")
 		}
-		d.dirPath = d.Spec.Dir
+		absPath, err := filepath.Abs(d.Spec.Dir)
+		if err != nil {
+			return err
+		}
+		d.dirPath = absPath
 		return nil
 	}
 
