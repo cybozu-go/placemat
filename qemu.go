@@ -534,8 +534,8 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	qemuCommand := cmd.CommandContext(ctx, "qemu-system-x86_64", params...)
 	if q.Debug {
-		qemuCommand.Stdout = os.Stdout
-		qemuCommand.Stderr = os.Stderr
+		qemuCommand.Stdout = newColoredLogWriter("qemu", n.Name, os.Stdout)
+		qemuCommand.Stderr = newColoredLogWriter("qemu", n.Name, os.Stderr)
 	}
 	err := qemuCommand.Run()
 	if err != nil {
@@ -593,8 +593,10 @@ func (q *QemuProvider) startPod(ctx context.Context, p *Pod, root string) error 
 	}
 	args = append(args, params...)
 	rkt := exec.Command("ip", args...)
-	rkt.Stdout = os.Stdout
-	rkt.Stderr = os.Stderr
+	if q.Debug {
+		rkt.Stdout = newColoredLogWriter("rkt", p.Name, os.Stdout)
+		rkt.Stderr = newColoredLogWriter("rkt", p.Name, os.Stderr)
+	}
 	err = rkt.Start()
 	if err != nil {
 		log.Error("failed to start rkt", map[string]interface{}{

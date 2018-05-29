@@ -27,7 +27,7 @@ var (
 	flgCacheDir = flag.String("cache-dir", defaultCacheDir, "directory for cache data")
 	flgDataDir  = flag.String("data-dir", defaultDataDir, "directory to store data")
 	flgGraphic  = flag.Bool("graphic", false, "run QEMU with graphical console")
-	flgDebug    = flag.Bool("debug", false, "show QEMU's stdout and stderr")
+	flgDebug    = flag.Bool("debug", false, "show QEMU's and Pod's stdout and stderr")
 )
 
 func loadClusterFromFile(p string) (*placemat.Cluster, error) {
