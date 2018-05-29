@@ -65,6 +65,8 @@ Options:
         directory for cache data.
   -data-dir string
         directory to store data (default "/var/scratch/placemat")
+  -debug
+        show QEMU's and Pod's stdout and stderr
 ```
 
 If `-cache-dir` is not specified, the default will be `/home/${SUDO_USER}/placemat_data`
