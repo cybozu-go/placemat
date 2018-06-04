@@ -25,7 +25,7 @@ type NodeVolumeSpec struct {
 	NetworkConfig string `yaml:"network-config,omitempty"`
 	Size          string `yaml:"size,omitempty"`
 	Folder        string `yaml:"folder,omitempty"`
-	CopyOnWrite   bool   `yaml:"copy-on-write"`
+	CopyOnWrite   bool   `yaml:"copy-on-write,omitempty"`
 }
 
 // NodeVolumeConfig represents a Node's Volume definition in YAML
