@@ -230,10 +230,15 @@ func (v *imageVolume) Create(ctx context.Context, dataDir string) ([]string, err
 
 	if needRecreate {
 		if v.image.Spec.File != "" {
+			fp, err := filepath.Abs(v.image.Spec.File)
+			if err != nil {
+				return nil, err
+			}
+
 			if v.copyOnWrite {
-				err = createCoWImageFromBase(ctx, v.image.Spec.File, p)
+				err = createCoWImageFromBase(ctx, fp, p)
 			} else {
-				err = writeToFile(v.image.Spec.File, p, v.image.Spec.Decompressor)
+				err = writeToFile(fp, p, v.image.Spec.Decompressor)
 			}
 		} else {
 			err = downloadData(ctx, v.image.Spec.URL, v.image.Spec.Decompressor, v.image.cache)

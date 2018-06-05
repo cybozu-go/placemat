@@ -179,7 +179,9 @@ func (q *QemuProvider) setupCacheDir(cacheDir string) error {
 
 func execCommands(ctx context.Context, commands [][]string) error {
 	for _, cmds := range commands {
-		err := cmd.CommandContext(ctx, cmds[0], cmds[1:]...).Run()
+		c := cmd.CommandContext(ctx, cmds[0], cmds[1:]...)
+		c.Severity = log.LvDebug
+		err := c.Run()
 		if err != nil {
 			return err
 		}
@@ -188,11 +190,16 @@ func execCommands(ctx context.Context, commands [][]string) error {
 }
 
 func execCommandsForce(ctx context.Context, commands [][]string) error {
-	var err error
+	var firstError error
 	for _, cmds := range commands {
-		err = cmd.CommandContext(ctx, cmds[0], cmds[1:]...).Run()
+		c := cmd.CommandContext(ctx, cmds[0], cmds[1:]...)
+		c.Severity = log.LvDebug
+		err := c.Run()
+		if err != nil && firstError == nil {
+			firstError = err
+		}
 	}
-	return err
+	return firstError
 }
 
 func createTap(ctx context.Context, tap string, network string) error {
