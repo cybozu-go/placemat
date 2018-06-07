@@ -600,10 +600,8 @@ func (q *QemuProvider) startPod(ctx context.Context, p *Pod, root string) error 
 	}
 	args = append(args, params...)
 	rkt := exec.Command("ip", args...)
-	if q.Debug {
-		rkt.Stdout = newColoredLogWriter("rkt", p.Name, os.Stdout)
-		rkt.Stderr = newColoredLogWriter("rkt", p.Name, os.Stderr)
-	}
+	rkt.Stdout = newColoredLogWriter("rkt", p.Name, os.Stdout)
+	rkt.Stderr = newColoredLogWriter("rkt", p.Name, os.Stderr)
 	err = rkt.Start()
 	if err != nil {
 		log.Error("failed to start rkt", map[string]interface{}{
