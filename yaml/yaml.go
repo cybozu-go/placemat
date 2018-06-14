@@ -187,10 +187,9 @@ var recreatePolicyConfig = map[string]placemat.VolumeRecreatePolicy{
 }
 
 var biosConfig = map[string]placemat.BIOSMode{
-	"":        placemat.LegacyBIOS,
-	"legacy":  placemat.LegacyBIOS,
-	"uefi":    placemat.UEFI,
-	"seabios": placemat.SeaBIOS,
+	"":       placemat.LegacyBIOS,
+	"legacy": placemat.LegacyBIOS,
+	"uefi":   placemat.UEFI,
 }
 
 func unmarshalNode(data []byte) (*placemat.Node, error) {

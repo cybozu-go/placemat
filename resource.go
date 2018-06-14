@@ -37,7 +37,6 @@ type BIOSMode int
 const (
 	LegacyBIOS BIOSMode = iota
 	UEFI
-	SeaBIOS
 )
 
 // NetworkSpec represents a network specification

@@ -532,15 +532,14 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 			fmt.Sprintf("netdev=%s", br),
 			fmt.Sprintf("mac=%s", generateRandomMACForKVM()),
 		}
-		if n.Spec.BIOS != SeaBIOS {
+		if n.Spec.BIOS == UEFI {
 			// disable iPXE boot
 			devParams = append(devParams, "romfile=")
 		}
 		params = append(params, "-device", strings.Join(devParams, ","))
 	}
 
-	switch n.Spec.BIOS {
-	case UEFI:
+	if n.Spec.BIOS == UEFI {
 		p := q.nvramPath(n.Name)
 		err := createNVRAM(ctx, p)
 		if err != nil {
@@ -549,8 +548,6 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 			})
 			return err
 		}
-	case SeaBIOS:
-		params = append(params, "-bios", "seabios.bin")
 	}
 	params = append(params, "-boot", fmt.Sprintf("reboot-timeout=%d", int64(defaultRebootTimeout/time.Millisecond)))
 
