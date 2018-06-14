@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -22,6 +23,8 @@ import (
 const (
 	defaultOVMFCodePath = "/usr/share/OVMF/OVMF_CODE.fd"
 	defaultOVMFVarsPath = "/usr/share/OVMF/OVMF_VARS.fd"
+
+	defaultRebootTimeout = 30 * time.Second
 )
 
 var vhostNetSupported bool
@@ -523,11 +526,21 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 		}
 
 		params = append(params, "-netdev", netdev)
-		params = append(params, "-device",
-			fmt.Sprintf("virtio-net-pci,netdev=%s,romfile=,mac=%s", br, generateRandomMACForKVM()))
+
+		devParams := []string{
+			"virtio-net-pci",
+			fmt.Sprintf("netdev=%s", br),
+			fmt.Sprintf("mac=%s", generateRandomMACForKVM()),
+		}
+		if n.Spec.BIOS != SeaBIOS {
+			// disable iPXE boot
+			devParams = append(devParams, "romfile=")
+		}
+		params = append(params, "-device", strings.Join(devParams, ","))
 	}
 
-	if n.Spec.BIOS == UEFI {
+	switch n.Spec.BIOS {
+	case UEFI:
 		p := q.nvramPath(n.Name)
 		err := createNVRAM(ctx, p)
 		if err != nil {
@@ -536,7 +549,10 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 			})
 			return err
 		}
+	case SeaBIOS:
+		params = append(params, "-bios", "seabios.bin")
 	}
+	params = append(params, "-boot", fmt.Sprintf("reboot-timeout=%d", int64(defaultRebootTimeout/time.Millisecond)))
 
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	qemuCommand := cmd.CommandContext(ctx, "qemu-system-x86_64", params...)

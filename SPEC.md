@@ -147,7 +147,10 @@ The properties in the `spec` are the following:
 - `ignition`: [Ignition file](https://coreos.com/ignition/docs/latest/configuration-v2_1.html).
 - `resources`:  `cpu` and `memory` resources to allocate to the VM.
 - `smbios`: System Management BIOS (SMBIOS) values for `manufacturer`, `product`, and `serial`.  If `serial` is not set, a hash value of the node's name is used.
-- `bios`: BIOS mode of the VM.  If `uefi` is specified, the VM loads OVMF as BIOS.
+- `bios`: BIOS mode of the VM.
+    - If not specified: The VM will load Qemu's default BIOS and disable iPXE boot by a net device.
+    - If `uefi` is specified: The VM loads OVMF as BIOS and disable iPXE boot by a net device.
+    - If `seabios` is specified: The VM loads SeaBIOS as BIOS and enable iPXE boot by a net device. The BIOS file is required to be set on `/usr/share/qemu/seabios.bin`.
 
 ### `image` volume
 
