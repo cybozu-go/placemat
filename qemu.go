@@ -548,6 +548,8 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 			})
 			return err
 		}
+	} else {
+		params = append(params, "-bios", "bios.bin")
 	}
 	params = append(params, "-boot", fmt.Sprintf("reboot-timeout=%d", int64(defaultRebootTimeout/time.Millisecond)))
 
