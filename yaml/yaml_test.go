@@ -206,7 +206,7 @@ func testUnmarshalNetwork(t *testing.T) {
 kind: Network
 name: net1
 spec:
-  internal: false
+  type: external
   use-nat: true
   addresses:
     - 10.0.0.1
@@ -215,7 +215,7 @@ spec:
 			expected: placemat.Network{
 				Name: "net1",
 				Spec: placemat.NetworkSpec{
-					Internal:  false,
+					Type:      placemat.NetworkExternal,
 					UseNAT:    true,
 					Addresses: []string{"10.0.0.1", "10.0.0.2"},
 				},
@@ -227,12 +227,29 @@ spec:
 kind: Network
 name: net2
 spec:
-  internal: true
+  type: internal
 `,
 			expected: placemat.Network{
 				Name: "net2",
 				Spec: placemat.NetworkSpec{
-					Internal: true,
+					Type: placemat.NetworkInternal,
+				},
+			},
+		},
+		{
+			source: `
+kind: Network
+name: net3
+spec:
+  type: bmc
+  addresses:
+    - 10.0.0.1/24
+`,
+			expected: placemat.Network{
+				Name: "net3",
+				Spec: placemat.NetworkSpec{
+					Type:      placemat.NetworkBMC,
+					Addresses: []string{"10.0.0.1/24"},
 				},
 			},
 		},
@@ -258,7 +275,7 @@ spec:
 kind: Network
 name: net1
 spec:
-  internal: true
+  type: internal
   use-nat: true
   addresses:
     - 10.0.0.1
@@ -271,8 +288,18 @@ spec:
 kind: Network
 name: net2
 spec:
-  internal: false
+  type: external
   use-nat: true
+  addresses:
+`,
+			expected: "addresses is empty for non-internal network",
+		},
+		{
+			source: `
+kind: Network
+name: net3
+spec:
+  type: bmc
   addresses:
 `,
 			expected: "addresses is empty for non-internal network",
@@ -659,7 +686,7 @@ func testUnmarshalCluster(t *testing.T) {
 kind: Network
 name: net1
 spec:
-  internal: true
+  type: internal
 ---
 kind: Image
 name: ubuntu

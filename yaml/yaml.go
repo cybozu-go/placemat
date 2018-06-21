@@ -133,7 +133,7 @@ type PodConfig struct {
 
 // NetworkSpec represents a Network specification in YAML
 type NetworkSpec struct {
-	Internal  bool     `yaml:"internal"`
+	Type      string   `yaml:"type"`
 	UseNAT    bool     `yaml:"use-nat"`
 	Addresses []string `yaml:"addresses,omitempty"`
 }
@@ -297,16 +297,26 @@ func unmarshalNetwork(data []byte) (*placemat.Network, error) {
 	if n.Name == "" {
 		return nil, errors.New("network name is empty")
 	}
-	if n.Spec.Internal && (n.Spec.UseNAT || len(n.Spec.Addresses) > 0) {
+	if !(n.Spec.Type == "internal" || n.Spec.Type == "external" || n.Spec.Type == "bmc") {
+		return nil, errors.New("unknown network type")
+	}
+	if n.Spec.Type == "internal" && (n.Spec.UseNAT || len(n.Spec.Addresses) > 0) {
 		return nil, errors.New("'use-nat' and 'addresses' are meaningless for internal network")
 	}
-	if !n.Spec.Internal && len(n.Spec.Addresses) == 0 {
+	if n.Spec.Type != "internal" && len(n.Spec.Addresses) == 0 {
 		return nil, errors.New("addresses is empty for non-internal network")
 	}
 
 	var network placemat.Network
 	network.Name = n.Name
-	network.Spec.Internal = n.Spec.Internal
+	switch n.Spec.Type {
+	case "internal":
+		network.Spec.Type = placemat.NetworkInternal
+	case "external":
+		network.Spec.Type = placemat.NetworkExternal
+	case "bmc":
+		network.Spec.Type = placemat.NetworkBMC
+	}
 	network.Spec.UseNAT = n.Spec.UseNAT
 	network.Spec.Addresses = n.Spec.Addresses
 	return &network, nil

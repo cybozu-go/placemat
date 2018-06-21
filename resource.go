@@ -15,6 +15,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+// NetworkType represents a network type.
+type NetworkType int
+
+// Network types.
+const (
+	NetworkInternal NetworkType = iota
+	NetworkExternal
+	NetworkBMC
+)
+
 // VolumeRecreatePolicy represents a policy to recreate a volume
 type VolumeRecreatePolicy int
 
@@ -41,7 +51,7 @@ const (
 
 // NetworkSpec represents a network specification
 type NetworkSpec struct {
-	Internal  bool
+	Type      NetworkType
 	UseNAT    bool
 	Addresses []string
 }
