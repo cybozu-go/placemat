@@ -144,7 +144,7 @@ This will launch `picocom`.  To exit, type `Ctrl-Q`, then `Ctrl-X`.
 Specification
 -------------
 
-See [SPEC](SPEC.md).
+See specifications under [docs directory](docs/).
 
 License
 -------
