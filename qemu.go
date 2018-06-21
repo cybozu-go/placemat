@@ -2,6 +2,7 @@ package placemat
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/sha1"
 	"errors"
@@ -47,6 +48,10 @@ func init() {
 	}
 }
 
+type nodeProcess struct {
+	cmd *cmd.LogCmd
+}
+
 // QemuProvider is an implementation of Provider interface.  It launches
 // qemu-system-x86_64 as a VM engine, and qemu-img to create image.
 type QemuProvider struct {
@@ -61,6 +66,9 @@ type QemuProvider struct {
 	imageCache *cache
 	dataCache  *cache
 	tempDir    string
+
+	nodeCh        chan BMCInfo
+	nodeProcesses map[string]nodeProcess
 }
 
 // ImageCache implements Provier interface.
@@ -92,6 +100,9 @@ func (q *QemuProvider) Setup(dataDir, cacheDir string) error {
 	if err != nil {
 		return err
 	}
+
+	q.nodeCh = make(chan BMCInfo)
+	q.nodeProcesses = make(map[string]nodeProcess)
 
 	return nil
 }
@@ -459,11 +470,10 @@ func (q *QemuProvider) qemuParams(n *Node) []string {
 	if n.Spec.SMBIOS.Product != "" {
 		smbios += ",product=" + n.Spec.SMBIOS.Product
 	}
-	if n.Spec.SMBIOS.Serial != "" {
-		smbios += ",serial=" + n.Spec.SMBIOS.Serial
-	} else {
-		smbios += ",serial=" + nodeSerial(n.Name)
+	if n.Spec.SMBIOS.Serial == "" {
+		n.Spec.SMBIOS.Serial = nodeSerial(n.Name)
 	}
+	smbios += ",serial=" + n.Spec.SMBIOS.Serial
 	params = append(params, "-smbios", smbios)
 	return params
 }
@@ -550,11 +560,17 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 		}
 	}
 	params = append(params, "-boot", fmt.Sprintf("reboot-timeout=%d", int64(defaultRebootTimeout/time.Millisecond)))
+	params = append(params, "-monitor", "none")
+	params = append(params, "-serial", "stdio")
 
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	qemuCommand := cmd.CommandContext(ctx, "qemu-system-x86_64", params...)
+	w := processWriter{
+		serial: n.Spec.SMBIOS.Serial,
+		ch:     q.nodeCh,
+	}
+	qemuCommand.Stdout = &w
 	if q.Debug {
-		qemuCommand.Stdout = newColoredLogWriter("qemu", n.Name, os.Stdout)
 		qemuCommand.Stderr = newColoredLogWriter("qemu", n.Name, os.Stderr)
 	}
 	err := qemuCommand.Run()
@@ -563,8 +579,39 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 			"error": err,
 		})
 	}
+	q.nodeProcesses[n.Spec.SMBIOS.Serial] = nodeProcess{
+		cmd: qemuCommand,
+	}
 
 	return err
+}
+
+type BMCInfo struct {
+	serial     string
+	bmcAddress string
+}
+
+type processWriter struct {
+	data   []byte
+	serial string
+	ch     chan<- BMCInfo
+}
+
+func (w *processWriter) Write(p []byte) (n int, err error) {
+	w.data = append(w.data, p...)
+	index := bytes.IndexByte(w.data, '\n')
+	if index != -1 {
+		bmcAddress := w.data[:index]
+		w.data = w.data[index+1:]
+
+		if len(bmcAddress) != 0 {
+			w.ch <- BMCInfo{
+				serial:     w.serial,
+				bmcAddress: string(bmcAddress),
+			}
+		}
+	}
+	return len(p), nil
 }
 
 func generateRandomMACForKVM() string {
@@ -673,6 +720,18 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 	}
 
 	env := cmd.NewEnvironment(ctx)
+
+	env.Go(func(ctx context.Context) error {
+		for {
+			select {
+			case info := <-q.nodeCh:
+				fmt.Printf("============================%v\n", info)
+			case <-ctx.Done():
+				return nil
+			}
+		}
+		return nil
+	})
 	for _, n := range nodes {
 		node := n
 		env.Go(func(ctx context.Context) error {
