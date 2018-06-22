@@ -26,6 +26,7 @@ const (
 	defaultOVMFVarsPath = "/usr/share/OVMF/OVMF_VARS.fd"
 
 	defaultRebootTimeout = 30 * time.Second
+	maxBufferSize        = 256
 )
 
 var vhostNetSupported bool
@@ -599,20 +600,29 @@ type processWriter struct {
 }
 
 func (w *processWriter) Write(p []byte) (n int, err error) {
+	n = len(p)
 	w.data = append(w.data, p...)
-	index := bytes.IndexByte(w.data, '\n')
-	if index != -1 {
-		bmcAddress := w.data[:index]
-		w.data = w.data[index+1:]
-
-		if len(bmcAddress) != 0 {
-			w.ch <- BMCInfo{
-				serial:     w.serial,
-				bmcAddress: string(bmcAddress),
-			}
-		}
+	if len(w.data) > maxBufferSize {
+		log.Warn("discard data received from guest VM, because it is too large.", nil)
+		w.data = nil
+		return
 	}
-	return len(p), nil
+	index := bytes.IndexByte(w.data, '\n')
+
+	switch index {
+	case 0:
+		w.data = w.data[1:]
+		fallthrough
+	case -1:
+		return
+	}
+	bmcAddress := string(w.data[:index])
+	w.data = w.data[index+1:]
+	w.ch <- BMCInfo{
+		serial:     w.serial,
+		bmcAddress: bmcAddress,
+	}
+	return
 }
 
 func generateRandomMACForKVM() string {
