@@ -586,6 +586,7 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 	return err
 }
 
+// BMCInfo represents BMC information notified by a guest VM.
 type BMCInfo struct {
 	serial     string
 	bmcAddress string
