@@ -102,7 +102,7 @@ func (q *QemuProvider) Setup(dataDir, cacheDir string) error {
 		return err
 	}
 
-	q.bmcServer = newBMCServer()
+	q.bmcServer = newBMCServer(&q.tng)
 
 	return nil
 }

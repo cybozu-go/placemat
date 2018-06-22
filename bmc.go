@@ -14,15 +14,16 @@ type bmcServer struct {
 	nodeProcesses map[string]nodeProcess // key: serial
 	nodeSerials   map[string]string      // key: address
 
-	tng      nameGenerator
+	tng      *nameGenerator
 	networks map[string][]*net.IPNet
 }
 
-func newBMCServer() *bmcServer {
+func newBMCServer(tng *nameGenerator) *bmcServer {
 	return &bmcServer{
 		nodeCh:        make(chan bmcInfo),
 		nodeProcesses: make(map[string]nodeProcess),
 		nodeSerials:   make(map[string]string),
+		tng:           tng,
 		networks:      make(map[string][]*net.IPNet),
 	}
 }
@@ -41,8 +42,6 @@ func (s *bmcServer) setup(networks []*Network) error {
 		}
 	}
 
-	s.tng.prefix = "bmctap"
-
 	return nil
 }
 
@@ -59,7 +58,6 @@ func (s *bmcServer) start(ctx context.Context) error {
 				})
 			}
 		case <-ctx.Done():
-			s.deleteTaps(ctx)
 			return nil
 		}
 	}
@@ -103,16 +101,4 @@ func (s *bmcServer) findBridge(address string) (string, error) {
 	}
 
 	return "", errors.New("BMC address not in range of BMC networks: " + address)
-}
-
-func (s *bmcServer) deleteTaps(ctx context.Context) {
-	for _, tap := range s.tng.GeneratedNames() {
-		err := deleteTap(ctx, tap)
-		if err != nil {
-			log.Error("failed to delete a TAP", map[string]interface{}{
-				"name":      tap,
-				log.FnError: err,
-			})
-		}
-	}
 }
