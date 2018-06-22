@@ -50,7 +50,8 @@ func init() {
 }
 
 type nodeProcess struct {
-	cmd *cmd.LogCmd
+	cmd     *cmd.LogCmd
+	monitor net.Conn
 }
 
 // QemuProvider is an implementation of Provider interface.  It launches
@@ -277,6 +278,10 @@ func deletePodNS(ctx context.Context, pod string) error {
 
 func (q *QemuProvider) socketPath(host string) string {
 	return filepath.Join(q.RunDir, host+".socket")
+}
+
+func (q *QemuProvider) monitorSocketPath(host string) string {
+	return filepath.Join(q.RunDir, host+".monitor")
 }
 
 func (q *QemuProvider) nvramPath(host string) string {
@@ -561,8 +566,10 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 		}
 	}
 	params = append(params, "-boot", fmt.Sprintf("reboot-timeout=%d", int64(defaultRebootTimeout/time.Millisecond)))
-	params = append(params, "-monitor", "none")
 	params = append(params, "-serial", "stdio")
+
+	monitor := q.monitorSocketPath(n.Name)
+	params = append(params, "-monitor", "unix:"+monitor+",server,nowait")
 
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	qemuCommand := cmd.CommandContext(ctx, "qemu-system-x86_64", params...)
@@ -574,14 +581,52 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 	if q.Debug {
 		qemuCommand.Stderr = newColoredLogWriter("qemu", n.Name, os.Stderr)
 	}
-	err := qemuCommand.Run()
+
+	err := qemuCommand.Start()
+	if err != nil {
+		return err
+	}
+
+	var conn net.Conn
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		os.Remove(monitor)
+	}()
+
+	for {
+		_, err = os.Stat(monitor)
+		if err == nil {
+			break
+		}
+		if os.IsNotExist(err) {
+			select {
+			case <-time.After(100 * time.Millisecond):
+			case <-ctx.Done():
+				return nil
+			}
+			continue
+		}
+		return err
+	}
+
+	conn, err = net.Dial("unix", monitor)
+	if err != nil {
+		return err
+	}
+
+	proc := nodeProcess{
+		cmd:     qemuCommand,
+		monitor: conn,
+	}
+	q.nodeProcesses[n.Spec.SMBIOS.Serial] = proc
+
+	err = qemuCommand.Wait()
 	if err != nil {
 		log.Error("QEMU exited with an error", map[string]interface{}{
 			"error": err,
 		})
-	}
-	q.nodeProcesses[n.Spec.SMBIOS.Serial] = nodeProcess{
-		cmd: qemuCommand,
 	}
 
 	return err
