@@ -596,31 +596,34 @@ type BMCInfo struct {
 type processWriter struct {
 	data   []byte
 	serial string
+	sent   bool
 	ch     chan<- BMCInfo
 }
 
 func (w *processWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
 
+	if w.sent {
+		return
+	}
+
 	index := bytes.IndexByte(p, '\n')
-	for index != -1 {
-		w.data = append(w.data, p[:index]...)
-		bmcAddress := strings.TrimSpace(string(w.data))
-		w.ch <- BMCInfo{
-			serial:     w.serial,
-			bmcAddress: bmcAddress,
+	if index == -1 {
+		w.data = append(w.data, p...)
+		if len(w.data) > maxBufferSize {
+			log.Warn("discard data received from guest VM, because it is too large.", nil)
+			w.data = nil
 		}
-
-		w.data = nil
-		p = p[index+1:]
-		index = bytes.IndexByte(p, '\n')
+		return
 	}
 
-	w.data = append(w.data, p...)
-	if len(w.data) > maxBufferSize {
-		log.Warn("discard data received from guest VM, because it is too large.", nil)
-		w.data = nil
+	w.data = append(w.data, p[:index]...)
+	bmcAddress := strings.TrimSpace(string(w.data))
+	w.ch <- BMCInfo{
+		serial:     w.serial,
+		bmcAddress: bmcAddress,
 	}
+	w.sent = true
 
 	return
 }
