@@ -601,27 +601,27 @@ type processWriter struct {
 
 func (w *processWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
+
+	index := bytes.IndexByte(p, '\n')
+	for index != -1 {
+		w.data = append(w.data, p[:index]...)
+		bmcAddress := strings.TrimSpace(string(w.data))
+		w.ch <- BMCInfo{
+			serial:     w.serial,
+			bmcAddress: bmcAddress,
+		}
+
+		w.data = nil
+		p = p[index+1:]
+		index = bytes.IndexByte(p, '\n')
+	}
+
 	w.data = append(w.data, p...)
 	if len(w.data) > maxBufferSize {
 		log.Warn("discard data received from guest VM, because it is too large.", nil)
 		w.data = nil
-		return
 	}
-	index := bytes.IndexByte(w.data, '\n')
 
-	switch index {
-	case 0:
-		w.data = w.data[1:]
-		fallthrough
-	case -1:
-		return
-	}
-	bmcAddress := string(w.data[:index])
-	w.data = w.data[index+1:]
-	w.ch <- BMCInfo{
-		serial:     w.serial,
-		bmcAddress: bmcAddress,
-	}
 	return
 }
 
