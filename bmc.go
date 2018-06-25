@@ -3,6 +3,7 @@ package placemat
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"net"
@@ -12,22 +13,23 @@ import (
 	"github.com/cybozu-go/log"
 	"github.com/rmxymh/infra-ecosphere/bmc"
 	"github.com/rmxymh/infra-ecosphere/ipmi"
+	"github.com/rmxymh/infra-ecosphere/utils"
 )
 
 type bmcServer struct {
-	nodeCh        chan bmcInfo
-	nodeProcesses map[string]nodeProcess // key: serial
-	nodeSerials   map[string]string      // key: address
+	nodeCh      chan bmcInfo
+	nodeVMs     map[string]*nodeVM // key: serial
+	nodeSerials map[string]string  // key: address
 
 	networks map[string][]*net.IPNet
 }
 
 func newBMCServer() *bmcServer {
 	return &bmcServer{
-		nodeCh:        make(chan bmcInfo),
-		nodeProcesses: make(map[string]nodeProcess),
-		nodeSerials:   make(map[string]string),
-		networks:      make(map[string][]*net.IPNet),
+		nodeCh:      make(chan bmcInfo),
+		nodeVMs:     make(map[string]*nodeVM),
+		nodeSerials: make(map[string]string),
+		networks:    make(map[string][]*net.IPNet),
 	}
 }
 
@@ -45,18 +47,67 @@ func (s *bmcServer) setup(networks []*Network) error {
 		}
 	}
 
-	bmc.AddBMCUser("cybozu", "cybzou")
+	bmc.AddBMCUser("cybozu", "cybozu")
 
-	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_GET_CHASSIS_STATUS, handleIPMI)
-	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_CHASSIS_CONTROL, handleIPMI)
-	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_CHASSIS_RESET, handleIPMI)
+	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_GET_CHASSIS_STATUS, s.handleIPMIGetChassisStatus)
+	//ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_CHASSIS_CONTROL, s.handleIPMIChassisControl)
 
 	return nil
 }
 
-func handleIPMI(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISessionWrapper, message ipmi.IPMIMessage) {
+func (s *bmcServer) getVMByAddress(addr string) (*nodeVM, error) {
+	serial, ok := s.nodeSerials[addr]
+	if !ok {
+		return nil, errors.New("address not registered: " + addr)
+	}
 
-	fmt.Println("-----------------------------handle")
+	vm, ok := s.nodeVMs[serial]
+	if !ok {
+		return nil, errors.New("serial not registered: " + serial)
+	}
+
+	return vm, nil
+}
+
+func (s *bmcServer) handleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISessionWrapper, message ipmi.IPMIMessage) {
+	session, ok := ipmi.GetSession(wrapper.SessionId)
+	if !ok {
+		fmt.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
+		return
+	}
+
+	localIP := utils.GetLocalIP(server)
+	vm, err := s.getVMByAddress(localIP)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	session.Inc()
+
+	response := ipmi.IPMIGetChassisStatusResponse{}
+	if vm.isRunning() {
+		response.CurrentPowerState |= ipmi.CHASSIS_POWER_STATE_BITMASK_POWER_ON
+	}
+	response.LastPowerEvent = 0
+	response.MiscChassisState = 0
+	response.FrontPanelButtonCapabilities = 0
+
+	dataBuf := bytes.Buffer{}
+	binary.Write(&dataBuf, binary.LittleEndian, response)
+
+	responseWrapper, responseMessage := ipmi.BuildResponseMessageTemplate(
+		wrapper, message, (ipmi.IPMI_NETFN_CHASSIS | ipmi.IPMI_NETFN_RESPONSE), ipmi.IPMI_CMD_GET_CHASSIS_STATUS)
+	responseMessage.Data = dataBuf.Bytes()
+
+	responseWrapper.SessionId = wrapper.SessionId
+	responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
+	rmcp := ipmi.BuildUpRMCPForIPMI()
+
+	obuf := bytes.Buffer{}
+	ipmi.SerializeRMCP(&obuf, rmcp)
+	ipmi.SerializeIPMI(&obuf, responseWrapper, responseMessage, session.User.Password)
+	server.WriteToUDP(obuf.Bytes(), addr)
 }
 
 func (s *bmcServer) listenIPMI(ctx context.Context) error {

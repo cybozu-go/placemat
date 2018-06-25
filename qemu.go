@@ -7,6 +7,7 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -49,9 +50,32 @@ func init() {
 	}
 }
 
-type nodeProcess struct {
+type nodeVM struct {
 	cmd     *cmd.LogCmd
 	monitor net.Conn
+	running bool
+}
+
+func (n *nodeVM) isRunning() bool {
+	return n.running
+}
+
+func (n *nodeVM) powerOn() {
+	if n.running {
+		return
+	}
+
+	io.WriteString(n.monitor, "system_reset\ncont\n")
+	n.running = true
+}
+
+func (n *nodeVM) powerOff() {
+	if !n.running {
+		return
+	}
+
+	io.WriteString(n.monitor, "stop\n")
+	n.running = false
 }
 
 // QemuProvider is an implementation of Provider interface.  It launches
@@ -613,12 +637,16 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 	if err != nil {
 		return err
 	}
+	go func() {
+		io.Copy(ioutil.Discard, conn)
+	}()
 
-	proc := nodeProcess{
+	vm := &nodeVM{
 		cmd:     qemuCommand,
 		monitor: conn,
+		running: true,
 	}
-	q.bmcServer.nodeProcesses[n.Spec.SMBIOS.Serial] = proc
+	q.bmcServer.nodeVMs[n.Spec.SMBIOS.Serial] = vm
 
 	err = qemuCommand.Wait()
 	if err != nil {
