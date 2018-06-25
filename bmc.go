@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -17,19 +18,20 @@ import (
 )
 
 type bmcServer struct {
-	nodeCh      chan bmcInfo
-	nodeVMs     map[string]*nodeVM // key: serial
-	nodeSerials map[string]string  // key: address
-
+	nodeCh   chan bmcInfo
+	nodeVMs  map[string]*nodeVM // key: serial
 	networks map[string][]*net.IPNet
+
+	mu          sync.Mutex
+	nodeSerials map[string]string // key: address
 }
 
 func newBMCServer() *bmcServer {
 	return &bmcServer{
 		nodeCh:      make(chan bmcInfo),
 		nodeVMs:     make(map[string]*nodeVM),
-		nodeSerials: make(map[string]string),
 		networks:    make(map[string][]*net.IPNet),
+		nodeSerials: make(map[string]string),
 	}
 }
 
@@ -56,7 +58,10 @@ func (s *bmcServer) setup(networks []*Network) error {
 }
 
 func (s *bmcServer) getVMByAddress(addr string) (*nodeVM, error) {
+	s.mu.Lock()
 	serial, ok := s.nodeSerials[addr]
+	s.mu.Unlock()
+
 	if !ok {
 		return nil, errors.New("address not registered: " + addr)
 	}
@@ -110,9 +115,8 @@ func (s *bmcServer) handleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UD
 	server.WriteToUDP(obuf.Bytes(), addr)
 }
 
-func (s *bmcServer) listenIPMI(ctx context.Context) error {
-	addr := "0.0.0.0:623"
-	serverAddr, err := net.ResolveUDPAddr("udp", addr)
+func (s *bmcServer) listenIPMI(ctx context.Context, addr string) error {
+	serverAddr, err := net.ResolveUDPAddr("udp", addr+":623")
 	if err != nil {
 		return err
 	}
@@ -151,6 +155,7 @@ func (s *bmcServer) handleNode(ctx context.Context) error {
 					"bmc_address": info.bmcAddress,
 				})
 			}
+			go s.listenIPMI(ctx, info.bmcAddress)
 		case <-ctx.Done():
 			return nil
 		}
@@ -158,7 +163,9 @@ func (s *bmcServer) handleNode(ctx context.Context) error {
 }
 
 func (s *bmcServer) addPort(ctx context.Context, info bmcInfo) error {
+	s.mu.Lock()
 	s.nodeSerials[info.bmcAddress] = info.serial
+	s.mu.Unlock()
 
 	br, network, err := s.findBridge(info.bmcAddress)
 	if err != nil {
