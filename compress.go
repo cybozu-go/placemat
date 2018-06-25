@@ -3,9 +3,8 @@ package placemat
 import (
 	"compress/bzip2"
 	"compress/gzip"
+	"errors"
 	"io"
-
-	"github.com/pkg/errors"
 )
 
 // Decompressor defines an interface to decompress data from io.Reader.

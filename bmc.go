@@ -2,12 +2,12 @@ package placemat
 
 import (
 	"context"
+	"errors"
 	"net"
 	"strconv"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
-	"github.com/pkg/errors"
 )
 
 type bmcServer struct {

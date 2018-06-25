@@ -2,6 +2,7 @@ package placemat
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
-	"github.com/pkg/errors"
 )
 
 // NetworkType represents a network type.
