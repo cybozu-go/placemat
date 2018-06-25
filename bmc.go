@@ -52,7 +52,7 @@ func (s *bmcServer) setup(networks []*Network) error {
 	bmc.AddBMCUser("cybozu", "cybozu")
 
 	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_GET_CHASSIS_STATUS, s.handleIPMIGetChassisStatus)
-	//ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_CHASSIS_CONTROL, s.handleIPMIChassisControl)
+	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_CHASSIS_CONTROL, s.handleIPMIChassisControl)
 
 	return nil
 }
@@ -112,6 +112,64 @@ func (s *bmcServer) handleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UD
 	obuf := bytes.Buffer{}
 	ipmi.SerializeRMCP(&obuf, rmcp)
 	ipmi.SerializeIPMI(&obuf, responseWrapper, responseMessage, session.User.Password)
+	server.WriteToUDP(obuf.Bytes(), addr)
+}
+
+func (s *bmcServer) handleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISessionWrapper, message ipmi.IPMIMessage) {
+	buf := bytes.NewBuffer(message.Data)
+	request := ipmi.IPMIChassisControlRequest{}
+	binary.Read(buf, binary.LittleEndian, &request)
+
+	session, ok := ipmi.GetSession(wrapper.SessionId)
+	if !ok {
+		fmt.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
+		return
+	}
+
+	bmcUser := session.User
+	code := ipmi.GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, wrapper.SessionId, message, wrapper.SequenceNumber)
+	if bytes.Compare(wrapper.AuthenticationCode[:], code[:]) == 0 {
+		fmt.Println("      IPMI Authentication Pass.")
+	} else {
+		fmt.Println("      IPMI Authentication Failed.")
+	}
+
+	localIP := utils.GetLocalIP(server)
+	vm, err := s.getVMByAddress(localIP)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	switch request.ChassisControl {
+	case ipmi.CHASSIS_CONTROL_POWER_DOWN:
+		vm.powerOff()
+	case ipmi.CHASSIS_CONTROL_POWER_UP:
+		vm.powerOn()
+	case ipmi.CHASSIS_CONTROL_POWER_CYCLE:
+		vm.powerOff()
+		vm.powerOn()
+	case ipmi.CHASSIS_CONTROL_HARD_RESET:
+		vm.powerOff()
+		vm.powerOn()
+	case ipmi.CHASSIS_CONTROL_PULSE:
+		// do nothing
+	case ipmi.CHASSIS_CONTROL_POWER_SOFT:
+		//vm.powerSoft()
+	}
+
+	session.Inc()
+
+	responseWrapper, responseMessage := ipmi.BuildResponseMessageTemplate(
+		wrapper, message, (ipmi.IPMI_NETFN_CHASSIS | ipmi.IPMI_NETFN_RESPONSE), ipmi.IPMI_CMD_CHASSIS_CONTROL)
+
+	responseWrapper.SessionId = wrapper.SessionId
+	responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
+	rmcp := ipmi.BuildUpRMCPForIPMI()
+
+	obuf := bytes.Buffer{}
+	ipmi.SerializeRMCP(&obuf, rmcp)
+	ipmi.SerializeIPMI(&obuf, responseWrapper, responseMessage, bmcUser.Password)
 	server.WriteToUDP(obuf.Bytes(), addr)
 }
 
