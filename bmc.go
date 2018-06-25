@@ -3,6 +3,7 @@ package placemat
 import (
 	"context"
 	"net"
+	"strconv"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -14,16 +15,14 @@ type bmcServer struct {
 	nodeProcesses map[string]nodeProcess // key: serial
 	nodeSerials   map[string]string      // key: address
 
-	tng      *nameGenerator
 	networks map[string][]*net.IPNet
 }
 
-func newBMCServer(tng *nameGenerator) *bmcServer {
+func newBMCServer() *bmcServer {
 	return &bmcServer{
 		nodeCh:        make(chan bmcInfo),
 		nodeProcesses: make(map[string]nodeProcess),
 		nodeSerials:   make(map[string]string),
-		tng:           tng,
 		networks:      make(map[string][]*net.IPNet),
 	}
 }
@@ -49,9 +48,9 @@ func (s *bmcServer) start(ctx context.Context) error {
 	for {
 		select {
 		case info := <-s.nodeCh:
-			err := s.addTap(ctx, info)
+			err := s.addPort(ctx, info)
 			if err != nil {
-				log.Warn("adding tap failed", map[string]interface{}{
+				log.Warn("failed to add BMC port", map[string]interface{}{
 					log.FnError:   err,
 					"serial":      info.serial,
 					"bmc_address": info.bmcAddress,
@@ -63,42 +62,38 @@ func (s *bmcServer) start(ctx context.Context) error {
 	}
 }
 
-func (s *bmcServer) addTap(ctx context.Context, info bmcInfo) error {
+func (s *bmcServer) addPort(ctx context.Context, info bmcInfo) error {
 	s.nodeSerials[info.bmcAddress] = info.serial
 
-	tap := s.tng.New()
-	br, err := s.findBridge(info.bmcAddress)
+	br, network, err := s.findBridge(info.bmcAddress)
 	if err != nil {
 		return err
 	}
 
-	log.Info("creating BMC tap", map[string]interface{}{
+	prefixLen, _ := network.Mask.Size()
+	address := info.bmcAddress + "/" + strconv.Itoa(prefixLen)
+
+	log.Info("creating BMC port", map[string]interface{}{
 		"serial":      info.serial,
-		"bmc_address": info.bmcAddress,
-		"tap":         tap,
+		"bmc_address": address,
 		"bridge":      br,
 	})
 
-	err = createTap(ctx, tap, br)
-	if err != nil {
-		return err
-	}
-
-	c := cmd.CommandContext(ctx, "ip", "addr", "add", info.bmcAddress, "dev", tap)
+	c := cmd.CommandContext(ctx, "ip", "addr", "add", address, "dev", br)
 	c.Severity = log.LvDebug
 	return c.Run()
 }
 
-func (s *bmcServer) findBridge(address string) (string, error) {
+func (s *bmcServer) findBridge(address string) (string, *net.IPNet, error) {
 	ip := net.ParseIP(address)
 
 	for name, network := range s.networks {
 		for _, ipnet := range network {
 			if ipnet.Contains(ip) {
-				return name, nil
+				return name, ipnet, nil
 			}
 		}
 	}
 
-	return "", errors.New("BMC address not in range of BMC networks: " + address)
+	return "", nil, errors.New("BMC address not in range of BMC networks: " + address)
 }
