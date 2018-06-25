@@ -1,13 +1,17 @@
 package placemat
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
+	"github.com/rmxymh/infra-ecosphere/bmc"
+	"github.com/rmxymh/infra-ecosphere/ipmi"
 )
 
 type bmcServer struct {
@@ -41,10 +45,50 @@ func (s *bmcServer) setup(networks []*Network) error {
 		}
 	}
 
+	bmc.AddBMCUser("cybozu", "cybzou")
+
+	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_GET_CHASSIS_STATUS, handleIPMI)
+	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_CHASSIS_CONTROL, handleIPMI)
+	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_CHASSIS_RESET, handleIPMI)
+
 	return nil
 }
 
-func (s *bmcServer) start(ctx context.Context) error {
+func handleIPMI(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISessionWrapper, message ipmi.IPMIMessage) {
+
+	fmt.Println("-----------------------------handle")
+}
+
+func (s *bmcServer) listenIPMI(ctx context.Context) error {
+	addr := "0.0.0.0:623"
+	serverAddr, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		return err
+	}
+
+	server, err := net.ListenUDP("udp", serverAddr)
+	if err != nil {
+		return err
+	}
+	go func() {
+		<-ctx.Done()
+		server.Close()
+	}()
+
+	buf := make([]byte, 1024)
+	for {
+		_, addr, err := server.ReadFromUDP(buf)
+		if err != nil {
+			return err
+		}
+
+		bytebuf := bytes.NewBuffer(buf)
+		ipmi.DeserializeAndExecute(bytebuf, addr, server)
+	}
+	return nil
+}
+
+func (s *bmcServer) handleNode(ctx context.Context) error {
 	for {
 		select {
 		case info := <-s.nodeCh:

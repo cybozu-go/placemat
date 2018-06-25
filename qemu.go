@@ -782,7 +782,8 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 	if err != nil {
 		return err
 	}
-	env.Go(q.bmcServer.start)
+	env.Go(q.bmcServer.listenIPMI)
+	env.Go(q.bmcServer.handleNode)
 
 	for _, n := range nodes {
 		node := n
