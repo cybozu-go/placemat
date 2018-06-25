@@ -69,8 +69,7 @@ type QemuProvider struct {
 	dataCache  *cache
 	tempDir    string
 
-	nodeCh        chan BMCInfo
-	nodeProcesses map[string]nodeProcess
+	bmcServer *bmcServer
 }
 
 // ImageCache implements Provier interface.
@@ -103,8 +102,7 @@ func (q *QemuProvider) Setup(dataDir, cacheDir string) error {
 		return err
 	}
 
-	q.nodeCh = make(chan BMCInfo)
-	q.nodeProcesses = make(map[string]nodeProcess)
+	q.bmcServer = newBMCServer()
 
 	return nil
 }
@@ -575,7 +573,7 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 	qemuCommand := cmd.CommandContext(ctx, "qemu-system-x86_64", params...)
 	w := processWriter{
 		serial: n.Spec.SMBIOS.Serial,
-		ch:     q.nodeCh,
+		ch:     q.bmcServer.nodeCh,
 	}
 	qemuCommand.Stdout = &w
 	if q.Debug {
@@ -620,7 +618,7 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 		cmd:     qemuCommand,
 		monitor: conn,
 	}
-	q.nodeProcesses[n.Spec.SMBIOS.Serial] = proc
+	q.bmcServer.nodeProcesses[n.Spec.SMBIOS.Serial] = proc
 
 	err = qemuCommand.Wait()
 	if err != nil {
@@ -632,8 +630,8 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 	return err
 }
 
-// BMCInfo represents BMC information notified by a guest VM.
-type BMCInfo struct {
+// bmcInfo represents BMC information notified by a guest VM.
+type bmcInfo struct {
 	serial     string
 	bmcAddress string
 }
@@ -642,7 +640,7 @@ type processWriter struct {
 	data   []byte
 	serial string
 	sent   bool
-	ch     chan<- BMCInfo
+	ch     chan<- bmcInfo
 }
 
 func (w *processWriter) Write(p []byte) (n int, err error) {
@@ -664,7 +662,7 @@ func (w *processWriter) Write(p []byte) (n int, err error) {
 
 	w.data = append(w.data, p[:index]...)
 	bmcAddress := strings.TrimSpace(string(w.data))
-	w.ch <- BMCInfo{
+	w.ch <- bmcInfo{
 		serial:     w.serial,
 		bmcAddress: bmcAddress,
 	}
@@ -780,17 +778,12 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 
 	env := cmd.NewEnvironment(ctx)
 
-	env.Go(func(ctx context.Context) error {
-		for {
-			select {
-			case info := <-q.nodeCh:
-				fmt.Printf("============================%v\n", info)
-			case <-ctx.Done():
-				return nil
-			}
-		}
-		return nil
-	})
+	err = q.bmcServer.setup(c.Networks)
+	if err != nil {
+		return err
+	}
+	env.Go(q.bmcServer.start)
+
 	for _, n := range nodes {
 		node := n
 		env.Go(func(ctx context.Context) error {
