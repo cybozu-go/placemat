@@ -74,6 +74,8 @@ func (s *bmcServer) getVMByAddress(addr string) (*nodeVM, error) {
 	return vm, nil
 }
 
+// This function is largely copied from github.com/rmxymh/infra-ecosphere,
+// which licensed under the MIT License by Yu-Ming Huang.
 func (s *bmcServer) handleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISessionWrapper, message ipmi.IPMIMessage) {
 	session, ok := ipmi.GetSession(wrapper.SessionId)
 	if !ok {
@@ -115,6 +117,8 @@ func (s *bmcServer) handleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UD
 	server.WriteToUDP(obuf.Bytes(), addr)
 }
 
+// This function is largely copied from github.com/rmxymh/infra-ecosphere,
+// which licensed under the MIT License by Yu-Ming Huang.
 func (s *bmcServer) handleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISessionWrapper, message ipmi.IPMIMessage) {
 	buf := bytes.NewBuffer(message.Data)
 	request := ipmi.IPMIChassisControlRequest{}
