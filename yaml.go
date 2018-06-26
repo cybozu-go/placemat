@@ -28,40 +28,65 @@ func ReadYaml(r *bufio.Reader) (*Cluster, error) {
 
 		err = yaml.Unmarshal(data, &c)
 		if err != nil {
-			return &cluster, err
+			return nil, err
 		}
 
 		switch c.Kind {
 		case "Network":
-			r, err := unmarshalNetwork(data)
+			spec := new(NetworkSpec)
+			err = yaml.Unmarshal(data, spec)
 			if err != nil {
 				return nil, err
 			}
-			cluster.Networks = append(cluster.Networks, r)
+			network, err := NewNetwork(spec)
+			if err != nil {
+				return nil, err
+			}
+			cluster.Networks = append(cluster.Networks, network)
 		case "Image":
-			r, err := unmarshalImage(data)
+			spec := new(ImageSpec)
+			err = yaml.Unmarshal(data, spec)
 			if err != nil {
 				return nil, err
 			}
-			cluster.Images = append(cluster.Images, r)
+			image, err := NewImage(spec)
+			if err != nil {
+				return nil, err
+			}
+			cluster.Images = append(cluster.Images, image)
 		case "DataFolder":
-			r, err := unmarshalDataFolder(data)
+			spec := new(DataFolderSpec)
+			err = yaml.Unmarshal(data, spec)
 			if err != nil {
 				return nil, err
 			}
-			cluster.DataFolders = append(cluster.DataFolders, r)
+			folder, err := NewDataFolder(spec)
+			if err != nil {
+				return nil, err
+			}
+			cluster.DataFolders = append(cluster.DataFolders, folder)
 		case "Node":
-			r, err := unmarshalNode(data)
+			spec := new(NodeSpec)
+			err = yaml.Unmarshal(data, spec)
 			if err != nil {
 				return nil, err
 			}
-			cluster.Nodes = append(cluster.Nodes, r)
+			node, err := NewNode(spec)
+			if err != nil {
+				return nil, err
+			}
+			cluster.Nodes = append(cluster.Nodes, node)
 		case "Pod":
-			r, err := unmarshalPod(data)
+			spec := new(PodSpec)
+			err = yaml.Unmarshal(data, spec)
 			if err != nil {
 				return nil, err
 			}
-			cluster.Pods = append(cluster.Pods, r)
+			pod, err := NewPod(spec)
+			if err != nil {
+				return nil, err
+			}
+			cluster.Pods = append(cluster.Pods, pod)
 		default:
 			return nil, errors.New("unknown resource: " + c.Kind)
 		}

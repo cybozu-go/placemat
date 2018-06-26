@@ -40,10 +40,9 @@ type Network struct {
 	ng        *nameGenerator
 }
 
-func NewNetwork(spec *NetworkSpec, ng *nameGenerator) (*Network, error) {
+func NewNetwork(spec *NetworkSpec) (*Network, error) {
 	n := &Network{
 		NetworkSpec: spec,
-		ng:          ng,
 	}
 
 	if len(spec.Name) > maxNetworkNameLen {
@@ -95,7 +94,9 @@ func iptables(ip net.IP) string {
 	return "ip6tables"
 }
 
-func (n *Network) Create() error {
+func (n *Network) Create(ng *nameGenerator) error {
+	n.ng = ng
+
 	cmds := [][]string{
 		{"ip", "link", "add", n.Name, "type", "bridge"},
 		{"ip", "link", "set", n.Name, "up"},

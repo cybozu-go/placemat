@@ -55,7 +55,7 @@ type PodSpec struct {
 }
 
 func NewPod(spec *PodSpec) (*Pod, error) {
-	p = &Pod{
+	p := &Pod{
 		PodSpec: spec,
 	}
 
@@ -64,15 +64,15 @@ func NewPod(spec *PodSpec) (*Pod, error) {
 	}
 
 	for _, script := range spec.InitScripts {
-		script, err = filepath.Abs(script)
+		script, err := filepath.Abs(script)
 		if err != nil {
 			return nil, err
 		}
-		_, err := os.Stat(script)
+		_, err = os.Stat(script)
 		if err != nil {
 			return nil, err
 		}
-		pod.initScripts = append(pod.initScripts, script)
+		p.initScripts = append(p.initScripts, script)
 	}
 
 	for _, vs := range spec.Volumes {
@@ -232,13 +232,13 @@ func (p *Pod) resolve(c *Cluster) error {
 	}
 
 	for i := range p.Interfaces {
-		nn := p.Interfaces[i].NetworkName
+		nn := p.Interfaces[i].Network
 		if _, ok := nm[nn]; !ok {
 			return errors.New("no such network: " + nn)
 		}
 	}
 
-	for _, v := range p.Volumes {
+	for _, v := range p.volumes {
 		err := v.Resolve(c)
 		if err != nil {
 			return err
@@ -250,7 +250,7 @@ func (p *Pod) resolve(c *Cluster) error {
 
 func (p *Pod) appendParams(params []string) []string {
 	params = append(params, []string{"--hostname", p.Name}...)
-	for _, v := range p.Volumes {
+	for _, v := range p.volumes {
 		params = append(params, []string{"--volume", v.Spec()}...)
 	}
 

@@ -655,7 +655,7 @@ func (q *QemuProvider) startPod(ctx context.Context, p *Pod, root string) error 
 	ips := make(map[string][]string)
 	for i, iface := range p.Interfaces {
 		veth := q.vng.New()
-		err := createVeth(ctx, veth, iface.NetworkName)
+		err := createVeth(ctx, veth, iface.Network)
 		if err != nil {
 			return err
 		}
@@ -720,7 +720,7 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 	}
 	for _, n := range c.Networks {
 		log.Info("Creating network", map[string]interface{}{"name": n.Name})
-		err := n.Create()
+		err := n.Create(&q.tng)
 		if err != nil {
 			return err
 		}
@@ -730,7 +730,7 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 		log.Info("initializing data folder", map[string]interface{}{
 			"name": df.Name,
 		})
-		err := df.Prepare(ctx)
+		err := df.Prepare(ctx, q.tempDir, q.dataCache)
 		if err != nil {
 			return err
 		}
