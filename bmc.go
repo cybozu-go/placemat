@@ -30,20 +30,20 @@ type bmcServer struct {
 	networks []*Network
 
 	muVMs   sync.Mutex
-	nodeVMs map[string]*nodeVM // key: serial
+	nodeVMs map[string]*NodeVM // key: serial
 
 	muSerials   sync.Mutex
 	nodeSerials map[string]string // key: address
 }
 
-func newBMCServer(vms map[string]*nodeVM, networks []*Network, ch <-chan bmcInfo) *bmcServer {
+func newBMCServer(vms map[string]*NodeVM, networks []*Network, ch <-chan bmcInfo) *bmcServer {
 	s := &bmcServer{
 		nodeCh:      ch,
 		nodeVMs:     vms,
 		nodeSerials: make(map[string]string),
 	}
 	for _, n := range networks {
-		if n.Type == NetworkBMC {
+		if n.typ == NetworkBMC {
 			s.networks = append(s.networks, n)
 		}
 	}
@@ -56,7 +56,7 @@ func newBMCServer(vms map[string]*nodeVM, networks []*Network, ch <-chan bmcInfo
 	return s
 }
 
-func (s *bmcServer) getVMByAddress(addr string) (*nodeVM, error) {
+func (s *bmcServer) getVMByAddress(addr string) (*NodeVM, error) {
 	s.muSerials.Lock()
 	serial, ok := s.nodeSerials[addr]
 	s.muSerials.Unlock()
@@ -93,7 +93,7 @@ func (s *bmcServer) handleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UD
 	session.Inc()
 
 	response := ipmi.IPMIGetChassisStatusResponse{}
-	if vm.isRunning() {
+	if vm.IsRunning() {
 		response.CurrentPowerState |= ipmi.CHASSIS_POWER_STATE_BITMASK_POWER_ON
 	}
 	response.LastPowerEvent = 0
@@ -147,15 +147,15 @@ func (s *bmcServer) handleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPC
 
 	switch request.ChassisControl {
 	case ipmi.CHASSIS_CONTROL_POWER_DOWN:
-		vm.powerOff()
+		vm.PowerOff()
 	case ipmi.CHASSIS_CONTROL_POWER_UP:
-		vm.powerOn()
+		vm.PowerOn()
 	case ipmi.CHASSIS_CONTROL_POWER_CYCLE:
-		vm.powerOff()
-		vm.powerOn()
+		vm.PowerOff()
+		vm.PowerOn()
 	case ipmi.CHASSIS_CONTROL_HARD_RESET:
-		vm.powerOff()
-		vm.powerOn()
+		vm.PowerOff()
+		vm.PowerOn()
 	case ipmi.CHASSIS_CONTROL_PULSE:
 		// do nothing
 	case ipmi.CHASSIS_CONTROL_POWER_SOFT:
@@ -202,10 +202,12 @@ func (s *bmcServer) listenIPMI(ctx context.Context, addr string) error {
 		bytebuf := bytes.NewBuffer(buf)
 		ipmi.DeserializeAndExecute(bytebuf, addr, server)
 	}
-	return nil
 }
 
 func (s *bmcServer) handleNode(ctx context.Context) error {
+	env := cmd.NewEnvironment(ctx)
+
+OUTER:
 	for {
 		select {
 		case info := <-s.nodeCh:
@@ -217,11 +219,16 @@ func (s *bmcServer) handleNode(ctx context.Context) error {
 					"bmc_address": info.bmcAddress,
 				})
 			}
-			go s.listenIPMI(ctx, info.bmcAddress)
+			env.Go(func(ctx context.Context) error {
+				return s.listenIPMI(ctx, info.bmcAddress)
+			})
 		case <-ctx.Done():
-			return nil
+			break OUTER
 		}
 	}
+
+	env.Cancel(nil)
+	return env.Wait()
 }
 
 func (s *bmcServer) addPort(ctx context.Context, info bmcInfo) error {
@@ -260,7 +267,7 @@ func (s *bmcServer) findBridge(address string) (string, *net.IPNet, error) {
 	return "", nil, errors.New("BMC address not in range of BMC networks: " + address)
 }
 
-func (s *bmcServer) registerVM(serial string, vm *nodeVM) {
+func (s *bmcServer) registerVM(serial string, vm *NodeVM) {
 	s.muVMs.Lock()
 	s.nodeVMs[serial] = vm
 	s.muVMs.Unlock()
@@ -307,17 +314,20 @@ func (w *processWriter) Write(p []byte) (n int, err error) {
 	return
 }
 
-type nodeVM struct {
+// NodeVM holds resources to manage and monitor a QEMU process.
+type NodeVM struct {
 	cmd     *cmd.LogCmd
 	monitor net.Conn
 	running bool
 }
 
-func (n *nodeVM) isRunning() bool {
+// IsRunning returns true if the VM is running.
+func (n *NodeVM) IsRunning() bool {
 	return n.running
 }
 
-func (n *nodeVM) powerOn() {
+// PowerOn turns on the power of the VM.
+func (n *NodeVM) PowerOn() {
 	if n.running {
 		return
 	}
@@ -326,7 +336,8 @@ func (n *nodeVM) powerOn() {
 	n.running = true
 }
 
-func (n *nodeVM) powerOff() {
+// PowerOff turns off the power of the VM.
+func (n *NodeVM) PowerOff() {
 	if !n.running {
 		return
 	}

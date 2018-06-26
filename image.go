@@ -22,6 +22,7 @@ type Image struct {
 	p      string
 }
 
+// NewImage creates *Image from spec.
 func NewImage(spec *ImageSpec) (*Image, error) {
 	if len(spec.Name) == 0 {
 		return nil, errors.New("invalid image spec: " + spec.Name)
@@ -53,6 +54,7 @@ func NewImage(spec *ImageSpec) (*Image, error) {
 	return i, nil
 }
 
+// Prepare downloads the image if it is not in the cache.
 func (i *Image) Prepare(ctx context.Context, c *cache) error {
 	err := downloadData(ctx, i.u, i.decomp, c)
 	if err != nil {
@@ -63,6 +65,7 @@ func (i *Image) Prepare(ctx context.Context, c *cache) error {
 	return nil
 }
 
+// Path returns the filesystem path to the image file.
 func (i *Image) Path() string {
 	return i.p
 }

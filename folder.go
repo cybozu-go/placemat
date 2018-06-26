@@ -3,7 +3,6 @@ package placemat
 import (
 	"context"
 	"errors"
-	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -60,11 +59,12 @@ func NewDataFolder(spec *DataFolderSpec) (*DataFolder, error) {
 	return folder, nil
 }
 
-// Path returns a filepath to the directory having folder contents.
+// Path returns the filesystem path to the directory having folder contents.
 func (d *DataFolder) Path() string {
 	return d.dirPath
 }
 
+// Prepare copies or downloads necessary files to prepare folder contents.
 func (d *DataFolder) Prepare(ctx context.Context, baseDir string, c *cache) error {
 	if len(d.Dir) != 0 {
 		st, err := os.Stat(d.Dir)
@@ -95,48 +95,23 @@ func (d *DataFolder) Prepare(ctx context.Context, baseDir string, c *cache) erro
 			if err != nil {
 				return err
 			}
-		} else {
-			u, err := url.Parse(file.URL)
-			if err != nil {
-				return err
-			}
-			err = downloadData(ctx, u, nil, c)
-			if err != nil {
-				return err
-			}
-			err = copyDownloadedData(u, dstPath, c)
-			if err != nil {
-				return err
-			}
+			continue
+		}
+
+		u, err := url.Parse(file.URL)
+		if err != nil {
+			return err
+		}
+		err = downloadData(ctx, u, nil, c)
+		if err != nil {
+			return err
+		}
+		err = copyDownloadedData(u, dstPath, c)
+		if err != nil {
+			return err
 		}
 	}
 
 	d.dirPath = p
 	return nil
-}
-
-func writeToFile(srcPath, destPath string, decomp Decompressor) error {
-	f, err := os.Open(srcPath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
-	var src io.Reader = f
-	if decomp != nil {
-		newSrc, err := decomp.Decompress(src)
-		if err != nil {
-			return err
-		}
-		src = newSrc
-	}
-
-	_, err = io.Copy(destFile, src)
-	return err
 }

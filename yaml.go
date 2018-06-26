@@ -15,9 +15,9 @@ type baseConfig struct {
 
 // ReadYaml reads a yaml file and constructs Cluster
 func ReadYaml(r *bufio.Reader) (*Cluster, error) {
-	var c baseConfig
 	var cluster Cluster
-	var y = k8sYaml.NewYAMLReader(r)
+
+	y := k8sYaml.NewYAMLReader(r)
 	for {
 		data, err := y.Read()
 		if err == io.EOF {
@@ -26,6 +26,7 @@ func ReadYaml(r *bufio.Reader) (*Cluster, error) {
 			return nil, err
 		}
 
+		var c baseConfig
 		err = yaml.Unmarshal(data, &c)
 		if err != nil {
 			return nil, err

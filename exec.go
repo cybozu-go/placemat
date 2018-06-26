@@ -19,7 +19,9 @@ func execCommands(ctx context.Context, commands [][]string) error {
 	return nil
 }
 
-func execCommandsForce(ctx context.Context, commands [][]string) error {
+func execCommandsForce(commands [][]string) error {
+	ctx := context.Background()
+
 	var firstError error
 	for _, cmds := range commands {
 		c := cmd.CommandContext(ctx, cmds[0], cmds[1:]...)

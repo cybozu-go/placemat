@@ -31,6 +31,7 @@ func init() {
 	}
 }
 
+// Runtime contains the runtime information to run Cluster.
 type Runtime struct {
 	graphic    bool
 	runDir     string
@@ -41,7 +42,7 @@ type Runtime struct {
 	tempDir    string
 }
 
-// Setup initializes QemuProvider.
+// NewRuntime initializes a new Runtime.
 func NewRuntime(graphic bool, runDir, dataDir, cacheDir string) (*Runtime, error) {
 	r := &Runtime{
 		graphic: graphic,
@@ -50,8 +51,6 @@ func NewRuntime(graphic bool, runDir, dataDir, cacheDir string) (*Runtime, error
 	}
 
 	r.ng.prefix = "pm"
-
-	//r.bmcServer = newBMCServer()
 
 	fi, err := os.Stat(cacheDir)
 	switch {

@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"net"
-
-	"github.com/cybozu-go/cmd"
 )
 
 const maxNetworkNameLen = 15
@@ -31,8 +29,8 @@ type NetworkSpec struct {
 // Network represents a network configuration
 type Network struct {
 	*NetworkSpec
-	Type NetworkType
 
+	typ       NetworkType
 	ip        net.IP
 	ipNet     *net.IPNet
 	tapNames  []string
@@ -40,6 +38,7 @@ type Network struct {
 	ng        *nameGenerator
 }
 
+// NewNetwork creates *Network from spec.
 func NewNetwork(spec *NetworkSpec) (*Network, error) {
 	n := &Network{
 		NetworkSpec: spec,
@@ -51,7 +50,7 @@ func NewNetwork(spec *NetworkSpec) (*Network, error) {
 
 	switch spec.Type {
 	case "internal":
-		n.Type = NetworkInternal
+		n.typ = NetworkInternal
 		if spec.UseNAT {
 			return nil, errors.New("UseNAT must be false for internal network")
 		}
@@ -59,12 +58,12 @@ func NewNetwork(spec *NetworkSpec) (*Network, error) {
 			return nil, errors.New("Address cannot be specified for internal network")
 		}
 	case "external":
-		n.Type = NetworkExternal
+		n.typ = NetworkExternal
 		if len(spec.Address) == 0 {
 			return nil, errors.New("Address must be specified for external network")
 		}
 	case "bmc":
-		n.Type = NetworkBMC
+		n.typ = NetworkBMC
 		if spec.UseNAT {
 			return nil, errors.New("UseNAT must be false for BMC network")
 		}
@@ -94,6 +93,7 @@ func iptables(ip net.IP) string {
 	return "ip6tables"
 }
 
+// Create creates a virtual L2 switch using Linux bridge.
 func (n *Network) Create(ng *nameGenerator) error {
 	n.ng = ng
 
@@ -127,6 +127,7 @@ func (n *Network) Create(ng *nameGenerator) error {
 	return execCommands(context.Background(), cmds)
 }
 
+// CreateTap add a tap device to the bridge and return the tap device name.
 func (n *Network) CreateTap() (string, error) {
 	name := n.ng.New()
 
@@ -144,6 +145,8 @@ func (n *Network) CreateTap() (string, error) {
 	return name, nil
 }
 
+// CreateVeth creates a veth pair and add one of the pair to the bridge.
+// It returns the name of the other side of the pair.
 func (n *Network) CreateVeth() (string, error) {
 	name := n.ng.New()
 	nameInNS := name + "_"
@@ -161,15 +164,16 @@ func (n *Network) CreateVeth() (string, error) {
 	return nameInNS, nil
 }
 
+// Destroy deletes all created tap and veth devices, then the bridge.
 func (n *Network) Destroy() error {
-	ctx := context.Background()
-
+	cmds := [][]string{}
 	for _, name := range n.tapNames {
-		cmd.CommandContext(ctx, "ip", "tuntap", "delete", name, "mode", "tap").Run()
+		cmds = append(cmds, []string{"ip", "tuntap", "delete", name, "mode", "tap"})
 	}
 	for _, name := range n.vethNames {
-		cmd.CommandContext(ctx, "ip", "link", "delete", name).Run()
+		cmds = append(cmds, []string{"ip", "link", "delete", name})
 	}
+	cmds = append(cmds, []string{"ip", "link", "delete", n.Name, "type", "bridge"})
 
-	return cmd.CommandContext(ctx, "ip", "link", "delete", n.Name, "type", "bridge").Run()
+	return execCommandsForce(cmds)
 }

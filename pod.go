@@ -60,42 +60,6 @@ type PodSpec struct {
 	Apps        []*PodAppSpec      `yaml:"apps"`
 }
 
-func NewPod(spec *PodSpec) (*Pod, error) {
-	p := &Pod{
-		PodSpec: spec,
-	}
-
-	if len(spec.Name) == 0 {
-		return nil, errors.New("pod name is empty")
-	}
-
-	for _, script := range spec.InitScripts {
-		script, err := filepath.Abs(script)
-		if err != nil {
-			return nil, err
-		}
-		_, err = os.Stat(script)
-		if err != nil {
-			return nil, err
-		}
-		p.initScripts = append(p.initScripts, script)
-	}
-
-	for _, vs := range spec.Volumes {
-		vol, err := NewPodVolume(vs)
-		if err != nil {
-			return nil, err
-		}
-		p.volumes = append(p.volumes, vol)
-	}
-
-	if len(spec.Apps) == 0 {
-		return nil, errors.New("no app for pod " + spec.Name)
-	}
-
-	return p, nil
-}
-
 // PodVolume is an interface of a volume for Pod.
 type PodVolume interface {
 	// Name returns the volume name.
@@ -133,13 +97,12 @@ func (v *hostPodVolume) Name() string {
 }
 
 func (v *hostPodVolume) Resolve(c *Cluster) error {
-	for _, df := range c.DataFolders {
-		if v.folderName == df.Name {
-			v.folder = df
-			return nil
-		}
+	df, err := c.GetDataFolder(v.folderName)
+	if err != nil {
+		return err
 	}
-	return errors.New("folder is not found:" + v.folderName)
+	v.folder = df
+	return nil
 }
 
 func (v *hostPodVolume) Spec() string {
@@ -232,19 +195,51 @@ type Pod struct {
 	networks    []*Network
 }
 
-func (p *Pod) Resolve(c *Cluster) error {
-	nm := make(map[string]*Network)
-	for _, n := range c.Networks {
-		nm[n.Name] = n
+// NewPod creates a Pod from spec.
+func NewPod(spec *PodSpec) (*Pod, error) {
+	p := &Pod{
+		PodSpec: spec,
 	}
 
-	for i := range p.Interfaces {
-		nn := p.Interfaces[i].Network
-		if network, ok := nm[nn]; !ok {
-			return errors.New("no such network: " + nn)
-		} else {
-			p.networks = append(p.networks, network)
+	if len(spec.Name) == 0 {
+		return nil, errors.New("pod name is empty")
+	}
+
+	for _, script := range spec.InitScripts {
+		script, err := filepath.Abs(script)
+		if err != nil {
+			return nil, err
 		}
+		_, err = os.Stat(script)
+		if err != nil {
+			return nil, err
+		}
+		p.initScripts = append(p.initScripts, script)
+	}
+
+	for _, vs := range spec.Volumes {
+		vol, err := NewPodVolume(vs)
+		if err != nil {
+			return nil, err
+		}
+		p.volumes = append(p.volumes, vol)
+	}
+
+	if len(spec.Apps) == 0 {
+		return nil, errors.New("no app for pod " + spec.Name)
+	}
+
+	return p, nil
+}
+
+// Resolve resolves references to other resources in the cluster.
+func (p *Pod) Resolve(c *Cluster) error {
+	for _, iface := range p.Interfaces {
+		network, err := c.GetNetwork(iface.Network)
+		if err != nil {
+			return err
+		}
+		p.networks = append(p.networks, network)
 	}
 
 	for _, v := range p.volumes {
@@ -287,6 +282,7 @@ func fetchImage(ctx context.Context, image string) error {
 	return cmd.CommandContext(ctx, "rkt", args...).Run()
 }
 
+// Prepare fetches container images to run Pod.
 func (p *Pod) Prepare(ctx context.Context) error {
 	for _, a := range p.Apps {
 		err := fetchImage(ctx, a.Image)
@@ -324,13 +320,19 @@ func runInPodNS(ctx context.Context, pod string, script string) error {
 	return cmd.CommandContext(ctx, "ip", "netns", "exec", "pm_"+pod, script).Run()
 }
 
-func (p *Pod) Start(ctx context.Context, r *Runtime, root string) (*exec.Cmd, error) {
+func deletePodNS(ctx context.Context, pod string) error {
+	return cmd.CommandContext(ctx, "ip", "netns", "del", "pm_"+pod).Run()
+}
+
+// Start starts the Pod using rkt.  It does not return until
+// the process finishes or ctx is cancelled.
+func (p *Pod) Start(ctx context.Context, r *Runtime, root string) error {
 	veths := make([]string, len(p.networks))
 	ips := make(map[string][]string)
 	for i, n := range p.networks {
 		veth, err := n.CreateVeth()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		veths[i] = veth
 		ips[veth] = p.Interfaces[i].Addresses
@@ -338,13 +340,14 @@ func (p *Pod) Start(ctx context.Context, r *Runtime, root string) (*exec.Cmd, er
 
 	err := makePodNS(ctx, p.Name, veths, ips)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	defer deletePodNS(context.Background(), p.Name)
 
 	for _, script := range p.initScripts {
 		err := runInPodNS(ctx, p.Name, script)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -369,16 +372,12 @@ func (p *Pod) Start(ctx context.Context, r *Runtime, root string) (*exec.Cmd, er
 		log.Error("failed to start rkt", map[string]interface{}{
 			log.FnError: err,
 		})
-		return nil, err
+		return err
 	}
 
 	go func() {
 		<-ctx.Done()
 		rkt.Process.Signal(syscall.SIGTERM)
 	}()
-	return rkt, nil
-}
-
-func (p *Pod) Destroy() {
-	cmd.CommandContext(context.Background(), "ip", "netns", "del", "pm_"+p.Name).Run()
+	return rkt.Wait()
 }

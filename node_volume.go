@@ -2,7 +2,6 @@ package placemat
 
 import (
 	"context"
-	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -22,7 +21,7 @@ type NodeVolumeSpec struct {
 	CopyOnWrite   bool   `yaml:"copy-on-write,omitempty"`
 }
 
-// Volume defines the interface for Node volumes.
+// NodeVolume defines the interface for Node volumes.
 type NodeVolume interface {
 	Kind() string
 	Name() string
@@ -57,7 +56,7 @@ type imageVolume struct {
 }
 
 // NewImageVolume creates a volume for type "image".
-func NewImageVolume(name string, imageName string, cow bool) *imageVolume {
+func NewImageVolume(name string, imageName string, cow bool) NodeVolume {
 	return &imageVolume{
 		baseVolume:  baseVolume{name: name},
 		imageName:   imageName,
@@ -70,13 +69,12 @@ func (v imageVolume) Kind() string {
 }
 
 func (v *imageVolume) Resolve(c *Cluster) error {
-	for _, img := range c.Images {
-		if img.Name == v.imageName {
-			v.image = img
-			return nil
-		}
+	img, err := c.GetImage(v.imageName)
+	if err != nil {
+		return err
 	}
-	return errors.New("no such image: " + v.imageName)
+	v.image = img
+	return nil
 }
 
 func (v *imageVolume) Create(ctx context.Context, dataDir string) ([]string, error) {
@@ -151,7 +149,7 @@ type localDSVolume struct {
 }
 
 // NewLocalDSVolume creates a volume for type "localds".
-func NewLocalDSVolume(name string, u, n string) *localDSVolume {
+func NewLocalDSVolume(name string, u, n string) NodeVolume {
 	return &localDSVolume{
 		baseVolume:    baseVolume{name: name},
 		userData:      u,
@@ -198,7 +196,7 @@ type rawVolume struct {
 }
 
 // NewRawVolume creates a volume for type "raw".
-func NewRawVolume(name string, size string) *rawVolume {
+func NewRawVolume(name string, size string) NodeVolume {
 	return &rawVolume{
 		baseVolume: baseVolume{name: name},
 		size:       size,
@@ -236,7 +234,7 @@ type vvfatVolume struct {
 }
 
 // NewVVFATVolume creates a volume for type "vvfat".
-func NewVVFATVolume(name string, folderName string) *vvfatVolume {
+func NewVVFATVolume(name string, folderName string) NodeVolume {
 	return &vvfatVolume{
 		baseVolume: baseVolume{name: name},
 		folderName: folderName,
@@ -248,13 +246,12 @@ func (v vvfatVolume) Kind() string {
 }
 
 func (v *vvfatVolume) Resolve(c *Cluster) error {
-	for _, folder := range c.DataFolders {
-		if folder.Name == v.folderName {
-			v.folder = folder
-			return nil
-		}
+	df, err := c.GetDataFolder(v.folderName)
+	if err != nil {
+		return err
 	}
-	return errors.New("no such data folder: " + v.folderName)
+	v.folder = df
+	return nil
 }
 
 func (v *vvfatVolume) Create(ctx context.Context, _ string) ([]string, error) {

@@ -46,6 +46,7 @@ type NodeSpec struct {
 	SMBIOS       SMBIOSConfig     `yaml:"smbios,omitempty"`
 }
 
+// Node represents a virtual machine.
 type Node struct {
 	*NodeSpec
 	networks []*Network
@@ -79,6 +80,7 @@ func createNodeVolume(spec NodeVolumeSpec) (NodeVolume, error) {
 	}
 }
 
+// NewNode creates a Node from spec.
 func NewNode(spec *NodeSpec) (*Node, error) {
 	n := &Node{
 		NodeSpec: spec,
@@ -97,17 +99,14 @@ func NewNode(spec *NodeSpec) (*Node, error) {
 	return n, nil
 }
 
+// Resolve resolves references to other resources in the cluster.
 func (n *Node) Resolve(c *Cluster) error {
-
-OUTER:
 	for _, iface := range n.Interfaces {
-		for _, nn := range c.Networks {
-			if nn.Name == iface {
-				n.networks = append(n.networks, nn)
-				continue OUTER
-			}
+		network, err := c.GetNetwork(iface)
+		if err != nil {
+			return err
 		}
-		return fmt.Errorf("network resource not found: %s, %s", n.Name, iface)
+		n.networks = append(n.networks, network)
 	}
 
 	for _, vol := range n.volumes {
@@ -165,7 +164,9 @@ func (n *Node) qemuParams(r *Runtime) []string {
 	return params
 }
 
-func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*nodeVM, error) {
+// Start starts the Node as a QEMU process.
+// This will not wait the process termination; instead, it returns the process information.
+func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*NodeVM, error) {
 	params := n.qemuParams(r)
 
 	for _, vol := range n.volumes {
@@ -199,7 +200,7 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*n
 
 		devParams := []string{
 			"virtio-net-pci",
-			fmt.Sprintf("netdev=%s", br),
+			fmt.Sprintf("netdev=%s", br.Name),
 			fmt.Sprintf("mac=%s", generateRandomMACForKVM()),
 		}
 		if n.UEFI {
@@ -271,7 +272,7 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*n
 		io.Copy(ioutil.Discard, conn)
 	}()
 
-	vm := &nodeVM{
+	vm := &NodeVM{
 		cmd:     qemuCommand,
 		monitor: conn,
 		running: true,

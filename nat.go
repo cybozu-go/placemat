@@ -32,5 +32,5 @@ func destroyNatRules() error {
 			[]string{iptables, "-X", "PLACEMAT", "-t", "nat"},
 		)
 	}
-	return execCommandsForce(context.Background(), cmds)
+	return execCommandsForce(cmds)
 }

@@ -2,49 +2,145 @@ package placemat
 
 import (
 	"context"
+	"errors"
 	"os"
-
-	"os/exec"
+	"sync"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 )
 
-// Cluster represents cluster configuration
+// Cluster is a set of resources in a virtual data center.
 type Cluster struct {
 	Networks    []*Network
 	Images      []*Image
 	DataFolders []*DataFolder
 	Nodes       []*Node
 	Pods        []*Pod
+
+	// private fields will be initialized by Resolve.
+	netMap    map[string]*Network
+	imageMap  map[string]*Image
+	folderMap map[string]*DataFolder
+	nodeMap   map[string]*Node
+	podMap    map[string]*Pod
 }
 
-// Append appends the other cluster into the receiver
+// Append appends another cluster into the receiver.
 func (c *Cluster) Append(other *Cluster) *Cluster {
 	c.Networks = append(c.Networks, other.Networks...)
-	c.Nodes = append(c.Nodes, other.Nodes...)
 	c.Images = append(c.Images, other.Images...)
 	c.DataFolders = append(c.DataFolders, other.DataFolders...)
+	c.Nodes = append(c.Nodes, other.Nodes...)
 	c.Pods = append(c.Pods, other.Pods...)
 	return c
 }
 
+// Resolve resolves inter-resource references and checks unique constraints.
 func (c *Cluster) Resolve() error {
+	c.netMap = make(map[string]*Network)
+	for _, n := range c.Networks {
+		if _, ok := c.netMap[n.Name]; ok {
+			return errors.New("duplicate network: " + n.Name)
+		}
+		c.netMap[n.Name] = n
+	}
+
+	c.imageMap = make(map[string]*Image)
+	for _, i := range c.Images {
+		if _, ok := c.imageMap[i.Name]; ok {
+			return errors.New("duplicate image: " + i.Name)
+		}
+		c.imageMap[i.Name] = i
+	}
+
+	c.folderMap = make(map[string]*DataFolder)
+	for _, f := range c.DataFolders {
+		if _, ok := c.folderMap[f.Name]; ok {
+			return errors.New("duplicate data folder: " + f.Name)
+		}
+		c.folderMap[f.Name] = f
+	}
+
+	c.nodeMap = make(map[string]*Node)
 	for _, n := range c.Nodes {
 		err := n.Resolve(c)
 		if err != nil {
 			return err
 		}
+		if _, ok := c.nodeMap[n.Name]; ok {
+			return errors.New("duplicate node: " + n.Name)
+		}
+		c.nodeMap[n.Name] = n
 	}
+
+	c.podMap = make(map[string]*Pod)
 	for _, p := range c.Pods {
 		err := p.Resolve(c)
 		if err != nil {
 			return err
 		}
+		if _, ok := c.podMap[p.Name]; ok {
+			return errors.New("duplicate pod: " + p.Name)
+		}
+		c.podMap[p.Name] = p
 	}
+
 	return nil
 }
 
+// GetNetwork looks up the network by name.
+// It returns non-nil error if the named network is not found.
+func (c *Cluster) GetNetwork(name string) (*Network, error) {
+	n, ok := c.netMap[name]
+	if !ok {
+		return nil, errors.New("no such network: " + name)
+	}
+	return n, nil
+}
+
+// GetImage looks up the image by name.
+// It returns non-nil error if the named image is not found.
+func (c *Cluster) GetImage(name string) (*Image, error) {
+	i, ok := c.imageMap[name]
+	if !ok {
+		return nil, errors.New("no such image: " + name)
+	}
+	return i, nil
+}
+
+// GetDataFolder looks up the data folder by name.
+// It returns non-nil error if the named folder is not found.
+func (c *Cluster) GetDataFolder(name string) (*DataFolder, error) {
+	f, ok := c.folderMap[name]
+	if !ok {
+		return nil, errors.New("no such data folder: " + name)
+	}
+	return f, nil
+}
+
+// GetNode looks up the node by name.
+// It returns non-nil error if the named node is not found.
+func (c *Cluster) GetNode(name string) (*Node, error) {
+	n, ok := c.nodeMap[name]
+	if !ok {
+		return nil, errors.New("no such node: " + name)
+	}
+	return n, nil
+}
+
+// GetPod looks up the pod by name.
+// It returns non-nil error if the named pod is not found.
+func (c *Cluster) GetPod(name string) (*Pod, error) {
+	p, ok := c.podMap[name]
+	if !ok {
+		return nil, errors.New("no such pod: " + name)
+	}
+	return p, nil
+}
+
+// Start constructs the virtual data center with given resources.
+// It stop when ctx is cancelled.
 func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	defer os.RemoveAll(r.tempDir)
 
@@ -96,40 +192,48 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 		}
 	}
 
+	nodeCh := make(chan bmcInfo, len(c.Nodes))
+
+	var mu sync.Mutex
+	vms := make(map[string]*NodeVM)
+
 	env := cmd.NewEnvironment(ctx)
-
-	nodeCh := make(chan bmcInfo, 10)
-
-	vms := make(map[string]*nodeVM)
 	for _, n := range c.Nodes {
-		vm, err := n.Start(ctx, r, nodeCh)
-		if err != nil {
-			return err
-		}
-		vms[n.SMBIOS.Serial] = vm
+		n := n
+		env.Go(func(ctx context.Context) error {
+			vm, err := n.Start(ctx, r, nodeCh)
+			if err != nil {
+				return err
+			}
+			mu.Lock()
+			vms[n.SMBIOS.Serial] = vm
+			mu.Unlock()
+			return nil
+		})
+	}
+	env.Stop()
+	err = env.Wait()
+	if err != nil {
+		return err
 	}
 
 	bmcServer := newBMCServer(vms, c.Networks, nodeCh)
+
+	env = cmd.NewEnvironment(ctx)
 	env.Go(bmcServer.handleNode)
-
-	var pods []*exec.Cmd
 	for _, p := range c.Pods {
-		c, err := p.Start(ctx, r, root.Path())
-		if err != nil {
-			return err
-		}
-		pods = append(pods, c)
-		defer p.Destroy()
+		p := p
+		env.Go(func(ctx context.Context) error {
+			return p.Start(ctx, r, root.Path())
+		})
 	}
-
-	env.Stop()
-
 	for _, vm := range vms {
-		vm.cmd.Wait()
+		vm := vm
+		env.Go(func(ctx context.Context) error {
+			return vm.cmd.Wait()
+		})
 	}
-	for _, pod := range pods {
-		pod.Wait()
-	}
+	env.Stop()
 
 	return env.Wait()
 }
