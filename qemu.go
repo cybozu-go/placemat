@@ -646,7 +646,7 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 		monitor: conn,
 		running: true,
 	}
-	q.bmcServer.nodeVMs[n.Spec.SMBIOS.Serial] = vm
+	q.bmcServer.registerVM(n.Spec.SMBIOS.Serial, vm)
 
 	err = qemuCommand.Wait()
 	if err != nil {

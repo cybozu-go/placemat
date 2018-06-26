@@ -19,10 +19,12 @@ import (
 
 type bmcServer struct {
 	nodeCh   chan bmcInfo
-	nodeVMs  map[string]*nodeVM // key: serial
 	networks map[string][]*net.IPNet
 
-	mu          sync.Mutex
+	muVMs   sync.Mutex
+	nodeVMs map[string]*nodeVM // key: serial
+
+	muSerials   sync.Mutex
 	nodeSerials map[string]string // key: address
 }
 
@@ -58,15 +60,16 @@ func (s *bmcServer) setup(networks []*Network) error {
 }
 
 func (s *bmcServer) getVMByAddress(addr string) (*nodeVM, error) {
-	s.mu.Lock()
+	s.muSerials.Lock()
 	serial, ok := s.nodeSerials[addr]
-	s.mu.Unlock()
-
+	s.muSerials.Unlock()
 	if !ok {
 		return nil, errors.New("address not registered: " + addr)
 	}
 
+	s.muVMs.Lock()
 	vm, ok := s.nodeVMs[serial]
+	s.muVMs.Unlock()
 	if !ok {
 		return nil, errors.New("serial not registered: " + serial)
 	}
@@ -225,9 +228,9 @@ func (s *bmcServer) handleNode(ctx context.Context) error {
 }
 
 func (s *bmcServer) addPort(ctx context.Context, info bmcInfo) error {
-	s.mu.Lock()
+	s.muSerials.Lock()
 	s.nodeSerials[info.bmcAddress] = info.serial
-	s.mu.Unlock()
+	s.muSerials.Unlock()
 
 	br, network, err := s.findBridge(info.bmcAddress)
 	if err != nil {
@@ -260,4 +263,10 @@ func (s *bmcServer) findBridge(address string) (string, *net.IPNet, error) {
 	}
 
 	return "", nil, errors.New("BMC address not in range of BMC networks: " + address)
+}
+
+func (s *bmcServer) registerVM(serial string, vm *nodeVM) {
+	s.muVMs.Lock()
+	s.nodeVMs[serial] = vm
+	s.muVMs.Unlock()
 }
