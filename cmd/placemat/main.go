@@ -79,9 +79,10 @@ func run(yamls []string) error {
 			*flgCacheDir = *flgDataDir
 		}
 	}
+	runDir := os.ExpandEnv(*flgRunDir)
 	dataDir := os.ExpandEnv(*flgDataDir)
 	cacheDir := os.ExpandEnv(*flgCacheDir)
-	r, err := placemat.NewRuntime(!*flgGraphic, *flgRunDir, dataDir, cacheDir)
+	r, err := placemat.NewRuntime(*flgGraphic, runDir, dataDir, cacheDir)
 	if err != nil {
 		return err
 	}

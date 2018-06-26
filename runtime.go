@@ -32,7 +32,7 @@ func init() {
 }
 
 type Runtime struct {
-	noGraphic  bool
+	graphic    bool
 	runDir     string
 	ng         nameGenerator
 	dataDir    string
@@ -42,11 +42,11 @@ type Runtime struct {
 }
 
 // Setup initializes QemuProvider.
-func NewRuntime(noGraphic bool, runDir, dataDir, cacheDir string) (*Runtime, error) {
+func NewRuntime(graphic bool, runDir, dataDir, cacheDir string) (*Runtime, error) {
 	r := &Runtime{
-		noGraphic: noGraphic,
-		runDir:    runDir,
-		dataDir:   dataDir,
+		graphic: graphic,
+		runDir:  runDir,
+		dataDir: dataDir,
 	}
 
 	r.ng.prefix = "pm"
