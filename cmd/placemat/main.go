@@ -72,12 +72,6 @@ func run(yamls []string) error {
 		})
 	}
 
-	qemu := &placemat.QemuProvider{
-		NoGraphic: !*flgGraphic,
-		Debug:     *flgDebug,
-		RunDir:    *flgRunDir,
-	}
-
 	if *flgCacheDir == "" {
 		if os.Getenv("SUDO_USER") != "" {
 			*flgCacheDir = "/home/${SUDO_USER}/placemat_data"
@@ -85,8 +79,9 @@ func run(yamls []string) error {
 			*flgCacheDir = *flgDataDir
 		}
 	}
-
-	err = qemu.Setup(os.ExpandEnv(*flgDataDir), os.ExpandEnv(*flgCacheDir))
+	dataDir := os.ExpandEnv(*flgDataDir)
+	cacheDir := os.ExpandEnv(*flgCacheDir)
+	r, err := placemat.NewRuntime(!*flgGraphic, *flgRunDir, dataDir, cacheDir)
 	if err != nil {
 		return err
 	}
@@ -95,13 +90,13 @@ func run(yamls []string) error {
 	if err != nil {
 		return err
 	}
-	err = cluster.Resolve(qemu)
+	err = cluster.Resolve()
 	if err != nil {
 		return err
 	}
 
 	cmd.Go(func(ctx context.Context) error {
-		return placemat.Run(ctx, qemu, cluster)
+		return cluster.Start(ctx, r)
 	})
 	cmd.Stop()
 	return cmd.Wait()

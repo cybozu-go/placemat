@@ -1,11 +1,17 @@
 package placemat
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
+
+	"github.com/cybozu-go/cmd"
+	"github.com/cybozu-go/log"
 )
 
 // PodInterfaceSpec represents a Pod's Interface definition in YAML
@@ -223,9 +229,10 @@ type Pod struct {
 	*PodSpec
 	initScripts []string
 	volumes     []PodVolume
+	networks    []*Network
 }
 
-func (p *Pod) resolve(c *Cluster) error {
+func (p *Pod) Resolve(c *Cluster) error {
 	nm := make(map[string]*Network)
 	for _, n := range c.Networks {
 		nm[n.Name] = n
@@ -233,8 +240,10 @@ func (p *Pod) resolve(c *Cluster) error {
 
 	for i := range p.Interfaces {
 		nn := p.Interfaces[i].Network
-		if _, ok := nm[nn]; !ok {
+		if network, ok := nm[nn]; !ok {
 			return errors.New("no such network: " + nn)
+		} else {
+			p.networks = append(p.networks, network)
 		}
 	}
 
@@ -263,4 +272,113 @@ func (p *Pod) appendParams(params []string) []string {
 		addDDD = len(a.Args) > 0
 	}
 	return params
+}
+
+func fetchImage(ctx context.Context, image string) error {
+	log.Info("fetching image", map[string]interface{}{
+		"image": image,
+	})
+	args := []string{
+		"--pull-policy=new",
+		"--insecure-options=image",
+		"fetch",
+		image,
+	}
+	return cmd.CommandContext(ctx, "rkt", args...).Run()
+}
+
+func (p *Pod) Prepare(ctx context.Context) error {
+	for _, a := range p.Apps {
+		err := fetchImage(ctx, a.Image)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func makePodNS(ctx context.Context, pod string, veths []string, ips map[string][]string) error {
+	log.Info("Creating Pod network namespace", map[string]interface{}{"pod": pod})
+	ns := "pm_" + pod
+	cmds := [][]string{
+		{"ip", "netns", "add", ns},
+		{"ip", "netns", "exec", ns, "ip", "link", "set", "lo", "up"},
+		// 127.0.0.1 is auto-assigned to lo.
+		//{"ip", "netns", "exec", ns, "ip", "a", "add", "127.0.0.1/8", "dev", "lo"},
+	}
+	for i, veth := range veths {
+		eth := fmt.Sprintf("eth%d", i)
+		cmds = append(cmds, []string{
+			"ip", "link", "set", veth, "netns", ns, "name", eth, "up",
+		})
+		for _, ip := range ips[veth] {
+			cmds = append(cmds, []string{
+				"ip", "netns", "exec", ns, "ip", "a", "add", ip, "dev", eth,
+			})
+		}
+	}
+	return execCommands(ctx, cmds)
+}
+
+func runInPodNS(ctx context.Context, pod string, script string) error {
+	return cmd.CommandContext(ctx, "ip", "netns", "exec", "pm_"+pod, script).Run()
+}
+
+func (p *Pod) Start(ctx context.Context, r *Runtime, root string) (*exec.Cmd, error) {
+	veths := make([]string, len(p.networks))
+	ips := make(map[string][]string)
+	for i, n := range p.networks {
+		veth, err := n.CreateVeth()
+		if err != nil {
+			return nil, err
+		}
+		veths[i] = veth
+		ips[veth] = p.Interfaces[i].Addresses
+	}
+
+	err := makePodNS(ctx, p.Name, veths, ips)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, script := range p.initScripts {
+		err := runInPodNS(ctx, p.Name, script)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	params := []string{
+		"--insecure-options=all-run",
+		"run",
+		"--net=host",
+		"--dns=host",
+	}
+	params = p.appendParams(params)
+
+	log.Info("rkt run", map[string]interface{}{"name": p.Name, "params": params})
+	args := []string{
+		"netns", "exec", "pm_" + p.Name, "chroot", root, "rkt",
+	}
+	args = append(args, params...)
+	rkt := exec.Command("ip", args...)
+	rkt.Stdout = newColoredLogWriter("rkt", p.Name, os.Stdout)
+	rkt.Stderr = newColoredLogWriter("rkt", p.Name, os.Stderr)
+	err = rkt.Start()
+	if err != nil {
+		log.Error("failed to start rkt", map[string]interface{}{
+			log.FnError: err,
+		})
+		return nil, err
+	}
+
+	go func() {
+		<-ctx.Done()
+		rkt.Process.Signal(syscall.SIGTERM)
+	}()
+	return rkt, nil
+}
+
+func (p *Pod) Destroy() {
+	cmd.CommandContext(context.Background(), "ip", "netns", "del", "pm_"+p.Name).Run()
 }

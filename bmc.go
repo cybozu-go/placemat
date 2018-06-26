@@ -10,6 +10,10 @@ import (
 	"strconv"
 	"sync"
 
+	"strings"
+
+	"io"
+
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 	"github.com/rmxymh/infra-ecosphere/bmc"
@@ -17,8 +21,12 @@ import (
 	"github.com/rmxymh/infra-ecosphere/utils"
 )
 
+const (
+	maxBufferSize = 256
+)
+
 type bmcServer struct {
-	nodeCh   chan bmcInfo
+	nodeCh   <-chan bmcInfo
 	networks []*Network
 
 	muVMs   sync.Mutex
@@ -28,15 +36,12 @@ type bmcServer struct {
 	nodeSerials map[string]string // key: address
 }
 
-func newBMCServer() *bmcServer {
-	return &bmcServer{
-		nodeCh:      make(chan bmcInfo),
-		nodeVMs:     make(map[string]*nodeVM),
+func newBMCServer(vms map[string]*nodeVM, networks []*Network, ch <-chan bmcInfo) *bmcServer {
+	s := &bmcServer{
+		nodeCh:      ch,
+		nodeVMs:     vms,
 		nodeSerials: make(map[string]string),
 	}
-}
-
-func (s *bmcServer) setup(networks []*Network) error {
 	for _, n := range networks {
 		if n.Type == NetworkBMC {
 			s.networks = append(s.networks, n)
@@ -48,7 +53,7 @@ func (s *bmcServer) setup(networks []*Network) error {
 	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_GET_CHASSIS_STATUS, s.handleIPMIGetChassisStatus)
 	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_CHASSIS_CONTROL, s.handleIPMIChassisControl)
 
-	return nil
+	return s
 }
 
 func (s *bmcServer) getVMByAddress(addr string) (*nodeVM, error) {
@@ -259,4 +264,73 @@ func (s *bmcServer) registerVM(serial string, vm *nodeVM) {
 	s.muVMs.Lock()
 	s.nodeVMs[serial] = vm
 	s.muVMs.Unlock()
+}
+
+// bmcInfo represents BMC information notified by a guest VM.
+type bmcInfo struct {
+	serial     string
+	bmcAddress string
+}
+
+type processWriter struct {
+	data   []byte
+	serial string
+	sent   bool
+	ch     chan<- bmcInfo
+}
+
+func (w *processWriter) Write(p []byte) (n int, err error) {
+	n = len(p)
+
+	if w.sent {
+		return
+	}
+
+	index := bytes.IndexByte(p, '\n')
+	if index == -1 {
+		w.data = append(w.data, p...)
+		if len(w.data) > maxBufferSize {
+			log.Warn("discard data received from guest VM, because it is too large.", nil)
+			w.data = nil
+		}
+		return
+	}
+
+	w.data = append(w.data, p[:index]...)
+	bmcAddress := strings.TrimSpace(string(w.data))
+	w.ch <- bmcInfo{
+		serial:     w.serial,
+		bmcAddress: bmcAddress,
+	}
+	w.sent = true
+
+	return
+}
+
+type nodeVM struct {
+	cmd     *cmd.LogCmd
+	monitor net.Conn
+	running bool
+}
+
+func (n *nodeVM) isRunning() bool {
+	return n.running
+}
+
+func (n *nodeVM) powerOn() {
+	if n.running {
+		return
+	}
+
+	io.WriteString(n.monitor, "system_reset\ncont\n")
+	n.running = true
+}
+
+func (n *nodeVM) powerOff() {
+	if !n.running {
+		return
+	}
+
+	io.WriteString(n.monitor, "stop\n")
+	n.running = false
 }

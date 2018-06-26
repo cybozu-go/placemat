@@ -1,6 +1,31 @@
 package placemat
 
-import "errors"
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"path/filepath"
+
+	"crypto/sha1"
+	"math/rand"
+
+	"github.com/cybozu-go/cmd"
+	"github.com/cybozu-go/log"
+)
+
+const (
+	defaultOVMFCodePath  = "/usr/share/OVMF/OVMF_CODE.fd"
+	defaultOVMFVarsPath  = "/usr/share/OVMF/OVMF_VARS.fd"
+	defaultRebootTimeout = 30 * time.Second
+)
 
 // SMBIOSConfig represents a Node's SMBIOS definition in YAML
 type SMBIOSConfig struct {
@@ -23,8 +48,8 @@ type NodeSpec struct {
 
 type Node struct {
 	*NodeSpec
-	volumes []NodeVolume
-	params  []string
+	networks []*Network
+	volumes  []NodeVolume
 }
 
 func createNodeVolume(spec NodeVolumeSpec) (NodeVolume, error) {
@@ -70,4 +95,202 @@ func NewNode(spec *NodeSpec) (*Node, error) {
 		n.volumes = append(n.volumes, vol)
 	}
 	return n, nil
+}
+
+func (n *Node) Resolve(c *Cluster) error {
+
+OUTER:
+	for _, iface := range n.Interfaces {
+		for _, nn := range c.Networks {
+			if nn.Name == iface {
+				n.networks = append(n.networks, nn)
+				continue OUTER
+			}
+		}
+		return fmt.Errorf("network resource not found: %s, %s", n.Name, iface)
+	}
+
+	for _, vol := range n.volumes {
+		err := vol.Resolve(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func nodeSerial(name string) string {
+	return fmt.Sprintf("%x", sha1.Sum([]byte(name)))
+}
+
+func (n *Node) qemuParams(r *Runtime) []string {
+	params := []string{"-enable-kvm"}
+
+	if n.IgnitionFile != "" {
+		params = append(params, "-fw_cfg")
+		params = append(params, "opt/com.coreos/config,file="+n.IgnitionFile)
+	}
+
+	if n.CPU != 0 {
+		params = append(params, "-smp", strconv.Itoa(n.CPU))
+	}
+	if n.Memory != "" {
+		params = append(params, "-m", n.Memory)
+	}
+	if r.noGraphic {
+		p := r.socketPath(n.Name)
+		defer os.Remove(p)
+		params = append(params, "-nographic")
+		params = append(params, "-serial", "unix:"+p+",server,nowait")
+	}
+	if n.UEFI {
+		p := r.nvramPath(n.Name)
+		params = append(params, "-drive", "if=pflash,file="+defaultOVMFCodePath+",format=raw,readonly")
+		params = append(params, "-drive", "if=pflash,file="+p+",format=raw")
+	}
+
+	smbios := "type=1"
+	if n.SMBIOS.Manufacturer != "" {
+		smbios += ",manufacturer=" + n.SMBIOS.Manufacturer
+	}
+	if n.SMBIOS.Product != "" {
+		smbios += ",product=" + n.SMBIOS.Product
+	}
+	if n.SMBIOS.Serial == "" {
+		n.SMBIOS.Serial = nodeSerial(n.Name)
+	}
+	smbios += ",serial=" + n.SMBIOS.Serial
+	params = append(params, "-smbios", smbios)
+	return params
+}
+
+func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*nodeVM, error) {
+	params := n.qemuParams(r)
+
+	for _, vol := range n.volumes {
+		vname := vol.Name()
+		log.Info("Creating volume", map[string]interface{}{"node": n.Name, "volume": vname})
+		p := filepath.Join(r.dataDir, "volumes", n.Name)
+		err := os.MkdirAll(p, 0755)
+		if err != nil {
+			return nil, err
+		}
+		args, err := vol.Create(ctx, p)
+		if err != nil {
+			return nil, err
+		}
+
+		params = append(params, args...)
+	}
+
+	for _, br := range n.networks {
+		tap, err := br.CreateTap()
+		if err != nil {
+			return nil, err
+		}
+
+		netdev := "tap,id=" + br.Name + ",ifname=" + tap + ",script=no,downscript=no"
+		if vhostNetSupported {
+			netdev += ",vhost=on"
+		}
+
+		params = append(params, "-netdev", netdev)
+
+		devParams := []string{
+			"virtio-net-pci",
+			fmt.Sprintf("netdev=%s", br),
+			fmt.Sprintf("mac=%s", generateRandomMACForKVM()),
+		}
+		if n.UEFI {
+			// disable iPXE boot
+			devParams = append(devParams, "romfile=")
+		}
+		params = append(params, "-device", strings.Join(devParams, ","))
+	}
+
+	if n.UEFI {
+		p := r.nvramPath(n.Name)
+		err := createNVRAM(ctx, p)
+		if err != nil {
+			log.Error("Failed to create nvram", map[string]interface{}{
+				"error": err,
+			})
+			return nil, err
+		}
+	}
+	params = append(params, "-boot", fmt.Sprintf("reboot-timeout=%d", int64(defaultRebootTimeout/time.Millisecond)))
+	params = append(params, "-serial", "stdio")
+
+	monitor := r.monitorSocketPath(n.Name)
+	params = append(params, "-monitor", "unix:"+monitor+",server,nowait")
+
+	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
+	qemuCommand := cmd.CommandContext(ctx, "qemu-system-x86_64", params...)
+	w := processWriter{
+		serial: n.SMBIOS.Serial,
+		ch:     nodeCh,
+	}
+	qemuCommand.Stdout = &w
+	qemuCommand.Stderr = newColoredLogWriter("qemu", n.Name, os.Stderr)
+
+	err := qemuCommand.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	var conn net.Conn
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		os.Remove(monitor)
+	}()
+
+	for {
+		_, err = os.Stat(monitor)
+		if err == nil {
+			break
+		}
+		if os.IsNotExist(err) {
+			select {
+			case <-time.After(100 * time.Millisecond):
+			case <-ctx.Done():
+				return nil, nil
+			}
+			continue
+		}
+		return nil, err
+	}
+
+	conn, err = net.Dial("unix", monitor)
+	if err != nil {
+		return nil, err
+	}
+	go func() {
+		io.Copy(ioutil.Discard, conn)
+	}()
+
+	vm := &nodeVM{
+		cmd:     qemuCommand,
+		monitor: conn,
+		running: true,
+	}
+
+	return vm, err
+}
+
+func generateRandomMACForKVM() string {
+	vendorPrefix := "52:54:00" // QEMU's vendor prefix
+	bytes := make([]byte, 3)
+	rand.Read(bytes)
+	return fmt.Sprintf("%s:%02x:%02x:%02x", vendorPrefix, bytes[0], bytes[1], bytes[2])
+}
+
+func createNVRAM(ctx context.Context, p string) error {
+	_, err := os.Stat(p)
+	if !os.IsNotExist(err) {
+		return nil
+	}
+	return cmd.CommandContext(ctx, "cp", defaultOVMFVarsPath, p).Run()
 }
