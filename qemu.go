@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -715,6 +716,10 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 	}
 	defer root.Destroy()
 
+	err = createNatRules(ctx)
+	if err != nil {
+		return err
+	}
 	for _, n := range c.Networks {
 		log.Info("Creating network", map[string]interface{}{"name": n.Name})
 		err := n.Create()

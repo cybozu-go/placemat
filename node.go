@@ -2,12 +2,11 @@ package placemat
 
 import "errors"
 
-
 // SMBIOSConfig represents a Node's SMBIOS definition in YAML
 type SMBIOSConfig struct {
 	Manufacturer string `yaml:"manufacturer,omitempty"`
-	Product string `yaml:"product,omitempty"`
-	Serial string `yaml:"serial,omitempty"`
+	Product      string `yaml:"product,omitempty"`
+	Serial       string `yaml:"serial,omitempty"`
 }
 
 // NodeSpec represents a Node specification in YAML
@@ -25,7 +24,7 @@ type NodeSpec struct {
 type Node struct {
 	*NodeSpec
 	volumes []NodeVolume
-	params []string
+	params  []string
 }
 
 func createNodeVolume(spec NodeVolumeSpec) (NodeVolume, error) {
