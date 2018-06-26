@@ -1,10 +1,9 @@
-package yaml
+package placemat
 
 import (
 	"bufio"
 	"errors"
 	"io"
-	"net/url"
 	"os"
 	"path/filepath"
 
@@ -67,140 +66,6 @@ type PodConfig struct {
 	Kind string  `yaml:"kind"`
 	Name string  `yaml:"name"`
 	Spec PodSpec `yaml:"spec"`
-}
-
-// ImageSpec represents a Image specification in YAML
-type ImageSpec struct {
-	URL               string `yaml:"url,omitempty"`
-	File              string `yaml:"file,omitempty"`
-	CompressionMethod string `yaml:"compression,omitempty"`
-}
-
-// ImageConfig represents a Image definition in YAML
-type ImageConfig struct {
-	Kind string    `yaml:"kind"`
-	Name string    `yaml:"name"`
-	Spec ImageSpec `yaml:"spec"`
-}
-
-// DataFolderFileConfig represents a DataFolder's File definition in YAML
-type DataFolderFileConfig struct {
-	Name string `yaml:"name"`
-	URL  string `yaml:"url,omitempty"`
-	File string `yaml:"file,omitempty"`
-}
-
-// DataFolderSpec represents a DataFolder specification in YAML
-type DataFolderSpec struct {
-	Dir   string                 `yaml:"dir,omitempty"`
-	Files []DataFolderFileConfig `yaml:"files,omitempty"`
-}
-
-// DataFolderConfig represents a DataFolder definition in YAML
-type DataFolderConfig struct {
-	Kind string         `yaml:"kind"`
-	Name string         `yaml:"name"`
-	Spec DataFolderSpec `yaml:"spec"`
-}
-
-var recreatePolicyConfig = map[string]placemat.VolumeRecreatePolicy{
-	"":             placemat.RecreateIfNotPresent,
-	"IfNotPresent": placemat.RecreateIfNotPresent,
-	"Always":       placemat.RecreateAlways,
-	"Never":        placemat.RecreateNever,
-}
-
-var biosConfig = map[string]placemat.BIOSMode{
-	"":       placemat.LegacyBIOS,
-	"legacy": placemat.LegacyBIOS,
-	"uefi":   placemat.UEFI,
-}
-
-
-func unmarshalImage(data []byte) (*placemat.Image, error) {
-	var dto ImageConfig
-	err := yaml.Unmarshal(data, &dto)
-	if err != nil {
-		return nil, err
-	}
-	if dto.Name == "" {
-		return nil, errors.New("image name is empty")
-	}
-
-	if dto.Spec.URL == "" && dto.Spec.File == "" {
-		return nil, errors.New("either image.spec.url or image.spec.file must be specified")
-	}
-	if dto.Spec.URL != "" && dto.Spec.File != "" {
-		return nil, errors.New("only one of image.spec.url or image.spec.file can be specified")
-	}
-
-	var image placemat.Image
-
-	image.Name = dto.Name
-	if dto.Spec.URL != "" {
-		image.Spec.URL, err = url.Parse(dto.Spec.URL)
-		if err != nil {
-			return nil, err
-		}
-	}
-	image.Spec.File = dto.Spec.File
-
-	decompressor, err := placemat.NewDecompressor(dto.Spec.CompressionMethod)
-	if err != nil {
-		return nil, err
-	}
-	image.Spec.Decompressor = decompressor
-
-	return &image, nil
-}
-
-func unmarshalDataFolder(data []byte) (*placemat.DataFolder, error) {
-	var dto DataFolderConfig
-	err := yaml.Unmarshal(data, &dto)
-	if err != nil {
-		return nil, err
-	}
-	if dto.Name == "" {
-		return nil, errors.New("data folder name is empty")
-	}
-
-	if dto.Spec.Dir == "" && len(dto.Spec.Files) == 0 {
-		return nil, errors.New("either datafolder.spec.dir or datafolder.spec.files must be specified")
-	}
-	if dto.Spec.Dir != "" && len(dto.Spec.Files) > 0 {
-		return nil, errors.New("only one of datafolder.spec.dir or datafolder.spec.files can be specified")
-	}
-
-	var dataFolder placemat.DataFolder
-
-	dataFolder.Name = dto.Name
-	dataFolder.Spec.Dir = dto.Spec.Dir
-	for _, file := range dto.Spec.Files {
-		dataFolderFile := placemat.DataFolderFile{}
-
-		if file.Name == "" {
-			return nil, errors.New("element of datafolder.spec.files must have name")
-		}
-		dataFolderFile.Name = file.Name
-
-		if file.URL == "" && file.File == "" {
-			return nil, errors.New("element of datafolder.spec.files must have either url or file")
-		}
-		if file.URL != "" && file.File != "" {
-			return nil, errors.New("element of datafolder.spec.files can have only one of url or file")
-		}
-		if file.URL != "" {
-			dataFolderFile.URL, err = url.Parse(file.URL)
-			if err != nil {
-				return nil, err
-			}
-		}
-		dataFolderFile.File = file.File
-
-		dataFolder.Spec.Files = append(dataFolder.Spec.Files, dataFolderFile)
-	}
-
-	return &dataFolder, nil
 }
 
 func unmarshalPod(data []byte) (*placemat.Pod, error) {

@@ -3,6 +3,7 @@ package placemat
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -80,50 +81,62 @@ func (v *imageVolume) Resolve(c *Cluster) error {
 
 func (v *imageVolume) Create(ctx context.Context, dataDir string) ([]string, error) {
 	p := volumePath(dataDir, v.name)
+	args := v.qemuArgs(p)
 
 	_, err := os.Stat(p)
-	switch {
-	case os.IsNotExist(err):
-		if v.image.Spec.File != "" {
-			fp, err := filepath.Abs(v.image.Spec.File)
-			if err != nil {
-				return nil, err
-			}
-			if v.copyOnWrite {
-				err = createCoWImageFromBase(ctx, fp, p)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				err = writeToFile(fp, p, v.image.Spec.Decompressor)
-				if err != nil {
-					return nil, err
-				}
-			}
-		} else {
-			err := downloadData(ctx, v.image.Spec.URL, v.image.Spec.Decompressor, v.image.cache)
-			if err != nil {
-				return nil, err
-			}
-			if v.copyOnWrite {
-				baseImage := v.image.cache.Path(v.image.Spec.URL.String())
-				err = createCoWImageFromBase(ctx, baseImage, p)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				err = copyDownloadedData(v.image.Spec.URL, p, v.image.cache)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-	case err == nil:
-	default:
+	if err == nil {
+		return args, nil
+	}
+
+	if !os.IsNotExist(err) {
 		return nil, err
 	}
 
-	return v.qemuArgs(p), nil
+	if v.image.File != "" {
+		fp, err := filepath.Abs(v.image.File)
+		if err != nil {
+			return nil, err
+		}
+		if v.copyOnWrite {
+			err = createCoWImageFromBase(ctx, fp, p)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err = writeToFile(fp, p, v.image.decomp)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return args, nil
+	}
+
+	baseImage := v.image.Path()
+	if v.copyOnWrite {
+		err = createCoWImageFromBase(ctx, baseImage, p)
+		if err != nil {
+			return nil, err
+		}
+		return args, nil
+	}
+
+	f, err := os.Open(baseImage)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	g, err := os.Create(p)
+	if err != nil {
+		return nil, err
+	}
+	defer g.Close()
+
+	_, err = io.Copy(g, f)
+	if err != nil {
+		return nil, err
+	}
+	return args, nil
 }
 
 func createCoWImageFromBase(ctx context.Context, base, dest string) error {

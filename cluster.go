@@ -36,18 +36,5 @@ func (c *Cluster) Resolve(pv Provider) error {
 			return err
 		}
 	}
-
-	ic := pv.ImageCache()
-	for _, img := range c.Images {
-		img.cache = ic
-	}
-
-	dc := pv.DataCache()
-	td := pv.TempDir()
-	for _, folder := range c.DataFolders {
-		folder.cache = dc
-		folder.baseTempDir = td
-	}
 	return nil
 }
-

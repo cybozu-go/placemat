@@ -19,8 +19,6 @@ import (
 	"syscall"
 	"time"
 
-	"strconv"
-
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 )
@@ -732,7 +730,7 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 		log.Info("initializing data folder", map[string]interface{}{
 			"name": df.Name,
 		})
-		err := df.setup(ctx)
+		err := df.Prepare(ctx)
 		if err != nil {
 			return err
 		}
