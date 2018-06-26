@@ -131,20 +131,6 @@ type PodConfig struct {
 	Spec PodSpec `yaml:"spec"`
 }
 
-// NetworkSpec represents a Network specification in YAML
-type NetworkSpec struct {
-	Type      string   `yaml:"type"`
-	UseNAT    bool     `yaml:"use-nat"`
-	Addresses []string `yaml:"addresses,omitempty"`
-}
-
-// NetworkConfig represents a Network definition in YAML
-type NetworkConfig struct {
-	Kind string      `yaml:"kind"`
-	Name string      `yaml:"name"`
-	Spec NetworkSpec `yaml:"spec"`
-}
-
 // ImageSpec represents a Image specification in YAML
 type ImageSpec struct {
 	URL               string `yaml:"url,omitempty"`

@@ -19,7 +19,7 @@ import (
 
 type bmcServer struct {
 	nodeCh   chan bmcInfo
-	networks map[string][]*net.IPNet
+	networks []*Network
 
 	muVMs   sync.Mutex
 	nodeVMs map[string]*nodeVM // key: serial
@@ -32,22 +32,14 @@ func newBMCServer() *bmcServer {
 	return &bmcServer{
 		nodeCh:      make(chan bmcInfo),
 		nodeVMs:     make(map[string]*nodeVM),
-		networks:    make(map[string][]*net.IPNet),
 		nodeSerials: make(map[string]string),
 	}
 }
 
 func (s *bmcServer) setup(networks []*Network) error {
 	for _, n := range networks {
-		if n.Spec.Type == NetworkBMC {
-			s.networks[n.Name] = make([]*net.IPNet, len(n.Spec.Addresses))
-			for i, address := range n.Spec.Addresses {
-				_, ipnet, err := net.ParseCIDR(address)
-				if err != nil {
-					return err
-				}
-				s.networks[n.Name][i] = ipnet
-			}
+		if n.Type == NetworkBMC {
+			s.networks = append(s.networks, n)
 		}
 	}
 
@@ -254,11 +246,9 @@ func (s *bmcServer) addPort(ctx context.Context, info bmcInfo) error {
 func (s *bmcServer) findBridge(address string) (string, *net.IPNet, error) {
 	ip := net.ParseIP(address)
 
-	for name, network := range s.networks {
-		for _, ipnet := range network {
-			if ipnet.Contains(ip) {
-				return name, ipnet, nil
-			}
+	for _, n := range s.networks {
+		if n.ipNet.Contains(ip) {
+			return n.Name, n.ipNet, nil
 		}
 	}
 

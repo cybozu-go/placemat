@@ -15,16 +15,6 @@ import (
 	"github.com/cybozu-go/log"
 )
 
-// NetworkType represents a network type.
-type NetworkType int
-
-// Network types.
-const (
-	NetworkInternal NetworkType = iota
-	NetworkExternal
-	NetworkBMC
-)
-
 // VolumeRecreatePolicy represents a policy to recreate a volume
 type VolumeRecreatePolicy int
 
@@ -48,19 +38,6 @@ const (
 	LegacyBIOS BIOSMode = iota
 	UEFI
 )
-
-// NetworkSpec represents a network specification
-type NetworkSpec struct {
-	Type      NetworkType
-	UseNAT    bool
-	Addresses []string
-}
-
-// Network represents a network configuration
-type Network struct {
-	Name string
-	Spec NetworkSpec
-}
 
 // ImageSpec represents an image specification
 type ImageSpec struct {
