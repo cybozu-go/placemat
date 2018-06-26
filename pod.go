@@ -3,8 +3,92 @@ package placemat
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 )
+
+// PodInterfaceSpec represents a Pod's Interface definition in YAML
+type PodInterfaceSpec struct {
+	Network   string   `yaml:"network"`
+	Addresses []string `yaml:"addresses,omitempty"`
+}
+
+// PodVolumeSpec represents a Pod's Volume definition in YAML
+type PodVolumeSpec struct {
+	Name     string `yaml:"name"`
+	Kind     string `yaml:"kind"`
+	Folder   string `yaml:"folder,omitempty"`
+	ReadOnly bool   `yaml:"readonly"`
+	Mode     string `yaml:"mode,omitempty"`
+	UID      string `yaml:"uid,omitempty"`
+	GID      string `yaml:"gid,omitempty"`
+}
+
+// PodAppMountSpec represents a App's Mount definition in YAML
+type PodAppMountSpec struct {
+	Volume string `yaml:"volume"`
+	Target string `yaml:"target"`
+}
+
+// PodAppSpec represents a Pod's App definition in YAML
+type PodAppSpec struct {
+	Name           string            `yaml:"name"`
+	Image          string            `yaml:"image"`
+	ReadOnlyRootfs bool              `yaml:"readonly-rootfs"`
+	User           string            `yaml:"user,omitempty"`
+	Group          string            `yaml:"group,omitempty"`
+	Exec           string            `yaml:"exec,omitempty"`
+	Args           []string          `yaml:"args,omitempty"`
+	Env            map[string]string `yaml:"env,omitempty"`
+	CapsRetain     []string          `yaml:"caps-retain,omitempty"`
+	Mount          []PodAppMountSpec `yaml:"mount,omitempty"`
+}
+
+// PodSpec represents a Pod specification in YAML
+type PodSpec struct {
+	Name        string             `yaml:"name"`
+	InitScripts []string           `yaml:"init-scripts,omitempty"`
+	Interfaces  []PodInterfaceSpec `yaml:"interfaces,omitempty"`
+	Volumes     []*PodVolumeSpec   `yaml:"volumes,omitempty"`
+	Apps        []*PodAppSpec      `yaml:"apps"`
+}
+
+func NewPod(spec *PodSpec) (*Pod, error) {
+	p = &Pod{
+		PodSpec: spec,
+	}
+
+	if len(spec.Name) == 0 {
+		return nil, errors.New("pod name is empty")
+	}
+
+	for _, script := range spec.InitScripts {
+		script, err = filepath.Abs(script)
+		if err != nil {
+			return nil, err
+		}
+		_, err := os.Stat(script)
+		if err != nil {
+			return nil, err
+		}
+		pod.initScripts = append(pod.initScripts, script)
+	}
+
+	for _, vs := range spec.Volumes {
+		vol, err := NewPodVolume(vs)
+		if err != nil {
+			return nil, err
+		}
+		p.volumes = append(p.volumes, vol)
+	}
+
+	if len(spec.Apps) == 0 {
+		return nil, errors.New("no app for pod " + spec.Name)
+	}
+
+	return p, nil
+}
 
 // PodVolume is an interface of a volume for Pod.
 type PodVolume interface {
@@ -17,18 +101,18 @@ type PodVolume interface {
 }
 
 // NewPodVolume makes a PodVolume, or returns an error.
-func NewPodVolume(name, kind, folder, mode, uid, gid string, readOnly bool) (PodVolume, error) {
-	if len(name) == 0 {
+func NewPodVolume(spec *PodVolumeSpec) (PodVolume, error) {
+	if len(spec.Name) == 0 {
 		return nil, errors.New("invalid pod volume name")
 	}
-	switch kind {
+	switch spec.Kind {
 	case "host":
-		return newHostPodVolume(name, folder, readOnly), nil
+		return newHostPodVolume(spec.Name, spec.Folder, spec.ReadOnly), nil
 	case "empty":
-		return newEmptyPodVolume(name, mode, uid, gid), nil
+		return newEmptyPodVolume(spec.Name, spec.Mode, spec.UID, spec.GID), nil
 	}
 
-	return nil, errors.New("invalid kind of pod volume: " + kind)
+	return nil, errors.New("invalid kind of pod volume: " + spec.Kind)
 }
 
 type hostPodVolume struct {
@@ -98,24 +182,7 @@ func newEmptyPodVolume(name, mode, uid, gid string) PodVolume {
 	return &emptyPodVolume{name, mode, uid, gid}
 }
 
-// PodApp represents an app for Pod.
-type PodApp struct {
-	Name           string
-	Image          string
-	ReadOnlyRootfs bool
-	User           string
-	Group          string
-	Exec           string
-	Args           []string
-	Env            map[string]string
-	CapsRetain     []string
-	MountPoints    []struct {
-		VolumeName string
-		Target     string
-	}
-}
-
-func (a *PodApp) appendParams(params []string, podname string) []string {
+func (a *PodAppSpec) appendParams(params []string, podname string) []string {
 	params = append(params, []string{
 		a.Image,
 		"--name", a.Name,
@@ -139,8 +206,8 @@ func (a *PodApp) appendParams(params []string, podname string) []string {
 	if len(a.CapsRetain) > 0 {
 		params = append(params, "--caps-retain="+strings.Join(a.CapsRetain, ","))
 	}
-	for _, mp := range a.MountPoints {
-		t := fmt.Sprintf("volume=%s,target=%s", mp.VolumeName, mp.Target)
+	for _, mp := range a.Mount {
+		t := fmt.Sprintf("volume=%s,target=%s", mp.Volume, mp.Target)
 		params = append(params, []string{"--mount", t}...)
 	}
 	if len(a.Args) > 0 {
@@ -153,14 +220,9 @@ func (a *PodApp) appendParams(params []string, podname string) []string {
 
 // Pod represents a pod resource.
 type Pod struct {
-	Name        string
-	InitScripts []string
-	Interfaces  []struct {
-		NetworkName string
-		Addresses   []string
-	}
-	Volumes []PodVolume
-	Apps    []*PodApp
+	*PodSpec
+	initScripts []string
+	volumes     []PodVolume
 }
 
 func (p *Pod) resolve(c *Cluster) error {

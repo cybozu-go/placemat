@@ -668,7 +668,7 @@ func (q *QemuProvider) startPod(ctx context.Context, p *Pod, root string) error 
 		return err
 	}
 
-	for _, script := range p.InitScripts {
+	for _, script := range p.initScripts {
 		err := runInPodNS(ctx, p.Name, script)
 		if err != nil {
 			return err
