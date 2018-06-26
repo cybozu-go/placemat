@@ -18,6 +18,8 @@ import (
 	"syscall"
 	"time"
 
+	"strconv"
+
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 )
@@ -351,7 +353,7 @@ func (q *QemuProvider) Destroy(c *Cluster) error {
 	}
 
 	for _, n := range c.Networks {
-		err := q.destroyNetwork(context.Background(), n)
+		err := q.destroyNatRules(context.Background())
 		if err != nil {
 			log.Error("failed to destroy networks", map[string]interface{}{
 				"name":  n.Name,
@@ -411,16 +413,16 @@ func nodeSerial(name string) string {
 func (q *QemuProvider) qemuParams(n *Node) []string {
 	params := []string{"-enable-kvm"}
 
-	if n.Spec.IgnitionFile != "" {
+	if n.IgnitionFile != "" {
 		params = append(params, "-fw_cfg")
-		params = append(params, "opt/com.coreos/config,file="+n.Spec.IgnitionFile)
+		params = append(params, "opt/com.coreos/config,file="+n.IgnitionFile)
 	}
 
-	if n.Spec.Resources.CPU != "" {
-		params = append(params, "-smp", n.Spec.Resources.CPU)
+	if n.CPU != 0 {
+		params = append(params, "-smp", strconv.Itoa(n.CPU))
 	}
-	if n.Spec.Resources.Memory != "" {
-		params = append(params, "-m", n.Spec.Resources.Memory)
+	if n.Memory != "" {
+		params = append(params, "-m", n.Memory)
 	}
 	if q.NoGraphic {
 		p := q.socketPath(n.Name)
@@ -428,29 +430,29 @@ func (q *QemuProvider) qemuParams(n *Node) []string {
 		params = append(params, "-nographic")
 		params = append(params, "-serial", "unix:"+p+",server,nowait")
 	}
-	if n.Spec.BIOS == UEFI {
+	if n.UEFI {
 		p := q.nvramPath(n.Name)
 		params = append(params, "-drive", "if=pflash,file="+defaultOVMFCodePath+",format=raw,readonly")
 		params = append(params, "-drive", "if=pflash,file="+p+",format=raw")
 	}
 
 	smbios := "type=1"
-	if n.Spec.SMBIOS.Manufacturer != "" {
-		smbios += ",manufacturer=" + n.Spec.SMBIOS.Manufacturer
+	if n.SMBIOS.Manufacturer != "" {
+		smbios += ",manufacturer=" + n.SMBIOS.Manufacturer
 	}
-	if n.Spec.SMBIOS.Product != "" {
-		smbios += ",product=" + n.Spec.SMBIOS.Product
+	if n.SMBIOS.Product != "" {
+		smbios += ",product=" + n.SMBIOS.Product
 	}
-	if n.Spec.SMBIOS.Serial == "" {
-		n.Spec.SMBIOS.Serial = nodeSerial(n.Name)
+	if n.SMBIOS.Serial == "" {
+		n.SMBIOS.Serial = nodeSerial(n.Name)
 	}
-	smbios += ",serial=" + n.Spec.SMBIOS.Serial
+	smbios += ",serial=" + n.SMBIOS.Serial
 	params = append(params, "-smbios", smbios)
 	return params
 }
 
 func (q *QemuProvider) prepareNode(ctx context.Context, n *Node) error {
-	for _, vol := range n.Spec.Volumes {
+	for _, vol := range n.volumes {
 		vname := vol.Name()
 		log.Info("Creating volume", map[string]interface{}{"node": n.Name, "volume": vname})
 		p := filepath.Join(q.dataDir, "volumes", n.Name)
@@ -494,7 +496,7 @@ func (q *QemuProvider) preparePod(ctx context.Context, p *Pod) error {
 func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 	params := append(n.params, q.qemuParams(n)...)
 
-	for _, br := range n.Spec.Interfaces {
+	for _, br := range n.Interfaces {
 		tap := q.tng.New()
 		err := createTap(ctx, tap, br)
 		if err != nil {
@@ -513,14 +515,14 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 			fmt.Sprintf("netdev=%s", br),
 			fmt.Sprintf("mac=%s", generateRandomMACForKVM()),
 		}
-		if n.Spec.BIOS == UEFI {
+		if n.UEFI {
 			// disable iPXE boot
 			devParams = append(devParams, "romfile=")
 		}
 		params = append(params, "-device", strings.Join(devParams, ","))
 	}
 
-	if n.Spec.BIOS == UEFI {
+	if n.UEFI {
 		p := q.nvramPath(n.Name)
 		err := createNVRAM(ctx, p)
 		if err != nil {
@@ -539,7 +541,7 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	qemuCommand := cmd.CommandContext(ctx, "qemu-system-x86_64", params...)
 	w := processWriter{
-		serial: n.Spec.SMBIOS.Serial,
+		serial: n.SMBIOS.Serial,
 		ch:     q.bmcServer.nodeCh,
 	}
 	qemuCommand.Stdout = &w
@@ -589,7 +591,7 @@ func (q *QemuProvider) startNode(ctx context.Context, n *Node) error {
 		monitor: conn,
 		running: true,
 	}
-	q.bmcServer.registerVM(n.Spec.SMBIOS.Serial, vm)
+	q.bmcServer.registerVM(n.SMBIOS.Serial, vm)
 
 	err = qemuCommand.Wait()
 	if err != nil {
@@ -715,7 +717,7 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 
 	for _, n := range c.Networks {
 		log.Info("Creating network", map[string]interface{}{"name": n.Name})
-		err := q.createNetwork(ctx, n)
+		err := n.Create()
 		if err != nil {
 			return err
 		}
@@ -731,9 +733,7 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 		}
 	}
 
-	nodes := c.NodesFromNodeSets()
-	nodes = append(nodes, c.Nodes...)
-	for _, n := range nodes {
+	for _, n := range c.Nodes {
 		err := q.prepareNode(ctx, n)
 		if err != nil {
 			return err
@@ -755,7 +755,7 @@ func (q *QemuProvider) Start(ctx context.Context, c *Cluster) error {
 	}
 	env.Go(q.bmcServer.handleNode)
 
-	for _, n := range nodes {
+	for _, n := range c.Nodes {
 		node := n
 		env.Go(func(ctx context.Context) error {
 			return q.startNode(ctx, node)

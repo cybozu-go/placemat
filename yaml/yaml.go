@@ -3,7 +3,6 @@ package yaml
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -16,67 +15,6 @@ import (
 
 type baseConfig struct {
 	Kind string `yaml:"kind"`
-}
-
-// NodeVolumeSpec represents a Node's Volume specification in YAML
-type NodeVolumeSpec struct {
-	Image         string `yaml:"image,omitempty"`
-	UserData      string `yaml:"user-data,omitempty"`
-	NetworkConfig string `yaml:"network-config,omitempty"`
-	Size          string `yaml:"size,omitempty"`
-	Folder        string `yaml:"folder,omitempty"`
-	CopyOnWrite   bool   `yaml:"copy-on-write,omitempty"`
-}
-
-// NodeVolumeConfig represents a Node's Volume definition in YAML
-type NodeVolumeConfig struct {
-	Kind           string         `yaml:"kind"`
-	Name           string         `yaml:"name"`
-	RecreatePolicy string         `yaml:"recreatePolicy,omitempty"`
-	Spec           NodeVolumeSpec `yaml:"spec"`
-}
-
-// NodeResourceConfig represents a Node's Resource definition in YAML
-type NodeResourceConfig struct {
-	CPU    string `yaml:"cpu,omitempty"`
-	Memory string `yaml:"memory,omitempty"`
-}
-
-// SMBIOSConfig represents a Node's SMBIOS definition in YAML
-type SMBIOSConfig struct {
-	Manufacturer string `yaml:"manufacturer,omitempty"`
-	ProductName  string `yaml:"product,omitempty"`
-	SerialNumber string `yaml:"serial,omitempty"`
-}
-
-// NodeSpec represents a Node specification in YAML
-type NodeSpec struct {
-	Interfaces   []string           `yaml:"interfaces,omitempty"`
-	Volumes      []NodeVolumeConfig `yaml:"volumes,omitempty"`
-	IgnitionFile string             `yaml:"ignition,omitempty"`
-	Resources    NodeResourceConfig `yaml:"resources,omitempty"`
-	BIOS         string             `yaml:"bios,omitempty"`
-	SMBIOS       SMBIOSConfig       `yaml:"smbios,omitempty"`
-}
-
-// NodeConfig represents a Node definition in YAML
-type NodeConfig struct {
-	Kind string   `yaml:"kind"`
-	Name string   `yaml:"name"`
-	Spec NodeSpec `yaml:"spec"`
-}
-
-// NodeSetSpec represents a NodeSet specification in YAML
-type NodeSetSpec struct {
-	Replicas int      `yaml:"replicas"`
-	Template NodeSpec `yaml:"template"`
-}
-
-// NodeSetConfig represents a NodeSet definition in YAML
-type NodeSetConfig struct {
-	Kind string      `yaml:"kind"`
-	Name string      `yaml:"name"`
-	Spec NodeSetSpec `yaml:"spec"`
 }
 
 // PodInterfaceConfig represents a Pod's Interface definition in YAML
@@ -178,136 +116,6 @@ var biosConfig = map[string]placemat.BIOSMode{
 	"uefi":   placemat.UEFI,
 }
 
-func unmarshalNode(data []byte) (*placemat.Node, error) {
-	var n NodeConfig
-	err := yaml.Unmarshal(data, &n)
-	if err != nil {
-		return nil, err
-	}
-	if n.Name == "" {
-		return nil, errors.New("node name is empty")
-	}
-
-	var node placemat.Node
-	node.Name = n.Name
-	s, err := constructNodeSpec(n.Spec)
-	if err != nil {
-		return nil, err
-	}
-	node.Spec = s
-
-	return &node, nil
-}
-
-func unmarshalNodeSet(data []byte) (*placemat.NodeSet, error) {
-	var nsc NodeSetConfig
-	err := yaml.Unmarshal(data, &nsc)
-	if err != nil {
-		return nil, err
-	}
-	if nsc.Name == "" {
-		return nil, errors.New("nodeSet name is empty")
-	}
-
-	var nodeSet placemat.NodeSet
-	nodeSet.Name = nsc.Name
-	nodeSet.Spec.Replicas = nsc.Spec.Replicas
-	nodeSet.Spec.Template, err = constructNodeSpec(nsc.Spec.Template)
-
-	return &nodeSet, err
-}
-
-func constructNodeSpec(ns NodeSpec) (placemat.NodeSpec, error) {
-	var res placemat.NodeSpec
-	var ok bool
-	res.Interfaces = ns.Interfaces
-	if ns.Interfaces == nil {
-		res.Interfaces = []string{}
-	}
-	res.Volumes = make([]placemat.Volume, len(ns.Volumes))
-	for i, v := range ns.Volumes {
-		policy, ok := recreatePolicyConfig[v.RecreatePolicy]
-		if !ok {
-			return placemat.NodeSpec{}, fmt.Errorf("invalid RecreatePolicy: " + v.RecreatePolicy)
-		}
-
-		var dst placemat.Volume
-
-		switch v.Kind {
-		case "image":
-			if v.Spec.Image == "" {
-				return placemat.NodeSpec{}, errors.New("image volume must specify an image name")
-			}
-			dst = placemat.NewImageVolume(v.Name, policy, v.Spec.Image, v.Spec.CopyOnWrite)
-		case "localds":
-			if v.Spec.UserData == "" {
-				return placemat.NodeSpec{}, errors.New("localds volume must specify user-data")
-			}
-			dst = placemat.NewLocalDSVolume(v.Name, policy, v.Spec.UserData, v.Spec.NetworkConfig)
-		case "raw":
-			if v.Spec.Size == "" {
-				return placemat.NodeSpec{}, errors.New("raw volume must specify size")
-			}
-			dst = placemat.NewRawVolume(v.Name, policy, v.Spec.Size)
-		case "vvfat":
-			if v.Spec.Folder == "" {
-				return placemat.NodeSpec{}, errors.New("VVFAT volume must specify a folder name")
-			}
-			dst = placemat.NewVVFATVolume(v.Name, policy, v.Spec.Folder)
-		default:
-			return placemat.NodeSpec{}, errors.New("unknown volume kind: " + v.Kind)
-		}
-
-		res.Volumes[i] = dst
-	}
-	res.IgnitionFile = ns.IgnitionFile
-	res.Resources.CPU = ns.Resources.CPU
-	res.Resources.Memory = ns.Resources.Memory
-	res.BIOS, ok = biosConfig[ns.BIOS]
-	if !ok {
-		return placemat.NodeSpec{}, fmt.Errorf("invalid BIOS: " + ns.BIOS)
-	}
-	res.SMBIOS.Manufacturer = ns.SMBIOS.Manufacturer
-	res.SMBIOS.Product = ns.SMBIOS.ProductName
-	res.SMBIOS.Serial = ns.SMBIOS.SerialNumber
-
-	return res, nil
-}
-
-func unmarshalNetwork(data []byte) (*placemat.Network, error) {
-	var n NetworkConfig
-	err := yaml.Unmarshal(data, &n)
-	if err != nil {
-		return nil, err
-	}
-	if n.Name == "" {
-		return nil, errors.New("network name is empty")
-	}
-	if !(n.Spec.Type == "internal" || n.Spec.Type == "external" || n.Spec.Type == "bmc") {
-		return nil, errors.New("unknown network type")
-	}
-	if n.Spec.Type == "internal" && (n.Spec.UseNAT || len(n.Spec.Addresses) > 0) {
-		return nil, errors.New("'use-nat' and 'addresses' are meaningless for internal network")
-	}
-	if n.Spec.Type != "internal" && len(n.Spec.Addresses) == 0 {
-		return nil, errors.New("addresses is empty for non-internal network")
-	}
-
-	var network placemat.Network
-	network.Name = n.Name
-	switch n.Spec.Type {
-	case "internal":
-		network.Spec.Type = placemat.NetworkInternal
-	case "external":
-		network.Spec.Type = placemat.NetworkExternal
-	case "bmc":
-		network.Spec.Type = placemat.NetworkBMC
-	}
-	network.Spec.UseNAT = n.Spec.UseNAT
-	network.Spec.Addresses = n.Spec.Addresses
-	return &network, nil
-
-}
 
 func unmarshalImage(data []byte) (*placemat.Image, error) {
 	var dto ImageConfig
@@ -521,12 +329,6 @@ func ReadYaml(r *bufio.Reader) (*placemat.Cluster, error) {
 				return nil, err
 			}
 			cluster.Nodes = append(cluster.Nodes, r)
-		case "NodeSet":
-			r, err := unmarshalNodeSet(data)
-			if err != nil {
-				return &cluster, err
-			}
-			cluster.NodeSets = append(cluster.NodeSets, r)
 		case "Pod":
 			r, err := unmarshalPod(data)
 			if err != nil {
