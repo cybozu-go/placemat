@@ -1,6 +1,7 @@
 package placemat
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -9,8 +10,6 @@ import (
 	"net"
 	"strconv"
 	"sync"
-
-	"strings"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -278,7 +277,6 @@ type bmcInfo struct {
 }
 
 type guestConnection struct {
-	data   []byte
 	serial string
 	sent   bool
 	guest  net.Conn
@@ -286,9 +284,9 @@ type guestConnection struct {
 }
 
 func (g *guestConnection) Handle() {
-	buf := make([]byte, 1)
+	bufr := bufio.NewReader(g.guest)
 	for {
-		_, err := g.guest.Read(buf)
+		line, err := bufr.ReadBytes('\n')
 		if err != nil {
 			return
 		}
@@ -297,20 +295,11 @@ func (g *guestConnection) Handle() {
 			continue
 		}
 
-		if buf[0] == '\n' {
-			bmcAddress := strings.TrimSpace(string(g.data))
-			g.ch <- bmcInfo{
-				serial:     g.serial,
-				bmcAddress: bmcAddress,
-			}
-			g.sent = true
-			continue
+		bmcAddress := string(bytes.TrimSpace(line))
+		g.ch <- bmcInfo{
+			serial:     g.serial,
+			bmcAddress: bmcAddress,
 		}
-
-		g.data = append(g.data, buf[0])
-		if len(g.data) > maxBufferSize {
-			log.Warn("discard data received from guest VM, because it is too large.", nil)
-			g.data = nil
-		}
+		g.sent = true
 	}
 }
