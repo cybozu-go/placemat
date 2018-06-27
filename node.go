@@ -221,18 +221,18 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 		}
 	}
 	params = append(params, "-boot", fmt.Sprintf("reboot-timeout=%d", int64(defaultRebootTimeout/time.Millisecond)))
-	params = append(params, "-serial", "stdio")
+
+	guest := r.guestSocketPath(n.Name)
+	params = append(params, "-chardev", "socket,id=char0,path="+guest+",server,nowait")
+	params = append(params, "-device", "virtio-serial")
+	params = append(params, "-device", "virtserialport,chardev=char0,name=placemat")
 
 	monitor := r.monitorSocketPath(n.Name)
 	params = append(params, "-monitor", "unix:"+monitor+",server,nowait")
 
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	qemuCommand := cmd.CommandContext(ctx, "qemu-system-x86_64", params...)
-	w := processWriter{
-		serial: n.SMBIOS.Serial,
-		ch:     nodeCh,
-	}
-	qemuCommand.Stdout = &w
+	qemuCommand.Stdout = newColoredLogWriter("qemu", n.Name, os.Stdout)
 	qemuCommand.Stderr = newColoredLogWriter("qemu", n.Name, os.Stderr)
 
 	err := qemuCommand.Start()
@@ -241,38 +241,57 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 	}
 
 	for {
-		_, err = os.Stat(monitor)
-		if err == nil {
+		_, err := os.Stat(monitor)
+		if err != nil && !os.IsNotExist(err) {
+			return nil, err
+		}
+
+		_, err2 := os.Stat(guest)
+		if err2 != nil && !os.IsNotExist(err2) {
+			return nil, err2
+		}
+
+		if err == nil && err2 == nil {
 			break
 		}
-		if os.IsNotExist(err) {
-			select {
-			case <-time.After(100 * time.Millisecond):
-			case <-ctx.Done():
-				return nil, nil
-			}
-			continue
+
+		select {
+		case <-time.After(100 * time.Millisecond):
+		case <-ctx.Done():
+			return nil, nil
 		}
-		return nil, err
 	}
 
-	conn, err := net.Dial("unix", monitor)
+	connMonitor, err := net.Dial("unix", monitor)
 	if err != nil {
 		return nil, err
 	}
 	go func() {
-		io.Copy(ioutil.Discard, conn)
+		io.Copy(ioutil.Discard, connMonitor)
 	}()
 
+	connGuest, err := net.Dial("unix", guest)
+	if err != nil {
+		return nil, err
+	}
+	gc := &guestConnection{
+		serial: n.SMBIOS.Serial,
+		guest:  connGuest,
+		ch:     nodeCh,
+	}
+	go gc.Handle()
+
 	cleanup := func() {
-		conn.Close()
+		connGuest.Close()
+		os.Remove(guest)
+		connMonitor.Close()
 		os.Remove(monitor)
 		os.Remove(r.socketPath(n.Name))
 	}
 
 	vm := &NodeVM{
 		cmd:     qemuCommand,
-		monitor: conn,
+		monitor: connMonitor,
 		running: true,
 		cleanup: cleanup,
 	}
