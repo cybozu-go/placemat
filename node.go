@@ -241,14 +241,6 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 		return nil, err
 	}
 
-	var conn net.Conn
-	defer func() {
-		if conn != nil {
-			conn.Close()
-		}
-		os.Remove(monitor)
-	}()
-
 	for {
 		_, err = os.Stat(monitor)
 		if err == nil {
@@ -265,7 +257,7 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 		return nil, err
 	}
 
-	conn, err = net.Dial("unix", monitor)
+	conn, err := net.Dial("unix", monitor)
 	if err != nil {
 		return nil, err
 	}
@@ -273,10 +265,17 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 		io.Copy(ioutil.Discard, conn)
 	}()
 
+	cleanup := func() {
+		conn.Close()
+		os.Remove(monitor)
+		os.Remove(r.socketPath(n.Name))
+	}
+
 	vm := &NodeVM{
 		cmd:     qemuCommand,
 		monitor: conn,
 		running: true,
+		cleanup: cleanup,
 	}
 
 	return vm, err
