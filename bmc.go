@@ -277,37 +277,40 @@ type bmcInfo struct {
 	bmcAddress string
 }
 
-type processWriter struct {
+type guestConnection struct {
 	data   []byte
 	serial string
 	sent   bool
+	guest  net.Conn
 	ch     chan<- bmcInfo
 }
 
-func (w *processWriter) Write(p []byte) (n int, err error) {
-	n = len(p)
-
-	if w.sent {
-		return
-	}
-
-	index := bytes.IndexByte(p, '\n')
-	if index == -1 {
-		w.data = append(w.data, p...)
-		if len(w.data) > maxBufferSize {
-			log.Warn("discard data received from guest VM, because it is too large.", nil)
-			w.data = nil
+func (g *guestConnection) Handle() {
+	buf := make([]byte, 1)
+	for {
+		_, err := g.guest.Read(buf)
+		if err != nil {
+			return
 		}
-		return
-	}
 
-	w.data = append(w.data, p[:index]...)
-	bmcAddress := strings.TrimSpace(string(w.data))
-	w.ch <- bmcInfo{
-		serial:     w.serial,
-		bmcAddress: bmcAddress,
-	}
-	w.sent = true
+		if g.sent {
+			continue
+		}
 
-	return
+		if buf[0] == '\n' {
+			bmcAddress := strings.TrimSpace(string(g.data))
+			g.ch <- bmcInfo{
+				serial:     g.serial,
+				bmcAddress: bmcAddress,
+			}
+			g.sent = true
+			continue
+		}
+
+		g.data = append(g.data, buf[0])
+		if len(g.data) > maxBufferSize {
+			log.Warn("discard data received from guest VM, because it is too large.", nil)
+			g.data = nil
+		}
+	}
 }

@@ -142,6 +142,10 @@ func (r *Runtime) monitorSocketPath(host string) string {
 	return filepath.Join(r.runDir, host+".monitor")
 }
 
+func (r *Runtime) guestSocketPath(host string) string {
+	return filepath.Join(r.runDir, host+".guest")
+}
+
 func (r *Runtime) nvramPath(host string) string {
 	return filepath.Join(r.dataDir, "nvram", host+".fd")
 }
