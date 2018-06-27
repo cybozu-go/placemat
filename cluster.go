@@ -200,7 +200,8 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	env := cmd.NewEnvironment(ctx)
 	for _, n := range c.Nodes {
 		n := n
-		env.Go(func(ctx context.Context) error {
+		env.Go(func(ctx2 context.Context) error {
+			// reference the original context because ctx2 will soon be cancelled.
 			vm, err := n.Start(ctx, r, nodeCh)
 			if err != nil {
 				return err
