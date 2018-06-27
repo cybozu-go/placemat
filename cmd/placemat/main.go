@@ -13,7 +13,6 @@ import (
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat"
-	"github.com/cybozu-go/placemat/yaml"
 )
 
 const (
@@ -36,7 +35,7 @@ func loadClusterFromFile(p string) (*placemat.Cluster, error) {
 		return nil, err
 	}
 	defer f.Close()
-	return yaml.ReadYaml(bufio.NewReader(f))
+	return placemat.ReadYaml(bufio.NewReader(f))
 }
 
 func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {
@@ -73,12 +72,6 @@ func run(yamls []string) error {
 		})
 	}
 
-	qemu := &placemat.QemuProvider{
-		NoGraphic: !*flgGraphic,
-		Debug:     *flgDebug,
-		RunDir:    *flgRunDir,
-	}
-
 	if *flgCacheDir == "" {
 		if os.Getenv("SUDO_USER") != "" {
 			*flgCacheDir = "/home/${SUDO_USER}/placemat_data"
@@ -86,8 +79,10 @@ func run(yamls []string) error {
 			*flgCacheDir = *flgDataDir
 		}
 	}
-
-	err = qemu.Setup(os.ExpandEnv(*flgDataDir), os.ExpandEnv(*flgCacheDir))
+	runDir := os.ExpandEnv(*flgRunDir)
+	dataDir := os.ExpandEnv(*flgDataDir)
+	cacheDir := os.ExpandEnv(*flgCacheDir)
+	r, err := placemat.NewRuntime(*flgGraphic, runDir, dataDir, cacheDir)
 	if err != nil {
 		return err
 	}
@@ -96,13 +91,13 @@ func run(yamls []string) error {
 	if err != nil {
 		return err
 	}
-	err = cluster.Resolve(qemu)
+	err = cluster.Resolve()
 	if err != nil {
 		return err
 	}
 
 	cmd.Go(func(ctx context.Context) error {
-		return placemat.Run(ctx, qemu, cluster)
+		return cluster.Start(ctx, r)
 	})
 	cmd.Stop()
 	return cmd.Wait()

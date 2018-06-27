@@ -10,6 +10,10 @@ import (
 	"strconv"
 	"sync"
 
+	"strings"
+
+	"io"
+
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 	"github.com/rmxymh/infra-ecosphere/bmc"
@@ -17,37 +21,30 @@ import (
 	"github.com/rmxymh/infra-ecosphere/utils"
 )
 
+const (
+	maxBufferSize = 256
+)
+
 type bmcServer struct {
-	nodeCh   chan bmcInfo
-	networks map[string][]*net.IPNet
+	nodeCh   <-chan bmcInfo
+	networks []*Network
 
 	muVMs   sync.Mutex
-	nodeVMs map[string]*nodeVM // key: serial
+	nodeVMs map[string]*NodeVM // key: serial
 
 	muSerials   sync.Mutex
 	nodeSerials map[string]string // key: address
 }
 
-func newBMCServer() *bmcServer {
-	return &bmcServer{
-		nodeCh:      make(chan bmcInfo),
-		nodeVMs:     make(map[string]*nodeVM),
-		networks:    make(map[string][]*net.IPNet),
+func newBMCServer(vms map[string]*NodeVM, networks []*Network, ch <-chan bmcInfo) *bmcServer {
+	s := &bmcServer{
+		nodeCh:      ch,
+		nodeVMs:     vms,
 		nodeSerials: make(map[string]string),
 	}
-}
-
-func (s *bmcServer) setup(networks []*Network) error {
 	for _, n := range networks {
-		if n.Spec.Type == NetworkBMC {
-			s.networks[n.Name] = make([]*net.IPNet, len(n.Spec.Addresses))
-			for i, address := range n.Spec.Addresses {
-				_, ipnet, err := net.ParseCIDR(address)
-				if err != nil {
-					return err
-				}
-				s.networks[n.Name][i] = ipnet
-			}
+		if n.typ == NetworkBMC {
+			s.networks = append(s.networks, n)
 		}
 	}
 
@@ -56,10 +53,10 @@ func (s *bmcServer) setup(networks []*Network) error {
 	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_GET_CHASSIS_STATUS, s.handleIPMIGetChassisStatus)
 	ipmi.IPMI_CHASSIS_SetHandler(ipmi.IPMI_CMD_CHASSIS_CONTROL, s.handleIPMIChassisControl)
 
-	return nil
+	return s
 }
 
-func (s *bmcServer) getVMByAddress(addr string) (*nodeVM, error) {
+func (s *bmcServer) getVMByAddress(addr string) (*NodeVM, error) {
 	s.muSerials.Lock()
 	serial, ok := s.nodeSerials[addr]
 	s.muSerials.Unlock()
@@ -96,7 +93,7 @@ func (s *bmcServer) handleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UD
 	session.Inc()
 
 	response := ipmi.IPMIGetChassisStatusResponse{}
-	if vm.isRunning() {
+	if vm.IsRunning() {
 		response.CurrentPowerState |= ipmi.CHASSIS_POWER_STATE_BITMASK_POWER_ON
 	}
 	response.LastPowerEvent = 0
@@ -150,15 +147,15 @@ func (s *bmcServer) handleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPC
 
 	switch request.ChassisControl {
 	case ipmi.CHASSIS_CONTROL_POWER_DOWN:
-		vm.powerOff()
+		vm.PowerOff()
 	case ipmi.CHASSIS_CONTROL_POWER_UP:
-		vm.powerOn()
+		vm.PowerOn()
 	case ipmi.CHASSIS_CONTROL_POWER_CYCLE:
-		vm.powerOff()
-		vm.powerOn()
+		vm.PowerOff()
+		vm.PowerOn()
 	case ipmi.CHASSIS_CONTROL_HARD_RESET:
-		vm.powerOff()
-		vm.powerOn()
+		vm.PowerOff()
+		vm.PowerOn()
 	case ipmi.CHASSIS_CONTROL_PULSE:
 		// do nothing
 	case ipmi.CHASSIS_CONTROL_POWER_SOFT:
@@ -205,10 +202,12 @@ func (s *bmcServer) listenIPMI(ctx context.Context, addr string) error {
 		bytebuf := bytes.NewBuffer(buf)
 		ipmi.DeserializeAndExecute(bytebuf, addr, server)
 	}
-	return nil
 }
 
 func (s *bmcServer) handleNode(ctx context.Context) error {
+	env := cmd.NewEnvironment(ctx)
+
+OUTER:
 	for {
 		select {
 		case info := <-s.nodeCh:
@@ -220,11 +219,16 @@ func (s *bmcServer) handleNode(ctx context.Context) error {
 					"bmc_address": info.bmcAddress,
 				})
 			}
-			go s.listenIPMI(ctx, info.bmcAddress)
+			env.Go(func(ctx context.Context) error {
+				return s.listenIPMI(ctx, info.bmcAddress)
+			})
 		case <-ctx.Done():
-			return nil
+			break OUTER
 		}
 	}
+
+	env.Cancel(nil)
+	return env.Wait()
 }
 
 func (s *bmcServer) addPort(ctx context.Context, info bmcInfo) error {
@@ -254,19 +258,90 @@ func (s *bmcServer) addPort(ctx context.Context, info bmcInfo) error {
 func (s *bmcServer) findBridge(address string) (string, *net.IPNet, error) {
 	ip := net.ParseIP(address)
 
-	for name, network := range s.networks {
-		for _, ipnet := range network {
-			if ipnet.Contains(ip) {
-				return name, ipnet, nil
-			}
+	for _, n := range s.networks {
+		if n.ipNet.Contains(ip) {
+			return n.Name, n.ipNet, nil
 		}
 	}
 
 	return "", nil, errors.New("BMC address not in range of BMC networks: " + address)
 }
 
-func (s *bmcServer) registerVM(serial string, vm *nodeVM) {
+func (s *bmcServer) registerVM(serial string, vm *NodeVM) {
 	s.muVMs.Lock()
 	s.nodeVMs[serial] = vm
 	s.muVMs.Unlock()
+}
+
+// bmcInfo represents BMC information notified by a guest VM.
+type bmcInfo struct {
+	serial     string
+	bmcAddress string
+}
+
+type processWriter struct {
+	data   []byte
+	serial string
+	sent   bool
+	ch     chan<- bmcInfo
+}
+
+func (w *processWriter) Write(p []byte) (n int, err error) {
+	n = len(p)
+
+	if w.sent {
+		return
+	}
+
+	index := bytes.IndexByte(p, '\n')
+	if index == -1 {
+		w.data = append(w.data, p...)
+		if len(w.data) > maxBufferSize {
+			log.Warn("discard data received from guest VM, because it is too large.", nil)
+			w.data = nil
+		}
+		return
+	}
+
+	w.data = append(w.data, p[:index]...)
+	bmcAddress := strings.TrimSpace(string(w.data))
+	w.ch <- bmcInfo{
+		serial:     w.serial,
+		bmcAddress: bmcAddress,
+	}
+	w.sent = true
+
+	return
+}
+
+// NodeVM holds resources to manage and monitor a QEMU process.
+type NodeVM struct {
+	cmd     *cmd.LogCmd
+	monitor net.Conn
+	running bool
+}
+
+// IsRunning returns true if the VM is running.
+func (n *NodeVM) IsRunning() bool {
+	return n.running
+}
+
+// PowerOn turns on the power of the VM.
+func (n *NodeVM) PowerOn() {
+	if n.running {
+		return
+	}
+
+	io.WriteString(n.monitor, "system_reset\ncont\n")
+	n.running = true
+}
+
+// PowerOff turns off the power of the VM.
+func (n *NodeVM) PowerOff() {
+	if !n.running {
+		return
+	}
+
+	io.WriteString(n.monitor, "stop\n")
+	n.running = false
 }

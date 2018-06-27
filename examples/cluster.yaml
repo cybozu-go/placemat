@@ -1,50 +1,24 @@
 kind: Network
 name: net0
-spec:
-  internal: false
-  use-nat: true
-  addresses:
-    - 172.16.0.1/24
+internal: false
+use-nat: true
+address: 172.16.0.1/24
 ---
 kind: Image
 name: ubuntu-image
-spec:
-  url: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+url: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
 ---
 kind: Node
 name: boot
-spec:
-  interfaces:
-    - net0
-  volumes:
-    - kind: image
-      name: root
-      recreatePolicy: IfNotPresent
-      spec:
-        image: ubuntu-image
-    - kind: localds
-      name: seed
-      recreatePolicy: Always
-      spec:
-        user-data: user-data.yaml
-        network-config: network-config.yaml
-  resources:
-    cpu: 1
-    memory: 2G
----
-kind: NodeSet
-name: worker
-spec:
-  replicas: 2
-  template:
-    interfaces:
-      - net0
-    volumes:
-      - kind: raw
-        name: data
-        spec:
-          size: 10G
-    resources:
-      cpu: 1
-      memory: 2G
-    bios: uefi
+interfaces:
+  - net0
+volumes:
+  - kind: image
+    name: root
+    image: ubuntu-image
+  - kind: localds
+    name: seed
+    user-data: user-data.yaml
+    network-config: network-config.yaml
+cpu: 1
+memory: 2G

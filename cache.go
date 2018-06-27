@@ -1,12 +1,20 @@
 package placemat
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
+
+	"github.com/cybozu-go/cmd"
+	"github.com/cybozu-go/log"
 )
 
 type cache struct {
@@ -60,4 +68,72 @@ func (c *cache) Contains(key string) bool {
 func (c *cache) Path(key string) string {
 	ek := escapeKey(key)
 	return filepath.Join(c.dir, ek)
+}
+
+func downloadData(ctx context.Context, u *url.URL, decomp Decompressor, c *cache) error {
+	urlString := u.String()
+
+	if c.Contains(urlString) {
+		return nil
+	}
+
+	req, err := http.NewRequest("GET", urlString, nil)
+	if err != nil {
+		return err
+	}
+	req = req.WithContext(ctx)
+
+	client := &cmd.HTTPClient{
+		Client:   &http.Client{},
+		Severity: log.LvDebug,
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download: %s: %s", res.Status, urlString)
+	}
+
+	size, err := strconv.Atoi(res.Header.Get("Content-Length"))
+	if err != nil {
+		return err
+	}
+
+	log.Info("Downloading data...", map[string]interface{}{
+		"url":  urlString,
+		"size": size,
+	})
+
+	var src io.Reader = res.Body
+	if decomp != nil {
+		newSrc, err := decomp.Decompress(res.Body)
+		if err != nil {
+			return err
+		}
+		src = newSrc
+	}
+
+	return c.Put(urlString, src)
+}
+
+func copyDownloadedData(u *url.URL, dest string, c *cache) error {
+	r, err := c.Get(u.String())
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	d, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	_, err = io.Copy(d, r)
+	if err != nil {
+		return err
+	}
+	return d.Sync()
 }
