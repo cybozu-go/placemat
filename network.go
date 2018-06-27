@@ -20,6 +20,7 @@ const (
 
 // NetworkSpec represents a Network specification in YAML
 type NetworkSpec struct {
+	Kind    string `yaml:"kind"`
 	Name    string `yaml:"name"`
 	Type    string `yaml:"type"`
 	UseNAT  bool   `yaml:"use-nat"`

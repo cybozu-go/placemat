@@ -36,6 +36,7 @@ type SMBIOSConfig struct {
 
 // NodeSpec represents a Node specification in YAML
 type NodeSpec struct {
+	Kind         string           `yaml:"kind"`
 	Name         string           `yaml:"name"`
 	Interfaces   []string         `yaml:"interfaces,omitempty"`
 	Volumes      []NodeVolumeSpec `yaml:"volumes,omitempty"`

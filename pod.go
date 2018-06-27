@@ -53,6 +53,7 @@ type PodAppSpec struct {
 
 // PodSpec represents a Pod specification in YAML
 type PodSpec struct {
+	Kind        string             `yaml:"kind"`
 	Name        string             `yaml:"name"`
 	InitScripts []string           `yaml:"init-scripts,omitempty"`
 	Interfaces  []PodInterfaceSpec `yaml:"interfaces,omitempty"`

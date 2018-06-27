@@ -17,6 +17,7 @@ type DataFolderFileSpec struct {
 
 // DataFolderSpec represents a DataFolder definition in YAML
 type DataFolderSpec struct {
+	Kind  string               `yaml:"kind"`
 	Name  string               `yaml:"name"`
 	Dir   string               `yaml:"dir,omitempty"`
 	Files []DataFolderFileSpec `yaml:"files,omitempty"`
