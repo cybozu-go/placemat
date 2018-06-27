@@ -57,6 +57,9 @@ func NewImage(spec *ImageSpec) (*Image, error) {
 
 // Prepare downloads the image if it is not in the cache.
 func (i *Image) Prepare(ctx context.Context, c *cache) error {
+	if i.u == nil {
+		return nil
+	}
 	err := downloadData(ctx, i.u, i.decomp, c)
 	if err != nil {
 		return err
