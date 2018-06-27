@@ -214,6 +214,11 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	}
 	env.Stop()
 	err = env.Wait()
+	defer func() {
+		for _, vm := range vms {
+			vm.cleanup()
+		}
+	}()
 	if err != nil {
 		return err
 	}

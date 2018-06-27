@@ -12,8 +12,6 @@ import (
 
 	"strings"
 
-	"io"
-
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 	"github.com/rmxymh/infra-ecosphere/bmc"
@@ -312,36 +310,4 @@ func (w *processWriter) Write(p []byte) (n int, err error) {
 	w.sent = true
 
 	return
-}
-
-// NodeVM holds resources to manage and monitor a QEMU process.
-type NodeVM struct {
-	cmd     *cmd.LogCmd
-	monitor net.Conn
-	running bool
-}
-
-// IsRunning returns true if the VM is running.
-func (n *NodeVM) IsRunning() bool {
-	return n.running
-}
-
-// PowerOn turns on the power of the VM.
-func (n *NodeVM) PowerOn() {
-	if n.running {
-		return
-	}
-
-	io.WriteString(n.monitor, "system_reset\ncont\n")
-	n.running = true
-}
-
-// PowerOff turns off the power of the VM.
-func (n *NodeVM) PowerOff() {
-	if !n.running {
-		return
-	}
-
-	io.WriteString(n.monitor, "stop\n")
-	n.running = false
 }
