@@ -140,7 +140,6 @@ func (n *Node) qemuParams(r *Runtime) []string {
 	}
 	if !r.graphic {
 		p := r.socketPath(n.Name)
-		defer os.Remove(p)
 		params = append(params, "-nographic")
 		params = append(params, "-serial", "unix:"+p+",server,nowait")
 	}
