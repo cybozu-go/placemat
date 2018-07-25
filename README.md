@@ -1,3 +1,4 @@
+[![GitHub release](https://img.shields.io/github/release/cybozu-go/placemat.svg?maxAge=60)][releases]
 [![CircleCI](https://circleci.com/gh/cybozu-go/placemat.svg?style=svg)](https://circleci.com/gh/cybozu-go/placemat)
 [![GoDoc](https://godoc.org/github.com/cybozu-go/placemat?status.svg)][godoc]
 [![Go Report Card](https://goreportcard.com/badge/github.com/cybozu-go/placemat)](https://goreportcard.com/report/github.com/cybozu-go/placemat)
@@ -25,6 +26,11 @@ Features
     in YAML files in a declarative fashion.  Users need not mind the order
     of creation and/or destruction of resources.
 
+* Virtual BMC for IPMI power management
+
+    Power on/off/reset of VMs can be done by [IPMI][] commands.
+    See [virtual BMC](docs/virtual_bmc.md) for details.
+
 * Automation
 
     Placemat supports [cloud-init][] and [ignition][] to automate
@@ -37,15 +43,15 @@ Features
 * UEFI
 
     Not only traditional BIOS, but placemat VMs can be booted in UEFI
-    mode if [OVMF][] is installed.
+    mode if [OVMF][] is available.
 
 Usage
 -----
 
-This project provides two commands, `placemat` and `placemat-connect`.
-`placemat` is the main tool to build networks and virtual machines.
-`placemat-connect` is a helper to connect to a serial console of
-a VM launched by `placemat`.
+This project provides these commands:
+
+* `placemat` is the main tool to build networks and virtual machines.
+* `placemat-connect` is a utility to connect to VM serial console.
 
 ### placemat command
 
@@ -96,7 +102,7 @@ Getting started
 ### Prerequisites
 
 - [QEMU][]
-- [OVMF][] (if UEFI boot is enabled)
+- [OVMF][] for UEFI.
 - [picocom](https://github.com/npat-efault/picocom) for `placemat-connect`
 - [rkt][] for `Pod` resource.
 
@@ -151,9 +157,11 @@ License
 
 MIT
 
-[godoc]: https://godoc.org/github.com/cybozu-go/aptutil
+[releases]: https://github.com/cybozu-go/placemat/releases
+[godoc]: https://godoc.org/github.com/cybozu-go/placemat
 [cloud-init]: http://cloudinit.readthedocs.io/en/latest/index.html
 [ignition]: https://coreos.com/ignition/docs/latest/
 [QEMU]: https://www.qemu.org/
 [OVMF]: https://github.com/tianocore/tianocore.github.io/wiki/OVMF
 [rkt]: https://coreos.com/rkt/
+[IPMI]: https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface
