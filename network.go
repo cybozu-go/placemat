@@ -6,7 +6,11 @@ import (
 	"net"
 )
 
-const maxNetworkNameLen = 15
+const (
+	maxNetworkNameLen = 15
+	v4ForwardKey      = "net.ipv4.ip_forward"
+	v6ForwardKey      = "net.ipv6.conf.all.forwarding"
+)
 
 // NetworkType represents a network type.
 type NetworkType int
@@ -31,12 +35,14 @@ type NetworkSpec struct {
 type Network struct {
 	*NetworkSpec
 
-	typ       NetworkType
-	ip        net.IP
-	ipNet     *net.IPNet
-	tapNames  []string
-	vethNames []string
-	ng        *nameGenerator
+	typ         NetworkType
+	ip          net.IP
+	ipNet       *net.IPNet
+	tapNames    []string
+	vethNames   []string
+	ng          *nameGenerator
+	v4forwarded bool
+	v6forwarded bool
 }
 
 // NewNetwork creates *Network from spec.
@@ -94,6 +100,23 @@ func iptables(ip net.IP) string {
 	return "ip6tables"
 }
 
+func isForwarding(name string) bool {
+	val, err := sysctlGet(name)
+	if err != nil {
+		return false
+	}
+
+	return len(val) > 0 && val[0] != '0'
+}
+
+func setForwarding(name string, flag bool) error {
+	val := "1\n"
+	if !flag {
+		val = "0\n"
+	}
+	return sysctlSet(name, val)
+}
+
 // Create creates a virtual L2 switch using Linux bridge.
 func (n *Network) Create(ng *nameGenerator) error {
 	n.ng = ng
@@ -115,6 +138,22 @@ func (n *Network) Create(ng *nameGenerator) error {
 
 	if !n.UseNAT {
 		return nil
+	}
+
+	if !isForwarding(v4ForwardKey) {
+		err = setForwarding(v4ForwardKey, true)
+		if err != nil {
+			return err
+		}
+		n.v4forwarded = true
+	}
+
+	if !isForwarding(v6ForwardKey) {
+		err = setForwarding(v6ForwardKey, true)
+		if err != nil {
+			return err
+		}
+		n.v6forwarded = true
 	}
 
 	cmds = [][]string{
@@ -167,6 +206,13 @@ func (n *Network) CreateVeth() (string, error) {
 
 // Destroy deletes all created tap and veth devices, then the bridge.
 func (n *Network) Destroy() error {
+	if n.v4forwarded {
+		setForwarding(v4ForwardKey, false)
+	}
+	if n.v6forwarded {
+		setForwarding(v6ForwardKey, false)
+	}
+
 	cmds := [][]string{}
 	for _, name := range n.tapNames {
 		cmds = append(cmds, []string{"ip", "tuntap", "delete", name, "mode", "tap"})
