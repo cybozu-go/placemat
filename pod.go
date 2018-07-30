@@ -300,6 +300,9 @@ func makePodNS(ctx context.Context, pod string, veths []string, ips map[string][
 	cmds := [][]string{
 		{"ip", "netns", "add", ns},
 		{"ip", "netns", "exec", ns, "ip", "link", "set", "lo", "up"},
+		// enable IP forwarding
+		{"ip", "netns", "exec", ns, "sysctl", "-w", v4ForwardKey + "=1"},
+		{"ip", "netns", "exec", ns, "sysctl", "-w", v6ForwardKey + "=1"},
 		// 127.0.0.1 is auto-assigned to lo.
 		//{"ip", "netns", "exec", ns, "ip", "a", "add", "127.0.0.1/8", "dev", "lo"},
 	}

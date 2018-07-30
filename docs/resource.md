@@ -188,6 +188,8 @@ A rkt pod is a set of containers sharing a network stack (namespace).
 Placemat prepares the network stack that consists of the given interfaces.
 Each network stack has its dedicated routing tables, iptables rules, etc.
 
+In Pod's network namespace, IP-forwarding is enabled by default.
+
 ```yaml
 kind: Pod
 name: my-pod
