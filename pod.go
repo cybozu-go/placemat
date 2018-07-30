@@ -300,6 +300,9 @@ func makePodNS(ctx context.Context, pod string, veths []string, ips map[string][
 	cmds := [][]string{
 		{"ip", "netns", "add", ns},
 		{"ip", "netns", "exec", ns, "ip", "link", "set", "lo", "up"},
+		// enable IP forwarding
+		{"ip", "netns", "exec", ns, "sysctl", "-w", v4ForwardKey + "=1"},
+		{"ip", "netns", "exec", ns, "sysctl", "-w", v6ForwardKey + "=1"},
 		// 127.0.0.1 is auto-assigned to lo.
 		//{"ip", "netns", "exec", ns, "ip", "a", "add", "127.0.0.1/8", "dev", "lo"},
 	}
@@ -313,16 +316,6 @@ func makePodNS(ctx context.Context, pod string, veths []string, ips map[string][
 				"ip", "netns", "exec", ns, "ip", "a", "add", ip, "dev", eth,
 			})
 		}
-	}
-	return execCommands(ctx, cmds)
-}
-
-func enableIPForwarding(ctx context.Context, pod string) error {
-	log.Info("Enable IP-forwarding in Pod network namespace", map[string]interface{}{"pod": pod})
-	ns := "pm_" + pod
-	cmds := [][]string{
-		{"ip", "netns", "exec", ns, "sysctl", "-w", v4ForwardKey + "=1"},
-		{"ip", "netns", "exec", ns, "sysctl", "-w", v6ForwardKey + "=1"},
 	}
 	return execCommands(ctx, cmds)
 }
@@ -354,11 +347,6 @@ func (p *Pod) Start(ctx context.Context, r *Runtime, root string) error {
 		return err
 	}
 	defer deletePodNS(context.Background(), p.Name)
-
-	err = enableIPForwarding(ctx, p.Name)
-	if err != nil {
-		return err
-	}
 
 	for _, script := range p.initScripts {
 		err := runInPodNS(ctx, p.Name, script)
