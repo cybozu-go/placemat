@@ -6,7 +6,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 ### Added
-- This file.
+- Enable IP forwarding in Pods (#57).
+- Enable IP forwarding in the host OS if NAT is enabled (#56).
 
 ### Changed
 - Improve README.md
