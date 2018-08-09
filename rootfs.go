@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -142,7 +143,8 @@ func NewRootfs() (*Rootfs, error) {
 		return nil, err
 	}
 
-	root, err := ioutil.TempDir("/", "placemat-root")
+	root := path.Join("/", "placemat-root")
+	err = os.MkdirAll(root, 0700)
 	if err != nil {
 		return nil, err
 	}

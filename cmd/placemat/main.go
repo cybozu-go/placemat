@@ -27,6 +27,7 @@ var (
 	flgDataDir  = flag.String("data-dir", defaultDataDir, "directory to store data")
 	flgGraphic  = flag.Bool("graphic", false, "run QEMU with graphical console")
 	flgDebug    = flag.Bool("debug", false, "show QEMU's and Pod's stdout and stderr")
+	flgForce    = flag.Bool("force", false, "force removal of the nat and network")
 )
 
 func loadClusterFromFile(p string) (*placemat.Cluster, error) {
@@ -82,7 +83,7 @@ func run(yamls []string) error {
 	runDir := os.ExpandEnv(*flgRunDir)
 	dataDir := os.ExpandEnv(*flgDataDir)
 	cacheDir := os.ExpandEnv(*flgCacheDir)
-	r, err := placemat.NewRuntime(*flgGraphic, runDir, dataDir, cacheDir)
+	r, err := placemat.NewRuntime(*flgForce, *flgGraphic, runDir, dataDir, cacheDir)
 	if err != nil {
 		return err
 	}

@@ -33,6 +33,7 @@ func init() {
 
 // Runtime contains the runtime information to run Cluster.
 type Runtime struct {
+	force      bool
 	graphic    bool
 	runDir     string
 	ng         nameGenerator
@@ -43,8 +44,9 @@ type Runtime struct {
 }
 
 // NewRuntime initializes a new Runtime.
-func NewRuntime(graphic bool, runDir, dataDir, cacheDir string) (*Runtime, error) {
+func NewRuntime(force bool, graphic bool, runDir, dataDir, cacheDir string) (*Runtime, error) {
 	r := &Runtime{
+		force:   force,
 		graphic: graphic,
 		runDir:  runDir,
 		dataDir: dataDir,

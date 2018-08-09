@@ -3,7 +3,9 @@ package placemat
 import (
 	"context"
 	"errors"
+	"io/ioutil"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/cybozu-go/cmd"
@@ -89,6 +91,59 @@ func (c *Cluster) Resolve() error {
 	return nil
 }
 
+// Cleanup remaining resources
+func (c *Cluster) Cleanup(r *Runtime) error {
+	// an error occurrs if the resource is not found.
+	// So ignore errors in large part
+
+	destroyNatRules()
+
+	ng := &nameGenerator{
+		prefix: r.ng.prefix,
+	}
+
+	for _, d := range c.Nodes {
+		os.Remove(r.guestSocketPath(d.Name))
+		os.Remove(r.monitorSocketPath(d.Name))
+		os.Remove(r.socketPath(d.Name))
+		for _, n := range d.networks {
+			name := ng.New()
+			n.tapNames = append(n.tapNames, name)
+		}
+	}
+
+	for _, p := range c.Pods {
+		deletePodNS(context.Background(), p.Name)
+		for _, n := range p.networks {
+			name := ng.New()
+			n.vethNames = append(n.vethNames, name)
+		}
+	}
+
+	for _, n := range c.Networks {
+		log.Info("Deleting network", map[string]interface{}{"name": n.Name})
+		n.Destroy()
+		// an error occurrs, if the named network is not found.
+	}
+
+	data, err := ioutil.ReadFile("/proc/mounts")
+	if err != nil {
+		return err
+	}
+
+	mounts := strings.Split(string(data), "\n")
+	for i := len(mounts) - 2; i >= 0; i-- {
+		fields := strings.Fields(mounts[i])
+
+		if strings.HasPrefix(fields[1], "/placemat-root") {
+			log.Info("Unmount", map[string]interface{}{"dist": fields[1]})
+			umount(fields[1])
+		}
+	}
+
+	return nil
+}
+
 // GetNetwork looks up the network by name.
 // It returns non-nil error if the named network is not found.
 func (c *Cluster) GetNetwork(name string) (*Network, error) {
@@ -143,6 +198,13 @@ func (c *Cluster) GetPod(name string) (*Pod, error) {
 // It stop when ctx is cancelled.
 func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	defer os.RemoveAll(r.tempDir)
+
+	if r.force {
+		err := c.Cleanup(r)
+		if err != nil {
+			return err
+		}
+	}
 
 	root, err := NewRootfs()
 	if err != nil {
