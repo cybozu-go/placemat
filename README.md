@@ -72,12 +72,15 @@ Options:
   -data-dir string
         directory to store data (default "/var/scratch/placemat")
   -debug
-        show QEMU's and Pod's stdout and stderr
+        show QEMU's and Pod's stdout and stderr        
+  -force
+        force run with removal of garbage
 ```
 
 If `-cache-dir` is not specified, the default will be `/home/${SUDO_USER}/placemat_data`
 if `sudo` is used for `placemat`.  If `sudo` is not used, cache directory will be
 the same as `-data-dir`.
+`-force` is used for forced run. Remaining garbage, for example virtual networks, mounts, socket files will be removed.
 
 ### placemat-connect command
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 
@@ -101,44 +102,53 @@ func (c *Cluster) Cleanup(r *Runtime) error {
 	ng := &nameGenerator{
 		prefix: r.ng.prefix,
 	}
+	cmds := [][]string{}
 
 	for _, d := range c.Nodes {
 		os.Remove(r.guestSocketPath(d.Name))
 		os.Remove(r.monitorSocketPath(d.Name))
 		os.Remove(r.socketPath(d.Name))
-		for _, n := range d.networks {
+		for range d.networks {
 			name := ng.New()
-			n.tapNames = append(n.tapNames, name)
+			cmds = append(cmds, []string{"ip", "tuntap", "delete", name, "mode", "tap"})
 		}
 	}
 
 	for _, p := range c.Pods {
 		deletePodNS(context.Background(), p.Name)
-		for _, n := range p.networks {
+		for range p.networks {
 			name := ng.New()
-			n.vethNames = append(n.vethNames, name)
+			cmds = append(cmds, []string{"ip", "link", "delete", name})
 		}
 	}
 
 	for _, n := range c.Networks {
-		log.Info("Deleting network", map[string]interface{}{"name": n.Name})
-		n.Destroy()
-		// an error occurrs, if the named network is not found.
+		cmds = append(cmds, []string{"ip", "link", "delete", n.Name, "type", "bridge"})
 	}
+
+	// an error occurrs, if the named network is not found.
+	execCommandsForce(cmds)
 
 	data, err := ioutil.ReadFile("/proc/mounts")
 	if err != nil {
 		return err
 	}
 
-	mounts := strings.Split(string(data), "\n")
-	for i := len(mounts) - 2; i >= 0; i-- {
-		fields := strings.Fields(mounts[i])
-
-		if strings.HasPrefix(fields[1], "/placemat-root") {
-			log.Info("Unmount", map[string]interface{}{"dist": fields[1]})
-			umount(fields[1])
+	paths := []string{}
+	for _, line := range strings.Split(string(data), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 4 {
+			continue
 		}
+		if strings.HasPrefix(fields[1], "/placemat-root") {
+			paths = append(paths, fields[1])
+		}
+	}
+
+	sort.Sort(sort.Reverse(sort.StringSlice(paths)))
+	for _, p := range paths {
+		log.Info("unmount", map[string]interface{}{"dist": p})
+		umount(p)
 	}
 
 	return nil
