@@ -23,7 +23,7 @@ var _ = BeforeSuite(func() {
 	runPlacemt("-force")
 
 	SetDefaultEventuallyPollingInterval(5 * time.Second)
-	SetDefaultEventuallyTimeout(30 * time.Second)
+	SetDefaultEventuallyTimeout(60 * time.Second)
 
 	err := prepareSSHClients(node1, node2)
 	Expect(err).NotTo(HaveOccurred())
