@@ -261,5 +261,5 @@ func CleanupRootfs() error {
 		}
 	}
 
-	return os.RemoveAll(rootPath)
+	return nil
 }
