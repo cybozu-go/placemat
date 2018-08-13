@@ -44,8 +44,6 @@ var _ = AfterSuite(func() {
 
 	select {
 	case <-placematSession.Exited:
-		fmt.Println("exited")
 	case <-time.After(30 * time.Second):
-		fmt.Println("waited")
 	}
 })

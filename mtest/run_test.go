@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"golang.org/x/crypto/ssh"
 )
@@ -29,8 +29,8 @@ func runPlacemt(args ...string) {
 	args = append(args, clusterYaml)
 	command := exec.Command("sudo", args...)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	session, err := gexec.Start(command, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
-	gomega.Expect(err).To(gomega.Succeed())
+	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+	Expect(err).To(Succeed())
 	placematSession = session
 }
 
@@ -114,6 +114,6 @@ func execAt(host string, args ...string) (stdout, stderr []byte, e error) {
 
 func execSafeAt(host string, args ...string) string {
 	stdout, _, err := execAt(host, args...)
-	gomega.ExpectWithOffset(1, err).To(gomega.Succeed())
+	ExpectWithOffset(1, err).To(Succeed())
 	return string(stdout)
 }
