@@ -89,6 +89,18 @@ func (c *Cluster) Resolve() error {
 	return nil
 }
 
+// Cleanup remaining resources
+func (c *Cluster) Cleanup(r *Runtime) error {
+	err := CleanupNodes(r, c.Nodes)
+	if err != nil {
+		return err
+	}
+
+	CleanupNetworks(r, c)
+
+	return CleanupRootfs()
+}
+
 // GetNetwork looks up the network by name.
 // It returns non-nil error if the named network is not found.
 func (c *Cluster) GetNetwork(name string) (*Network, error) {
@@ -143,6 +155,13 @@ func (c *Cluster) GetPod(name string) (*Pod, error) {
 // It stop when ctx is cancelled.
 func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	defer os.RemoveAll(r.tempDir)
+
+	if r.force {
+		err := c.Cleanup(r)
+		if err != nil {
+			return err
+		}
+	}
 
 	root, err := NewRootfs()
 	if err != nil {

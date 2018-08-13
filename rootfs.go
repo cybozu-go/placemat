@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/cybozu-go/log"
@@ -28,6 +29,8 @@ var (
 		"pids":       true,
 	}
 )
+
+const rootPath = "/placemat-root"
 
 func umount(mp string) error {
 	return exec.Command("umount", mp).Run()
@@ -142,17 +145,17 @@ func NewRootfs() (*Rootfs, error) {
 		return nil, err
 	}
 
-	root, err := ioutil.TempDir("/", "placemat-root")
+	err = os.MkdirAll(rootPath, 0700)
 	if err != nil {
 		return nil, err
 	}
 
-	err = bindMount("/", root)
+	err = bindMount("/", rootPath)
 	if err != nil {
 		return nil, err
 	}
 
-	mountPoints := []string{root}
+	mountPoints := []string{rootPath}
 	defer func() {
 		l := len(mountPoints)
 		for i := 0; i < l; i++ {
@@ -169,12 +172,12 @@ func NewRootfs() (*Rootfs, error) {
 		fs := fields[2]
 		options := fields[3]
 		opts := strings.Split(options, ",")
-		dest := filepath.Join(root, mp)
+		dest := filepath.Join(rootPath, mp)
 
 		switch {
 		case mp == "/":
 			continue
-		case strings.HasPrefix(mp, "/placemat-root"):
+		case strings.HasPrefix(mp, rootPath):
 			continue
 		case strings.HasPrefix(mp, "/boot"):
 			continue
@@ -224,7 +227,39 @@ func NewRootfs() (*Rootfs, error) {
 		}
 	}
 
-	ret := &Rootfs{root, mountPoints}
+	ret := &Rootfs{rootPath, mountPoints}
 	mountPoints = nil
 	return ret, nil
+}
+
+// CleanupRootfs unmount all remaining mounts.
+func CleanupRootfs() error {
+	data, err := ioutil.ReadFile("/proc/mounts")
+	if err != nil {
+		return err
+	}
+
+	var paths []string
+	for _, line := range strings.Split(string(data), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 4 {
+			continue
+		}
+		if strings.HasPrefix(fields[1], rootPath) {
+			paths = append(paths, fields[1])
+		}
+	}
+
+	sort.Sort(sort.Reverse(sort.StringSlice(paths)))
+	for _, p := range paths {
+		log.Info("unmount", map[string]interface{}{
+			"target": p,
+		})
+		err := umount(p)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
