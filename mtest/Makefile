@@ -61,7 +61,7 @@ $(OUTPUT)/placemat:
 test: $(GENERATED_FILES)
 	sudo rm -rf $(PLACEMAT_DATADIR)/volumes/node1
 	sudo rm -rf $(PLACEMAT_DATADIR)/volumes/node2
-	$(GINKGO)
+	$(GINKGO) -v
 
 clean:
 	rm -rf $(OUTPUT)

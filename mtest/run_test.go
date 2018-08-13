@@ -11,37 +11,42 @@ import (
 	"syscall"
 	"time"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"golang.org/x/crypto/ssh"
 )
 
-const sshTimeout = 3 * time.Minute
+const sshTimeout = 2 * time.Minute
 
 var (
-	sshClients      = make(map[string]*ssh.Client)
-	placematSession *gexec.Session
+	sshClients = make(map[string]*ssh.Client)
 )
 
-func runPlacemt(args ...string) {
+func runPlacemt(cluster string, args ...string) *gexec.Session {
+	cleanupPlacemat()
+
 	args = append([]string{placemat}, args...)
-	args = append(args, clusterYaml)
+	args = append(args, cluster)
 	command := exec.Command("sudo", args...)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+	session, err := gexec.Start(command, nil, nil)
 	Expect(err).To(Succeed())
-	placematSession = session
+	return session
 }
 
-func terminatePlacemat() {
-	pid := placematSession.Command.Process.Pid
+func terminatePlacemat(session *gexec.Session) {
+	pid := session.Command.Process.Pid
 	exec.Command("sudo", "kill", "-TERM", strconv.Itoa(-pid)).Run()
 }
 
-func killPlacemat() {
-	pid := placematSession.Command.Process.Pid
+func killPlacemat(session *gexec.Session) {
+	pid := session.Command.Process.Pid
 	exec.Command("sudo", "kill", "-KILL", strconv.Itoa(-pid)).Run()
+}
+
+func cleanupPlacemat() {
+	exec.Command("sudo", "rm", "-rf", "/var/scratch/placemat/volumes/node1").Run()
+	exec.Command("sudo", "rm", "-rf", "/var/scratch/placemat/volumes/node2").Run()
 }
 
 func sshTo(address string, sshKey ssh.Signer) (*ssh.Client, error) {
@@ -94,6 +99,20 @@ func prepareSSHClients(addresses ...string) error {
 	}
 
 	return nil
+}
+
+func syncSSHKeys() {
+	// sync VM root filesystem to store newly generated SSH host keys.
+	for h := range sshClients {
+		execSafeAt(h, "sync")
+	}
+}
+
+func destroySSHClients() {
+	for key, client := range sshClients {
+		client.Close()
+		delete(sshClients, key)
+	}
 }
 
 func execAt(host string, args ...string) (stdout, stderr []byte, e error) {

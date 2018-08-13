@@ -19,31 +19,7 @@ func TestMtest(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	fmt.Println("Preparing...")
-
-	runPlacemt("-force")
-
 	SetDefaultEventuallyPollingInterval(5 * time.Second)
 	SetDefaultEventuallyTimeout(60 * time.Second)
-
-	err := prepareSSHClients(node1, node2)
-	Expect(err).NotTo(HaveOccurred())
-
-	// sync VM root filesystem to store newly generated SSH host keys.
-	for h := range sshClients {
-		execSafeAt(h, "sync")
-	}
-
-	time.Sleep(time.Second)
-
 	fmt.Println("Begin tests...")
-})
-
-var _ = AfterSuite(func() {
-	fmt.Println("Terminating...")
-	terminatePlacemat()
-
-	select {
-	case <-placematSession.Exited:
-	case <-time.After(30 * time.Second):
-	}
 })
