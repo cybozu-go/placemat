@@ -204,6 +204,38 @@ func (n *Network) CreateVeth() (string, error) {
 	return nameInNS, nil
 }
 
+// CleanupNetworks removes all remaining network resources.
+func CleanupNetworks(r *Runtime, c *Cluster) {
+	destroyNatRules()
+
+	ng := &nameGenerator{
+		prefix: r.ng.prefix,
+	}
+	var cmds [][]string
+
+	for _, d := range c.Nodes {
+		for range d.networks {
+			name := ng.New()
+			cmds = append(cmds, []string{"ip", "tuntap", "delete", name, "mode", "tap"})
+		}
+	}
+
+	for _, p := range c.Pods {
+		deletePodNS(context.Background(), p.Name)
+		for range p.networks {
+			name := ng.New()
+			cmds = append(cmds, []string{"ip", "link", "delete", name})
+		}
+	}
+
+	for _, n := range c.Networks {
+		cmds = append(cmds, []string{"ip", "link", "delete", n.Name, "type", "bridge"})
+	}
+
+	// ignore all errors, because this commands will fail if tne network resource does not exist.
+	execCommandsForce(cmds)
+}
+
 // Destroy deletes all created tap and veth devices, then the bridge.
 func (n *Network) Destroy() error {
 	if n.v4forwarded {

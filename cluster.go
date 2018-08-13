@@ -3,10 +3,7 @@ package placemat
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"os"
-	"sort"
-	"strings"
 	"sync"
 
 	"github.com/cybozu-go/cmd"
@@ -94,64 +91,14 @@ func (c *Cluster) Resolve() error {
 
 // Cleanup remaining resources
 func (c *Cluster) Cleanup(r *Runtime) error {
-	// an error occurrs if the resource is not found.
-	// So ignore errors in large part
-
-	destroyNatRules()
-
-	ng := &nameGenerator{
-		prefix: r.ng.prefix,
-	}
-	cmds := [][]string{}
-
-	for _, d := range c.Nodes {
-		os.Remove(r.guestSocketPath(d.Name))
-		os.Remove(r.monitorSocketPath(d.Name))
-		os.Remove(r.socketPath(d.Name))
-		for range d.networks {
-			name := ng.New()
-			cmds = append(cmds, []string{"ip", "tuntap", "delete", name, "mode", "tap"})
-		}
-	}
-
-	for _, p := range c.Pods {
-		deletePodNS(context.Background(), p.Name)
-		for range p.networks {
-			name := ng.New()
-			cmds = append(cmds, []string{"ip", "link", "delete", name})
-		}
-	}
-
-	for _, n := range c.Networks {
-		cmds = append(cmds, []string{"ip", "link", "delete", n.Name, "type", "bridge"})
-	}
-
-	// an error occurrs, if the named network is not found.
-	execCommandsForce(cmds)
-
-	data, err := ioutil.ReadFile("/proc/mounts")
+	err := CleanupNodes(r, c.Nodes)
 	if err != nil {
 		return err
 	}
 
-	paths := []string{}
-	for _, line := range strings.Split(string(data), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) < 4 {
-			continue
-		}
-		if strings.HasPrefix(fields[1], "/placemat-root") {
-			paths = append(paths, fields[1])
-		}
-	}
+	CleanupNetworks(r, c)
 
-	sort.Sort(sort.Reverse(sort.StringSlice(paths)))
-	for _, p := range paths {
-		log.Info("unmount", map[string]interface{}{"dist": p})
-		umount(p)
-	}
-
-	return nil
+	return CleanupRootfs()
 }
 
 // GetNetwork looks up the network by name.

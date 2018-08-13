@@ -120,6 +120,27 @@ func (n *Node) Resolve(c *Cluster) error {
 	return nil
 }
 
+// CleanupNodes cleans files created at runtime for QEMU.
+func CleanupNodes(r *Runtime, nodes []*Node) error {
+	for _, d := range nodes {
+		files := []string{
+			r.guestSocketPath(d.Name),
+			r.monitorSocketPath(d.Name),
+			r.socketPath(d.Name),
+		}
+		for _, f := range files {
+			_, err := os.Stat(f)
+			if err == nil {
+				err = os.Remove(f)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func nodeSerial(name string) string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(name)))
 }
