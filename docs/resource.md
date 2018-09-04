@@ -109,7 +109,7 @@ volumes:
     network-config: network.yml
   - kind: raw
     name: data
-    size: 10GB
+    size: 10G
   - kind: vvfat
     name: host-data
     folder: host-dir
