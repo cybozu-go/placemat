@@ -68,7 +68,6 @@ clean:
 
 setup:
 	GO111MODULE=off \
-		    go get -u github.com/onsi/ginkgo/ginkgo \
-		    go get -u github.com/onsi/gomega/...
+		    go get -u github.com/onsi/ginkgo/ginkgo
 
 .PHONY:	all clean setup test
