@@ -2,14 +2,14 @@ version: 2
 jobs:
   build:
     docker:
-      - image: quay.io/cybozu/golang:1.10-bionic
-    working_directory: /go/src/github.com/cybozu-go/placemat
+      - image: quay.io/cybozu/golang:1.11-bionic
     steps:
       - checkout
       - run: apt-get update && apt-get install -y qemu-utils
-      - run: go get -v -t -d ./...
-      - run: (! goimports -d . 2>&1 | read _)
+      - run: go get -v -d ./...
+      - run: test -z "$(gofmt -s -d . | tee /dev/stderr)"
       - run: golint -set_exit_status ./...
+      - run: go vet ./...
       - run: go test -race -v ./...
   mtest:
     docker:
