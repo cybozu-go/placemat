@@ -157,11 +157,11 @@ func (n *Network) Create(ng *nameGenerator) error {
 	}
 
 	cmds = [][]string{
-		[]string{"iptables", "-t", "filter", "-A", "PLACEMAT", "-i", n.Name, "-j", "ACCEPT"},
-		[]string{"iptables", "-t", "filter", "-A", "PLACEMAT", "-o", n.Name, "-j", "ACCEPT"},
-		[]string{"ip6tables", "-t", "filter", "-A", "PLACEMAT", "-i", n.Name, "-j", "ACCEPT"},
-		[]string{"ip6tables", "-t", "filter", "-A", "PLACEMAT", "-o", n.Name, "-j", "ACCEPT"},
-		[]string{iptables(n.ip), "-t", "nat", "-A", "PLACEMAT", "-j", "MASQUERADE",
+		{"iptables", "-t", "filter", "-A", "PLACEMAT", "-i", n.Name, "-j", "ACCEPT"},
+		{"iptables", "-t", "filter", "-A", "PLACEMAT", "-o", n.Name, "-j", "ACCEPT"},
+		{"ip6tables", "-t", "filter", "-A", "PLACEMAT", "-i", n.Name, "-j", "ACCEPT"},
+		{"ip6tables", "-t", "filter", "-A", "PLACEMAT", "-o", n.Name, "-j", "ACCEPT"},
+		{iptables(n.ip), "-t", "nat", "-A", "PLACEMAT", "-j", "MASQUERADE",
 			"--source", n.ipNet.String(), "!", "--destination", n.ipNet.String()},
 	}
 	return execCommands(context.Background(), cmds)
