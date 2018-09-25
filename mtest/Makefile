@@ -67,8 +67,8 @@ clean:
 	rm -rf $(OUTPUT)
 
 setup:
-	go get -t -d ./...
-	go get -u github.com/onsi/ginkgo/ginkgo
-	go get -u github.com/onsi/gomega/...
+	GO111MODULE=off \
+		    go get -u github.com/onsi/ginkgo/ginkgo \
+		    go get -u github.com/onsi/gomega/...
 
 .PHONY:	all clean setup test
