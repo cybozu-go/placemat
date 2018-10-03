@@ -56,7 +56,11 @@ func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {
 
 func run(yamls []string) error {
 	if os.Getenv("UNSHARED_NAMESPACE") != "true" {
-		c := exec.Command("/proc/self/exe", os.Args[1:]...)
+		placemat, err := os.Readlink("/proc/self/exe")
+		if err != nil {
+			return err
+		}
+		c := exec.Command(placemat, os.Args[1:]...)
 		c.Stdin = os.Stdin
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
