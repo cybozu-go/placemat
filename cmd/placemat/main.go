@@ -7,7 +7,9 @@ import (
 	"flag"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/cybozu-go/cmd"
@@ -28,7 +30,6 @@ var (
 	flgGraphic  = flag.Bool("graphic", false, "run QEMU with graphical console")
 	flgDebug    = flag.Bool("debug", false, "show QEMU's and Pod's stdout and stderr")
 	flgForce    = flag.Bool("force", false, "force run with removal of garbage")
-	flgPodOnly  = flag.Bool("pod-only", false, "launch pod only")
 )
 
 func loadClusterFromFile(p string) (*placemat.Cluster, error) {
@@ -54,6 +55,18 @@ func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {
 }
 
 func run(yamls []string) error {
+	if os.Getenv("UNSHARED_NAMESPACE") != "true" {
+		c := exec.Command("/proc/self/exe", os.Args[1:]...)
+		c.Stdin = os.Stdin
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		c.SysProcAttr = &syscall.SysProcAttr{
+			Unshareflags: syscall.CLONE_NEWNS,
+		}
+		c.Env = append(os.Environ(), "UNSHARED_NAMESPACE=true")
+		return c.Run()
+	}
+
 	if len(yamls) == 0 {
 		return errors.New("no YAML files specified")
 	}
@@ -84,7 +97,7 @@ func run(yamls []string) error {
 	runDir := os.ExpandEnv(*flgRunDir)
 	dataDir := os.ExpandEnv(*flgDataDir)
 	cacheDir := os.ExpandEnv(*flgCacheDir)
-	r, err := placemat.NewRuntime(*flgForce, *flgGraphic, *flgPodOnly, runDir, dataDir, cacheDir)
+	r, err := placemat.NewRuntime(*flgForce, *flgGraphic, runDir, dataDir, cacheDir)
 	if err != nil {
 		return err
 	}

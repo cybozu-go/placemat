@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"syscall"
 
 	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
@@ -171,39 +170,9 @@ func mount(fs, dest, options string) error {
 	return c.Run()
 }
 
-func (c *Cluster) startPodOnly(ctx context.Context, r *Runtime) error {
-	err := mount("tmpfs", "/run", "rw")
-	if err != nil {
-		return err
-	}
-	defer umount("/run")
-
-	for _, p := range c.Pods {
-		err := p.Prepare(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	env := cmd.NewEnvironment(ctx)
-	for _, p := range c.Pods {
-		p := p
-		env.Go(func(ctx context.Context) error {
-			return p.Start(ctx, r)
-		})
-	}
-	env.Stop()
-
-	return env.Wait()
-}
-
 // Start constructs the virtual data center with given resources.
 // It stop when ctx is cancelled.
 func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
-	if r.podOnly {
-		return c.startPodOnly(ctx, r)
-	}
-
 	defer os.RemoveAll(r.tempDir)
 
 	if r.force {
@@ -213,7 +182,13 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 		}
 	}
 
-	err := createNatRules()
+	err := mount("tmpfs", "/run", "rw")
+	if err != nil {
+		return err
+	}
+	defer umount("/run")
+
+	err = createNatRules()
 	if err != nil {
 		return err
 	}
@@ -243,6 +218,13 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 			"name": img.Name,
 		})
 		err := img.Prepare(ctx, r.imageCache)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, p := range c.Pods {
+		err := p.Prepare(ctx)
 		if err != nil {
 			return err
 		}
@@ -283,23 +265,16 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 
 	env = cmd.NewEnvironment(ctx)
 	env.Go(bmcServer.handleNode)
+	for _, p := range c.Pods {
+		p := p
+		env.Go(func(ctx context.Context) error {
+			return p.Start(ctx, r)
+		})
+	}
 	for _, vm := range vms {
 		vm := vm
 		env.Go(func(ctx context.Context) error {
 			return vm.cmd.Wait()
-		})
-	}
-
-	if len(c.Pods) > 0 {
-		c := exec.Command("/proc/self/exe", append([]string{"--pod-only"}, os.Args[1:]...)...)
-		c.Stdin = os.Stdin
-		c.Stdout = os.Stdout
-		c.Stderr = os.Stderr
-		c.SysProcAttr = &syscall.SysProcAttr{
-			Unshareflags: syscall.CLONE_NEWNS,
-		}
-		env.Go(func(ctx context.Context) error {
-			return c.Run()
 		})
 	}
 	env.Stop()

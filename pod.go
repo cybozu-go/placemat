@@ -334,7 +334,6 @@ func (p *Pod) Start(ctx context.Context, r *Runtime) error {
 	veths := make([]string, len(p.networks))
 	ips := make(map[string][]string)
 	for i, n := range p.networks {
-		n.ng = &r.ng
 		veth, err := n.CreateVeth()
 		if err != nil {
 			return err
