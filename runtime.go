@@ -35,6 +35,7 @@ func init() {
 type Runtime struct {
 	force      bool
 	graphic    bool
+	podOnly    bool
 	runDir     string
 	ng         nameGenerator
 	dataDir    string
@@ -44,15 +45,20 @@ type Runtime struct {
 }
 
 // NewRuntime initializes a new Runtime.
-func NewRuntime(force bool, graphic bool, runDir, dataDir, cacheDir string) (*Runtime, error) {
+func NewRuntime(force, graphic, podOnly bool, runDir, dataDir, cacheDir string) (*Runtime, error) {
 	r := &Runtime{
 		force:   force,
 		graphic: graphic,
+		podOnly: podOnly,
 		runDir:  runDir,
 		dataDir: dataDir,
 	}
 
-	r.ng.prefix = "pm"
+	if podOnly {
+		r.ng.prefix = "pp"
+	} else {
+		r.ng.prefix = "pm"
+	}
 
 	fi, err := os.Stat(cacheDir)
 	switch {

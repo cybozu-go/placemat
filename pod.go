@@ -330,10 +330,11 @@ func deletePodNS(ctx context.Context, pod string) error {
 
 // Start starts the Pod using rkt.  It does not return until
 // the process finishes or ctx is cancelled.
-func (p *Pod) Start(ctx context.Context, r *Runtime, root string) error {
+func (p *Pod) Start(ctx context.Context, r *Runtime) error {
 	veths := make([]string, len(p.networks))
 	ips := make(map[string][]string)
 	for i, n := range p.networks {
+		n.ng = &r.ng
 		veth, err := n.CreateVeth()
 		if err != nil {
 			return err
@@ -365,7 +366,7 @@ func (p *Pod) Start(ctx context.Context, r *Runtime, root string) error {
 
 	log.Info("rkt run", map[string]interface{}{"name": p.Name, "params": params})
 	args := []string{
-		"netns", "exec", "pm_" + p.Name, "chroot", root, "rkt",
+		"netns", "exec", "pm_" + p.Name, "rkt",
 	}
 	args = append(args, params...)
 	rkt := exec.Command("ip", args...)
