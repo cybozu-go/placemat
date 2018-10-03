@@ -7,7 +7,9 @@ import (
 	"flag"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/cybozu-go/cmd"
@@ -53,6 +55,18 @@ func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {
 }
 
 func run(yamls []string) error {
+	if os.Getenv("UNSHARED_NAMESPACE") != "true" {
+		c := exec.Command("/proc/self/exe", os.Args[1:]...)
+		c.Stdin = os.Stdin
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		c.SysProcAttr = &syscall.SysProcAttr{
+			Unshareflags: syscall.CLONE_NEWNS,
+		}
+		c.Env = append(os.Environ(), "UNSHARED_NAMESPACE=true")
+		return c.Run()
+	}
+
 	if len(yamls) == 0 {
 		return errors.New("no YAML files specified")
 	}

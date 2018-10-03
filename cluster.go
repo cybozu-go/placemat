@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"sync"
 
 	"github.com/cybozu-go/cmd"
@@ -97,8 +98,7 @@ func (c *Cluster) Cleanup(r *Runtime) error {
 	}
 
 	CleanupNetworks(r, c)
-
-	return CleanupRootfs()
+	return nil
 }
 
 // GetNetwork looks up the network by name.
@@ -151,6 +151,25 @@ func (c *Cluster) GetPod(name string) (*Pod, error) {
 	return p, nil
 }
 
+func umount(mp string) error {
+	return exec.Command("umount", mp).Run()
+}
+
+func mount(fs, dest, options string) error {
+	err := os.MkdirAll(dest, 0755)
+	if err != nil {
+		return err
+	}
+	log.Info("mount", map[string]interface{}{
+		"fs":   fs,
+		"dest": dest,
+	})
+	c := exec.Command("mount", "-t", fs, "-o", options, fs, dest)
+	c.Stderr = os.Stderr
+	c.Stdout = os.Stdout
+	return c.Run()
+}
+
 // Start constructs the virtual data center with given resources.
 // It stop when ctx is cancelled.
 func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
@@ -163,11 +182,11 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 		}
 	}
 
-	root, err := NewRootfs()
+	err := mount("tmpfs", "/run", "rw")
 	if err != nil {
 		return err
 	}
-	defer root.Destroy()
+	defer umount("/run")
 
 	err = createNatRules()
 	if err != nil {
@@ -249,7 +268,7 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	for _, p := range c.Pods {
 		p := p
 		env.Go(func(ctx context.Context) error {
-			return p.Start(ctx, r, root.Path())
+			return p.Start(ctx, r)
 		})
 	}
 	for _, vm := range vms {
