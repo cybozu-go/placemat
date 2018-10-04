@@ -54,21 +54,51 @@ func loadClusterFromFiles(args []string) (*placemat.Cluster, error) {
 	return &cluster, nil
 }
 
+func runChildProcess() error {
+	placemat, err := os.Readlink("/proc/self/exe")
+	if err != nil {
+		return err
+	}
+	c := exec.Command(placemat, os.Args[1:]...)
+	c.Stdin = os.Stdin
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	c.SysProcAttr = &syscall.SysProcAttr{
+		Unshareflags: syscall.CLONE_NEWNS,
+	}
+	c.Env = append(os.Environ(), "UNSHARED_NAMESPACE=true")
+
+	done := make(chan error, 1)
+	err = c.Start()
+	if err != nil {
+		return err
+	}
+	go func() {
+		done <- c.Wait()
+	}()
+
+	cmd.Go(func(ctx context.Context) error {
+		select {
+		case err := <-done:
+			return err
+		case <-ctx.Done():
+			c.Process.Signal(syscall.SIGTERM)
+			select {
+			case <-done:
+				return nil
+			case <-time.After(10 * time.Second):
+				log.Warn("could not stop child process.", nil)
+				return nil
+			}
+		}
+	})
+	cmd.Stop()
+	return cmd.Wait()
+}
+
 func run(yamls []string) error {
 	if os.Getenv("UNSHARED_NAMESPACE") != "true" {
-		placemat, err := os.Readlink("/proc/self/exe")
-		if err != nil {
-			return err
-		}
-		c := exec.Command(placemat, os.Args[1:]...)
-		c.Stdin = os.Stdin
-		c.Stdout = os.Stdout
-		c.Stderr = os.Stderr
-		c.SysProcAttr = &syscall.SysProcAttr{
-			Unshareflags: syscall.CLONE_NEWNS,
-		}
-		c.Env = append(os.Environ(), "UNSHARED_NAMESPACE=true")
-		return c.Run()
+		return runChildProcess()
 	}
 
 	if len(yamls) == 0 {
