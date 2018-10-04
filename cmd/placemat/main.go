@@ -86,7 +86,7 @@ func runChildProcess() error {
 			select {
 			case <-done:
 				return nil
-			case <-time.After(10 * time.Second):
+			case <-time.After(30 * time.Second):
 				log.Warn("could not stop child process.", nil)
 				return nil
 			}
