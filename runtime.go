@@ -33,23 +33,27 @@ func init() {
 
 // Runtime contains the runtime information to run Cluster.
 type Runtime struct {
-	force      bool
-	graphic    bool
-	runDir     string
-	ng         nameGenerator
-	dataDir    string
-	imageCache *cache
-	dataCache  *cache
-	tempDir    string
+	force        bool
+	graphic      bool
+	enableVirtFS bool
+	runDir       string
+	ng           nameGenerator
+	dataDir      string
+	imageCache   *cache
+	dataCache    *cache
+	sharedDir    string
+	tempDir      string
 }
 
 // NewRuntime initializes a new Runtime.
-func NewRuntime(force, graphic bool, runDir, dataDir, cacheDir string) (*Runtime, error) {
+func NewRuntime(force, graphic, enableVirtFS bool, runDir, dataDir, cacheDir, sharedDir string) (*Runtime, error) {
 	r := &Runtime{
-		force:   force,
-		graphic: graphic,
-		runDir:  runDir,
-		dataDir: dataDir,
+		force:        force,
+		graphic:      graphic,
+		enableVirtFS: enableVirtFS,
+		runDir:       runDir,
+		dataDir:      dataDir,
+		sharedDir:    sharedDir,
 	}
 
 	r.ng.prefix = "pm"
