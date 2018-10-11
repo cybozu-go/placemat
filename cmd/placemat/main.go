@@ -18,18 +18,21 @@ import (
 )
 
 const (
-	defaultRunPath  = "/tmp"
-	defaultCacheDir = ""
-	defaultDataDir  = "/var/scratch/placemat"
+	defaultRunPath    = "/tmp"
+	defaultCacheDir   = ""
+	defaultDataDir    = "/var/scratch/placemat"
+	defaultSharedPath = "/mnt/placemat"
 )
 
 var (
-	flgRunDir   = flag.String("run-dir", defaultRunPath, "run directory")
-	flgCacheDir = flag.String("cache-dir", defaultCacheDir, "directory for cache data")
-	flgDataDir  = flag.String("data-dir", defaultDataDir, "directory to store data")
-	flgGraphic  = flag.Bool("graphic", false, "run QEMU with graphical console")
-	flgDebug    = flag.Bool("debug", false, "show QEMU's and Pod's stdout and stderr")
-	flgForce    = flag.Bool("force", false, "force run with removal of garbage")
+	flgRunDir       = flag.String("run-dir", defaultRunPath, "run directory")
+	flgCacheDir     = flag.String("cache-dir", defaultCacheDir, "directory for cache data")
+	flgDataDir      = flag.String("data-dir", defaultDataDir, "directory to store data")
+	flgSharedDir    = flag.String("shared-dir", defaultSharedPath, "shared directory")
+	flgGraphic      = flag.Bool("graphic", false, "run QEMU with graphical console")
+	flgDebug        = flag.Bool("debug", false, "show QEMU's and Pod's stdout and stderr")
+	flgForce        = flag.Bool("force", false, "force run with removal of garbage")
+	flgEnableVirtFS = flag.Bool("enable-virtfs", false, "enable VirtFS to share files between guest and host OS.")
 )
 
 func loadClusterFromFile(p string) (*placemat.Cluster, error) {
@@ -131,7 +134,8 @@ func run(yamls []string) error {
 	runDir := os.ExpandEnv(*flgRunDir)
 	dataDir := os.ExpandEnv(*flgDataDir)
 	cacheDir := os.ExpandEnv(*flgCacheDir)
-	r, err := placemat.NewRuntime(*flgForce, *flgGraphic, runDir, dataDir, cacheDir)
+	sharedDir := os.ExpandEnv(*flgSharedDir)
+	r, err := placemat.NewRuntime(*flgForce, *flgGraphic, *flgEnableVirtFS, runDir, dataDir, cacheDir, sharedDir)
 	if err != nil {
 		return err
 	}

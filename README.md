@@ -65,6 +65,10 @@ $ placemat [OPTIONS] YAML [YAML ...]
 Options:
   -graphic
         run QEMU with graphical console
+  -enable-virtfs
+        enable VirtFS to share files between the guest and the host OS.
+  -shared-dir
+        shared directory between the guest and the host OS (default "/mnt/placemat")
   -run-dir string
         run directory (default "/tmp")
   -cache-dir string

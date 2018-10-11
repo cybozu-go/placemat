@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -241,6 +242,16 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 			return nil, err
 		}
 	}
+
+	if r.enableVirtFS {
+		p := path.Join(r.sharedDir, n.Name)
+		err := os.MkdirAll(p, 0755)
+		if err != nil {
+			return nil, err
+		}
+		params = append(params, "-virtfs", fmt.Sprintf("local,path=%s,mount_tag=placemat,security_model=none", p))
+	}
+
 	params = append(params, "-boot", fmt.Sprintf("reboot-timeout=%d", int64(defaultRebootTimeout/time.Millisecond)))
 
 	guest := r.guestSocketPath(n.Name)
