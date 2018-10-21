@@ -5,11 +5,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2018-10-21
 ### Added
-- Enable IP forwarding in Pods (#57).
-- Enable IP forwarding in the host OS if NAT is enabled (#56).
+- Many things.  See git log.
 
-### Changed
-- Improve README.md
-
-[Unreleased]: https://github.com/cybozu-go/sabakan/compare/v0.1...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/cybozu-go/placemat/compare/v0.1...v1.0.0
