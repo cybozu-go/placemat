@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/cybozu-go/cmd"
+	"github.com/cybozu-go/well"
 )
 
 const (
@@ -45,11 +45,11 @@ func run(args []string) error {
 		return errors.New(`unable to connect to "` + host + `"`)
 	}
 
-	cmd.Go(func(ctx context.Context) error {
+	well.Go(func(ctx context.Context) error {
 		defer os.Remove(pty)
 		return exec.CommandContext(ctx, "socat", "UNIX-CONNECT:"+sock, "PTY,link="+pty).Run()
 	})
-	cmd.Go(func(ctx context.Context) error {
+	well.Go(func(ctx context.Context) error {
 		time.Sleep(1 * time.Second)
 
 		cmd := exec.CommandContext(ctx, "picocom", "-e", "q", pty)
@@ -62,8 +62,8 @@ func run(args []string) error {
 		}
 		return context.Canceled
 	})
-	cmd.Stop()
-	return cmd.Wait()
+	well.Stop()
+	return well.Wait()
 }
 
 func main() {

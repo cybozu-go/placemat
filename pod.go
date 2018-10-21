@@ -10,8 +10,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/well"
 )
 
 // PodInterfaceSpec represents a Pod's Interface definition in YAML
@@ -280,7 +280,7 @@ func fetchImage(ctx context.Context, image string) error {
 		"fetch",
 		image,
 	}
-	return cmd.CommandContext(ctx, "rkt", args...).Run()
+	return well.CommandContext(ctx, "rkt", args...).Run()
 }
 
 // Prepare fetches container images to run Pod.
@@ -321,11 +321,11 @@ func makePodNS(ctx context.Context, pod string, veths []string, ips map[string][
 }
 
 func runInPodNS(ctx context.Context, pod string, script string) error {
-	return cmd.CommandContext(ctx, "ip", "netns", "exec", "pm_"+pod, script).Run()
+	return well.CommandContext(ctx, "ip", "netns", "exec", "pm_"+pod, script).Run()
 }
 
 func deletePodNS(ctx context.Context, pod string) error {
-	return cmd.CommandContext(ctx, "ip", "netns", "del", "pm_"+pod).Run()
+	return well.CommandContext(ctx, "ip", "netns", "del", "pm_"+pod).Run()
 }
 
 // Start starts the Pod using rkt.  It does not return until

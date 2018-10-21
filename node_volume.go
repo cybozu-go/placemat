@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cybozu-go/cmd"
+	"github.com/cybozu-go/well"
 )
 
 // NodeVolumeSpec represents a Node's Volume specification in YAML
@@ -138,7 +138,7 @@ func (v *imageVolume) Create(ctx context.Context, dataDir string) ([]string, err
 }
 
 func createCoWImageFromBase(ctx context.Context, base, dest string) error {
-	c := cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-o", "backing_file="+base, dest)
+	c := well.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-o", "backing_file="+base, dest)
 	return c.Run()
 }
 
@@ -172,12 +172,12 @@ func (v *localDSVolume) Create(ctx context.Context, dataDir string) ([]string, e
 	switch {
 	case os.IsNotExist(err):
 		if v.networkConfig == "" {
-			err := cmd.CommandContext(ctx, "cloud-localds", p, v.userData).Run()
+			err := well.CommandContext(ctx, "cloud-localds", p, v.userData).Run()
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			err := cmd.CommandContext(ctx, "cloud-localds", p, v.userData, "--network-config", v.networkConfig).Run()
+			err := well.CommandContext(ctx, "cloud-localds", p, v.userData, "--network-config", v.networkConfig).Run()
 			if err != nil {
 				return nil, err
 			}
@@ -216,7 +216,7 @@ func (v *rawVolume) Create(ctx context.Context, dataDir string) ([]string, error
 	_, err := os.Stat(p)
 	switch {
 	case os.IsNotExist(err):
-		err = cmd.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, v.size).Run()
+		err = well.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, v.size).Run()
 		if err != nil {
 			return nil, err
 		}

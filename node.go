@@ -18,8 +18,8 @@ import (
 	"crypto/sha1"
 	"math/rand"
 
-	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/well"
 )
 
 const (
@@ -263,7 +263,7 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 	params = append(params, "-monitor", "unix:"+monitor+",server,nowait")
 
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
-	qemuCommand := cmd.CommandContext(ctx, "qemu-system-x86_64", params...)
+	qemuCommand := well.CommandContext(ctx, "qemu-system-x86_64", params...)
 	qemuCommand.Stdout = newColoredLogWriter("qemu", n.Name, os.Stdout)
 	qemuCommand.Stderr = newColoredLogWriter("qemu", n.Name, os.Stderr)
 
@@ -343,5 +343,5 @@ func createNVRAM(ctx context.Context, p string) error {
 	if !os.IsNotExist(err) {
 		return nil
 	}
-	return cmd.CommandContext(ctx, "cp", defaultOVMFVarsPath, p).Run()
+	return well.CommandContext(ctx, "cp", defaultOVMFVarsPath, p).Run()
 }
