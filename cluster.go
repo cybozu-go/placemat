@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/well"
 )
 
 // Cluster is a set of resources in a virtual data center.
@@ -235,7 +235,7 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	var mu sync.Mutex
 	vms := make(map[string]*NodeVM)
 
-	env := cmd.NewEnvironment(ctx)
+	env := well.NewEnvironment(ctx)
 	for _, n := range c.Nodes {
 		n := n
 		env.Go(func(ctx2 context.Context) error {
@@ -263,7 +263,7 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 
 	bmcServer := newBMCServer(vms, c.Networks, nodeCh)
 
-	env = cmd.NewEnvironment(ctx)
+	env = well.NewEnvironment(ctx)
 	env.Go(bmcServer.handleNode)
 	for _, p := range c.Pods {
 		p := p

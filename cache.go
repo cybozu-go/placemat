@@ -13,8 +13,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/well"
 )
 
 type cache struct {
@@ -83,7 +83,7 @@ func downloadData(ctx context.Context, u *url.URL, decomp Decompressor, c *cache
 	}
 	req = req.WithContext(ctx)
 
-	client := &cmd.HTTPClient{
+	client := &well.HTTPClient{
 		Client:   &http.Client{},
 		Severity: log.LvDebug,
 	}

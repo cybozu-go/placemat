@@ -4,12 +4,12 @@ import (
 	"io"
 	"net"
 
-	"github.com/cybozu-go/cmd"
+	"github.com/cybozu-go/well"
 )
 
 // NodeVM holds resources to manage and monitor a QEMU process.
 type NodeVM struct {
-	cmd     *cmd.LogCmd
+	cmd     *well.LogCmd
 	monitor net.Conn
 	running bool
 	cleanup func()

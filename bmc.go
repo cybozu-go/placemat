@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/well"
 	"github.com/rmxymh/infra-ecosphere/bmc"
 	"github.com/rmxymh/infra-ecosphere/ipmi"
 	"github.com/rmxymh/infra-ecosphere/utils"
@@ -202,7 +202,7 @@ func (s *bmcServer) listenIPMI(ctx context.Context, addr string) error {
 }
 
 func (s *bmcServer) handleNode(ctx context.Context) error {
-	env := cmd.NewEnvironment(ctx)
+	env := well.NewEnvironment(ctx)
 
 OUTER:
 	for {
@@ -247,7 +247,7 @@ func (s *bmcServer) addPort(ctx context.Context, info bmcInfo) error {
 		"bridge":      br,
 	})
 
-	c := cmd.CommandContext(ctx, "ip", "addr", "add", address, "dev", br)
+	c := well.CommandContext(ctx, "ip", "addr", "add", address, "dev", br)
 	c.Severity = log.LvDebug
 	return c.Run()
 }

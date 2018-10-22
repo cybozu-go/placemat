@@ -12,9 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cybozu-go/cmd"
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat"
+	"github.com/cybozu-go/well"
 )
 
 const (
@@ -80,7 +80,7 @@ func runChildProcess() error {
 		done <- c.Wait()
 	}()
 
-	cmd.Go(func(ctx context.Context) error {
+	well.Go(func(ctx context.Context) error {
 		select {
 		case err := <-done:
 			return err
@@ -95,8 +95,8 @@ func runChildProcess() error {
 			}
 		}
 	})
-	cmd.Stop()
-	return cmd.Wait()
+	well.Stop()
+	return well.Wait()
 }
 
 func run(yamls []string) error {
@@ -149,20 +149,23 @@ func run(yamls []string) error {
 		return err
 	}
 
-	cmd.Go(func(ctx context.Context) error {
+	well.Go(func(ctx context.Context) error {
 		return cluster.Start(ctx, r)
 	})
-	cmd.Stop()
-	return cmd.Wait()
+	well.Stop()
+	return well.Wait()
 }
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	flag.Parse()
-	cmd.LogConfig{}.Apply()
+	err := well.LogConfig{}.Apply()
+	if err != nil {
+		log.ErrorExit(err)
+	}
 
-	err := run(flag.Args())
+	err = run(flag.Args())
 	if err != nil {
 		log.ErrorExit(err)
 	}

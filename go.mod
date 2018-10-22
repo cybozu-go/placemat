@@ -1,8 +1,8 @@
 module github.com/cybozu-go/placemat
 
 require (
-	github.com/cybozu-go/cmd v1.6.0
 	github.com/cybozu-go/log v1.5.0
+	github.com/cybozu-go/well v1.8.1
 	github.com/fatih/color v1.7.0
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
