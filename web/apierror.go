@@ -1,4 +1,4 @@
-package placemat
+package web
 
 import "net/http"
 

@@ -1,4 +1,4 @@
-package placemat
+package web
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/cybozu-go/well"
 )
 
-func renderJSON(w http.ResponseWriter, data interface{}, status int) {
+func RenderJSON(w http.ResponseWriter, data interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	err := json.NewEncoder(w).Encode(data)
@@ -20,7 +20,7 @@ func renderJSON(w http.ResponseWriter, data interface{}, status int) {
 	}
 }
 
-func renderError(ctx context.Context, w http.ResponseWriter, e APIError) {
+func RenderError(ctx context.Context, w http.ResponseWriter, e APIError) {
 	fields := well.FieldsFromContext(ctx)
 	fields["status"] = e.Status
 	fields[log.FnError] = e.Error()

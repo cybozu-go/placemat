@@ -3,32 +3,14 @@ package placemat
 import (
 	"net/http"
 	"strings"
+
+	"github.com/cybozu-go/placemat/web"
 )
 
 type Server struct {
 	cluster *Cluster
 	vms     map[string]*NodeVM
 	runtime *Runtime
-}
-
-type NodeStatus struct {
-	Name       string            `json:"name"`
-	Taps       map[string]string `json:"taps"`
-	Volumes    []string          `json:"volumes"`
-	CPU        int               `json:"cpu"`
-	Memory     string            `json:"memory"`
-	UEFI       bool              `json:"uefi"`
-	SMBIOS     SMBIOSConfig      `json:"smbios"`
-	IsRunning  bool              `json:"is_running"`
-	SocketPath string            `json:"socket_path"`
-}
-
-type PodStatus struct {
-	Name    string            `json:"name"`
-	UUID    string            `json:"uuid"`
-	Veths   map[string]string `json:"veths"`
-	Volumes []string          `json:"volumes"`
-	Apps    []string          `json:"apps"`
 }
 
 func NewServer(cluster *Cluster, vms map[string]*NodeVM, r *Runtime) *Server {
@@ -50,17 +32,17 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleNetworks(w, r)
 		return
 	}
-	renderError(r.Context(), w, APIErrBadRequest)
+	web.RenderError(r.Context(), w, web.APIErrBadRequest)
 }
 
-func (s Server) newNodeStatus(node *Node, vm *NodeVM) *NodeStatus {
-	status := &NodeStatus{
-		Name:      node.Name,
-		Taps:      node.taps,
-		CPU:       node.CPU,
-		Memory:    node.Memory,
-		UEFI:      node.UEFI,
-		SMBIOS:    node.SMBIOS,
+func (s Server) newNodeStatus(node *Node, vm *NodeVM) *web.NodeStatus {
+	status := &web.NodeStatus{
+		Name:   node.Name,
+		Taps:   node.taps,
+		CPU:    node.CPU,
+		Memory: node.Memory,
+		UEFI:   node.UEFI,
+		//SMBIOS:    node.SMBIOS,
 		IsRunning: vm.IsRunning(),
 	}
 	if !s.runtime.graphic {
@@ -73,8 +55,8 @@ func (s Server) newNodeStatus(node *Node, vm *NodeVM) *NodeStatus {
 	return status
 }
 
-func (s Server) newPodStatus(pod *Pod) *PodStatus {
-	status := &PodStatus{
+func (s Server) newPodStatus(pod *Pod) *web.PodStatus {
+	status := &web.PodStatus{
 		Name:  pod.Name,
 		Veths: pod.veths,
 		UUID:  pod.uuid,
@@ -104,17 +86,17 @@ func splitParams(path string) []string {
 func (s Server) handleNodes(w http.ResponseWriter, r *http.Request) {
 	params := splitParams(r.URL.Path)
 	if r.Method == "GET" && len(params) == 1 {
-		statuses := make([]*NodeStatus, len(s.cluster.Nodes))
+		statuses := make([]*web.NodeStatus, len(s.cluster.Nodes))
 		for i, node := range s.cluster.Nodes {
 			statuses[i] = s.newNodeStatus(node, s.vms[node.SMBIOS.Serial])
 		}
-		renderJSON(w, statuses, http.StatusOK)
+		web.RenderJSON(w, statuses, http.StatusOK)
 	} else if r.Method == "GET" && len(params) == 2 {
 		if node, ok := s.cluster.nodeMap[params[1]]; ok {
 			status := s.newNodeStatus(node, s.vms[node.SMBIOS.Serial])
-			renderJSON(w, status, http.StatusOK)
+			web.RenderJSON(w, status, http.StatusOK)
 		} else {
-			renderError(r.Context(), w, APIErrNotFound)
+			web.RenderError(r.Context(), w, web.APIErrNotFound)
 		}
 	} else if r.Method == "POST" && len(params) == 3 {
 		if node, ok := s.cluster.nodeMap[params[1]]; ok {
@@ -127,32 +109,32 @@ func (s Server) handleNodes(w http.ResponseWriter, r *http.Request) {
 				s.vms[node.SMBIOS.Serial].PowerOff()
 				s.vms[node.SMBIOS.Serial].PowerOn()
 			default:
-				renderError(r.Context(), w, APIErrBadRequest)
+				web.RenderError(r.Context(), w, web.APIErrBadRequest)
 				return
 			}
-			renderJSON(w, s.vms[node.SMBIOS.Serial].IsRunning(), http.StatusOK)
+			web.RenderJSON(w, s.vms[node.SMBIOS.Serial].IsRunning(), http.StatusOK)
 		} else {
-			renderError(r.Context(), w, APIErrNotFound)
+			web.RenderError(r.Context(), w, web.APIErrNotFound)
 		}
 	} else {
-		renderError(r.Context(), w, APIErrBadRequest)
+		web.RenderError(r.Context(), w, web.APIErrBadRequest)
 	}
 }
 
 func (s Server) handlePods(w http.ResponseWriter, r *http.Request) {
 	params := splitParams(r.URL.Path)
 	if r.Method == "GET" && len(params) == 1 {
-		statuses := make([]*PodStatus, len(s.cluster.Pods))
+		statuses := make([]*web.PodStatus, len(s.cluster.Pods))
 		for i, pod := range s.cluster.Pods {
 			statuses[i] = s.newPodStatus(pod)
 		}
-		renderJSON(w, statuses, http.StatusOK)
+		web.RenderJSON(w, statuses, http.StatusOK)
 	} else if r.Method == "GET" && len(params) == 2 {
 		if pod, ok := s.cluster.podMap[params[1]]; ok {
 			status := s.newPodStatus(pod)
-			renderJSON(w, status, http.StatusOK)
+			web.RenderJSON(w, status, http.StatusOK)
 		} else {
-			renderError(r.Context(), w, APIErrNotFound)
+			web.RenderError(r.Context(), w, web.APIErrNotFound)
 		}
 		/* not working
 		} else if r.Method == "POST" && len(params) == 3 {
@@ -179,7 +161,7 @@ func (s Server) handlePods(w http.ResponseWriter, r *http.Request) {
 			}
 		*/
 	} else {
-		renderError(r.Context(), w, APIErrBadRequest)
+		web.RenderError(r.Context(), w, web.APIErrBadRequest)
 	}
 }
 
@@ -200,17 +182,17 @@ func (s Server) handleNetworks(w http.ResponseWriter, r *http.Request) {
 		case "clear":
 			cmds = append(cmds, []string{"tc", "qdisc", "del", "dev", params[1], "root"})
 		default:
-			renderError(r.Context(), w, APIErrBadRequest)
+			web.RenderError(r.Context(), w, web.APIErrBadRequest)
 			return
 		}
 
 		err := execCommands(r.Context(), cmds)
 		if err != nil {
-			renderError(r.Context(), w, InternalServerError(err))
+			web.RenderError(r.Context(), w, web.InternalServerError(err))
 		} else {
-			renderJSON(w, "ok", http.StatusOK)
+			web.RenderJSON(w, "ok", http.StatusOK)
 		}
 	} else {
-		renderError(r.Context(), w, APIErrBadRequest)
+		web.RenderError(r.Context(), w, web.APIErrBadRequest)
 	}
 }
