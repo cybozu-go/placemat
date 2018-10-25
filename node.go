@@ -52,6 +52,7 @@ type NodeSpec struct {
 type Node struct {
 	*NodeSpec
 	networks []*Network
+	taps     map[string]string
 	volumes  []NodeVolume
 }
 
@@ -86,6 +87,7 @@ func createNodeVolume(spec NodeVolumeSpec) (NodeVolume, error) {
 func NewNode(spec *NodeSpec) (*Node, error) {
 	n := &Node{
 		NodeSpec: spec,
+		taps:     make(map[string]string),
 	}
 	if spec.Name == "" {
 		return nil, errors.New("node name is empty")
@@ -212,6 +214,7 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 		if err != nil {
 			return nil, err
 		}
+		n.taps[br.Name] = tap
 
 		netdev := "tap,id=" + br.Name + ",ifname=" + tap + ",script=no,downscript=no"
 		if vhostNetSupported {

@@ -3,6 +3,7 @@ package placemat
 import (
 	"context"
 	"errors"
+	"net/http"
 	"os"
 	"os/exec"
 	"sync"
@@ -277,7 +278,16 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 			return vm.cmd.Wait()
 		})
 	}
-	env.Stop()
 
+	server := NewServer(c, vms, r)
+	s := &well.HTTPServer{
+		Server: &http.Server{
+			Addr:    "0.0.0.0:10808",
+			Handler: server,
+		},
+	}
+	s.ListenAndServe()
+
+	env.Stop()
 	return env.Wait()
 }
