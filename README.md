@@ -52,6 +52,7 @@ This project provides these commands:
 
 * `placemat` is the main tool to build networks and virtual machines.
 * `placemat-connect` is a utility to connect to VM serial console.
+* `pmctl` is a utility tool to control VMs and Pods.
 
 ### placemat command
 
@@ -75,6 +76,8 @@ Options:
         directory for cache data.
   -data-dir string
         directory to store data (default "/var/scratch/placemat")
+  -listen-addr string
+        listen address of API endpoint to control placemat. (default "0.0.0.0:10808")
   -debug
         show QEMU's and Pod's stdout and stderr        
   -force
@@ -87,6 +90,8 @@ the same as `-data-dir`.
 `-force` is used for forced run. Remaining garbage, for example virtual networks, mounts, socket files will be removed.
 
 ### placemat-connect command
+
+**DEPRECATED** : `placemat-connect` will be replaced by `pmctl node enter`.
 
 If placemat starts without `-graphic` option, VMs will have no graphic console.
 Instead, they have serial consoles exposed via UNIX domain sockets.
@@ -103,6 +108,12 @@ Options:
 
 **To exit** from the console, press Ctrl-Q, Ctrl-X in this order.
 
+### pmctl command
+
+`pmctl` is a command line tool to control VMs, Pods and Networks.
+
+See [pmctl](docs/pmctl.md)
+
 Getting started
 ---------------
 
@@ -117,7 +128,7 @@ For Ubuntu or Debian, you can install them as follows:
 
 ```console
 $ sudo apt-get update
-$ sudo apt-get install qemu-system-x86 qemu-utils ovmf picocom
+$ sudo apt-get install qemu-system-x86 qemu-utils ovmf picocom socat cloud-utils
 ```
 
 As to rkt, obtain a deb (or rpm) package then install it as follows:
