@@ -282,7 +282,7 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	server := NewServer(c, vms, r)
 	s := &well.HTTPServer{
 		Server: &http.Server{
-			Addr:    "0.0.0.0:10808",
+			Addr:    r.listenAddr,
 			Handler: server,
 		},
 	}

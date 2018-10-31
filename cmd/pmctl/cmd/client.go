@@ -53,6 +53,9 @@ func postAction(ctx context.Context, p string, params map[string]string) error {
 	req = req.WithContext(ctx)
 
 	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
 	if resp.StatusCode != http.StatusOK {
 		return errors.New(resp.Status)
 	}

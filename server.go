@@ -37,14 +37,16 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s Server) newNodeStatus(node *Node, vm *NodeVM) *web.NodeStatus {
 	status := &web.NodeStatus{
-		Name:   node.Name,
-		Taps:   node.taps,
-		CPU:    node.CPU,
-		Memory: node.Memory,
-		UEFI:   node.UEFI,
-		//SMBIOS:    node.SMBIOS,
+		Name:      node.Name,
+		Taps:      node.taps,
+		CPU:       node.CPU,
+		Memory:    node.Memory,
+		UEFI:      node.UEFI,
 		IsRunning: vm.IsRunning(),
 	}
+	status.SMBIOS.Serial = node.SMBIOS.Serial
+	status.SMBIOS.Manufacturer = node.SMBIOS.Manufacturer
+	status.SMBIOS.Product = node.SMBIOS.Product
 	if !s.runtime.graphic {
 		status.SocketPath = s.runtime.socketPath(node.Name)
 	}
@@ -176,9 +178,17 @@ func (s Server) handleNetworks(w http.ResponseWriter, r *http.Request) {
 		case "down":
 			cmds = append(cmds, []string{"ip", "link", "set", "dev", params[1], "down"})
 		case "delay":
-			cmds = append(cmds, []string{"tc", "qdisc", "add", "dev", params[1], "root", "netem", "delay", "100ms"})
+			delay := r.URL.Query().Get("delay")
+			if len(delay) == 0 {
+				delay = "100ms"
+			}
+			cmds = append(cmds, []string{"tc", "qdisc", "add", "dev", params[1], "root", "netem", "delay", delay})
 		case "loss":
-			cmds = append(cmds, []string{"tc", "qdisc", "add", "dev", params[1], "root", "netem", "loss", "50%"})
+			loss := r.URL.Query().Get("loss")
+			if len(loss) == 0 {
+				loss = "50%"
+			}
+			cmds = append(cmds, []string{"tc", "qdisc", "add", "dev", params[1], "root", "netem", "loss", loss})
 		case "clear":
 			cmds = append(cmds, []string{"tc", "qdisc", "del", "dev", params[1], "root"})
 		default:

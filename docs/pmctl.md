@@ -1,41 +1,141 @@
+pmctl
+=====
 
-```console
-$ pmctl [command]
 pmctl is a command-line tool to control nodes, pods, and networks on placemat
 
-Usage:
-  pmctl [command]
+Usage
+-----
 
-Available Commands:
-  help        Help about any command
-  net         net subcommand
-  node        node subcommand
-  pod         pod subcommand
-
-Flags:
-      --endpoint string    API endpoint of the target placemat (default "http://localhost:10808")
-  -h, --help               help for pmctl
+```console
+$ pmctl [--endpoint http://localhost:10808] <subcommand> [args...]
 ```
 
-#### node subcommand
-
-`pmctl node list`
-`pmctl node enter <NODE>`
-`pmctl node action start <NODE>`
-`pmctl node action stop <NODE>`
-`pmctl node action restart <NODE>`
-
-#### pod subcommand
-
-`pmctl pod list`
-`pmctl pod enter [--app=<APP>] [COMMANDS...]`
+| Option       | Default Value            | Description                           |
+| ------------ | ------------------------ | ------------------------------------- |
+| `--endpoint` | `http://localhost:10808` | `API endpoint of the target placemat` |
 
 
-#### net subcommand
+`node` subcommand
+-----------------
 
-`pmctl net up <DEVICE>`
-`pmctl net down <DEVICE>`
-`pmctl net delay [--delay=<DELAY>] <DEVICE>`
-`pmctl net loss [--loss=<LOSS>] <DEVICE>`
-`pmctl net clear <DEVICE>`
+### `pmctl node list [--json]`
+
+Show nodes list.
+
+* `--json`: Show detailed information of a node in JSON format.
+
+```console
+$ pmctl node list
+node1
+node2
+```
+
+```console
+$ pmctl node list --json | jq .
+[
+  {
+    "name": "node1",
+    "taps": {
+      "ext-net": "pm0"
+    },
+    "volumes": [
+      "root",
+      "data"
+    ],
+    "cpu": 1,
+    "memory": "3G",
+    "uefi": false,
+    "smbios": {
+      "manufacturer": "",
+      "product": "",
+      "serial": "e5e2a9518607915ae99ab77d575bfe7a7dcf2a99"
+    },
+    "is_running": true,
+    "socket_path": "/tmp/host1.socket"
+  },
+  {
+    "name": "node2",
+    "taps": {
+      "ext-net": "pm1"
+    },
+    "volumes": [
+      "root",
+      "data"
+    ],
+    "cpu": 1,
+    "memory": "3G",
+    "uefi": false,
+    "smbios": {
+      "manufacturer": "",
+      "product": "",
+      "serial": "e0d87a849f5a1e3d140e8b666446536edfe92089"
+    },
+    "is_running": true,
+    "socket_path": "/tmp/host2.socket"
+  }
+]
+```
+
+### `pmctl node enter <NODE>`
+
+Connect to a node via serial console.
+
+If placemat starts without `-graphic` option, VMs will have no graphic console.
+Instead, they have serial consoles exposed via UNIX domain sockets.
+
+```console
+$ pmctl node enter node1
+```
+
+**To exit** from the console, press Ctrl-Q, Ctrl-X in this order.
+
+### `pmctl node action start <NODE>`
+
+Start a node.
+
+```console
+$ pmctl node action start node1
+```
+
+### `pmctl node action stop <NODE>`
+
+Stop a node.
+
+```console
+$ pmctl node action stop node1
+```
+
+### `pmctl node action restart <NODE>`
+
+Restart a node.
+
+```console
+$ pmctl node action restart node1
+```
+
+`pod` subcommand
+----------------
+
+### `pmctl pod list [--json]`
+
+Show pods list.
+
+* `--json`: Show detailed information of a pod in JSON format.
+
+
+### `pmctl pod enter [--app=<APP>] [COMMANDS...]`
+
+
+`net` subcommand
+----------------
+
+### `pmctl net up <DEVICE>`
+
+### `pmctl net down <DEVICE>`
+
+### `pmctl net delay [--delay=<DELAY>] <DEVICE>`
+
+### `pmctl net loss [--loss=<LOSS>] <DEVICE>`
+
+### `pmctl net clear <DEVICE>`
 

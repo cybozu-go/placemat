@@ -9,8 +9,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// netClearCmd represents the netClear command
-var netClearCmd = &cobra.Command{
+var netActionParams struct {
+	Delay string
+	Loss  string
+}
+
+// netActionCmd represents the netClear command
+var netActionCmd = &cobra.Command{
 	Use:   "action ACTION DEVICE",
 	Short: "control network of nodes and pods",
 	Long: `control network of nodes and pods
@@ -29,13 +34,26 @@ ACTION
 		} else if len(args) > 2 {
 			return errors.New("too many arguments")
 		}
+		if len(netActionParams.Delay) != 0 && args[0] != "delay" {
+			return errors.New("--delay option can be used with `delay` action")
+		}
+		if len(netActionParams.Loss) != 0 && args[0] != "loss" {
+			return errors.New("--loss option can be used with `loss` action")
+		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		action := args[0]
 		device := args[1]
 		well.Go(func(ctx context.Context) error {
-			err := postAction(ctx, "/networks/"+device+"/"+action, nil)
+			params := map[string]string{}
+			if len(netActionParams.Delay) != 0 {
+				params["delay"] = netActionParams.Delay
+			}
+			if len(netActionParams.Loss) != 0 {
+				params["loss"] = netActionParams.Loss
+			}
+			err := postAction(ctx, "/networks/"+device+"/"+action, params)
 			return err
 		})
 		well.Stop()
@@ -47,5 +65,7 @@ ACTION
 }
 
 func init() {
-	netCmd.AddCommand(netClearCmd)
+	netCmd.AddCommand(netActionCmd)
+	netActionCmd.Flags().StringVar(&netActionParams.Delay, "delay", "", "delay")
+	netActionCmd.Flags().StringVar(&netActionParams.Loss, "loss", "", "loss")
 }
