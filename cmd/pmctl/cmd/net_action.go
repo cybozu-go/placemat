@@ -23,8 +23,8 @@ var netActionCmd = &cobra.Command{
 ACTION
   * up: change state of the device to UP
   * down:  change state of the device to DOWN
-  * delay: add delay to the packet through the device
-  * loss: randomly lose packets through the device
+  * delay: add delay to the packets going out of the device
+  * loss: drop packets randomly going out of the device
   * clear: clear the effect by "delay" and "loss" action`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {

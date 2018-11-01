@@ -186,7 +186,7 @@ func (s Server) handleNetworks(w http.ResponseWriter, r *http.Request) {
 		case "loss":
 			loss := r.URL.Query().Get("loss")
 			if len(loss) == 0 {
-				loss = "50%"
+				loss = "10%"
 			}
 			cmds = append(cmds, []string{"tc", "qdisc", "add", "dev", params[1], "root", "netem", "loss", loss})
 		case "clear":
