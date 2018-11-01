@@ -7,12 +7,14 @@ import (
 	"github.com/cybozu-go/placemat/web"
 )
 
+// Server is the API Server of placemat.
 type Server struct {
 	cluster *Cluster
 	vms     map[string]*NodeVM
 	runtime *Runtime
 }
 
+// NewServer creates a new Server instance.
 func NewServer(cluster *Cluster, vms map[string]*NodeVM, r *Runtime) *Server {
 	return &Server{
 		cluster: cluster,
@@ -21,6 +23,7 @@ func NewServer(cluster *Cluster, vms map[string]*NodeVM, r *Runtime) *Server {
 	}
 }
 
+// Handler implements http.Handler
 func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/nodes") {
 		s.handleNodes(w, r)

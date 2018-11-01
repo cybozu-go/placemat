@@ -1,11 +1,13 @@
 package web
 
+// SMBIOSStatus represents SMBIOS of a Node
 type SMBIOSStatus struct {
 	Manufacturer string `json:"manufacturer"`
 	Product      string `json:"product"`
 	Serial       string `json:"serial"`
 }
 
+// NodeStatus represents status of a Node
 type NodeStatus struct {
 	Name       string            `json:"name"`
 	Taps       map[string]string `json:"taps"`
@@ -18,6 +20,7 @@ type NodeStatus struct {
 	SocketPath string            `json:"socket_path"`
 }
 
+// PodStatus represents status of a Pod
 type PodStatus struct {
 	Name    string            `json:"name"`
 	UUID    string            `json:"uuid"`

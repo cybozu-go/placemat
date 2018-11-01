@@ -28,10 +28,9 @@ var nodeListCmd = &cobra.Command{
 			getJSON(ctx, "/nodes", nil, &status)
 			if nodeListParams.JSON {
 				return json.NewEncoder(os.Stdout).Encode(status)
-			} else {
-				for _, s := range status {
-					fmt.Println(s.Name)
-				}
+			}
+			for _, s := range status {
+				fmt.Println(s.Name)
 			}
 			return nil
 		})

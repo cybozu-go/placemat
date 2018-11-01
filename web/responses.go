@@ -9,6 +9,7 @@ import (
 	"github.com/cybozu-go/well"
 )
 
+// RenderJSON renders responce in JSON format
 func RenderJSON(w http.ResponseWriter, data interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -20,6 +21,7 @@ func RenderJSON(w http.ResponseWriter, data interface{}, status int) {
 	}
 }
 
+// RenderError renders response as error
 func RenderError(ctx context.Context, w http.ResponseWriter, e APIError) {
 	fields := well.FieldsFromContext(ctx)
 	fields["status"] = e.Status
