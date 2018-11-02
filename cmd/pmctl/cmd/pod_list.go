@@ -20,7 +20,7 @@ var podListParams struct {
 var podListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "show pod list",
-	Long:  `sho pod list`,
+	Long:  `show pod list`,
 	Run: func(cmd *cobra.Command, args []string) {
 		well.Go(func(ctx context.Context) error {
 			var status []web.PodStatus

@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// nodeRestartCmd represents the nodeRestart command
-var nodeRestartCmd = &cobra.Command{
+// nodeActionCmd represents the nodeAction command
+var nodeActionCmd = &cobra.Command{
 	Use:   "action ACTION NODE",
 	Short: "control nodes",
 	Long: `control nodes
@@ -45,5 +45,5 @@ ACTION
 }
 
 func init() {
-	nodeCmd.AddCommand(nodeRestartCmd)
+	nodeCmd.AddCommand(nodeActionCmd)
 }

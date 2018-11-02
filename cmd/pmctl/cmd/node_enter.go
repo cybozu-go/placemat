@@ -20,7 +20,7 @@ func ptyPath(host string) string {
 
 // nodeEnterCmd represents the nodeEnter command
 var nodeEnterCmd = &cobra.Command{
-	Use:   "enter",
+	Use:   "enter NODE",
 	Short: "connect to a VM with serial console",
 	Long:  `connect to a VM with serial console`,
 	Args: func(cmd *cobra.Command, args []string) error {

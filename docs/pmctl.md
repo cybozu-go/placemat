@@ -212,7 +212,7 @@ $ echo $DEVICE
 pm8
 ```
 
-### `pmctl net up <DEVICE>`
+### `pmctl net action up <DEVICE>`
 
 Change state of the device to UP.
 
@@ -220,14 +220,14 @@ Change state of the device to UP.
 $ pmctl net action up $DEVICE
 ```
 
-### `pmctl net down <DEVICE>`
+### `pmctl net action down <DEVICE>`
 
 Change state of the device to DOWN.
 
 ```console
 $ pmctl net action down $DEVICE
 ```
-### `pmctl net delay [--delay=<DELAY>] <DEVICE>`
+### `pmctl net action delay [--delay=<DELAY>] <DEVICE>`
 
 Ddd delay to the packets going out of the device with `tc` command.
 
@@ -245,7 +245,7 @@ PING 10.0.0.102 (10.0.0.102) 56(84) bytes of data.
 64 bytes from 10.0.0.102: icmp_seq=3 ttl=64 time=1001 ms
 ```
 
-### `pmctl net loss [--loss=<LOSS>] <DEVICE>`
+### `pmctl net action loss [--loss=<LOSS>] <DEVICE>`
 
 Drop packets randomly going out of the device with `tc` command.
 
@@ -263,7 +263,7 @@ PING 10.0.0.102 (10.0.0.102) 56(84) bytes of data.
 64 bytes from 10.0.0.102: icmp_seq=11 ttl=64 time=0.885 ms
 ```
 
-### `pmctl net clear <DEVICE>`
+### `pmctl net action clear <DEVICE>`
 
 Clear the effect by "delay" and "loss" action.
 

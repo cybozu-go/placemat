@@ -19,7 +19,7 @@ var nodeListParams struct {
 // nodeListCmd represents the nodeList command
 var nodeListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "show node lsit",
+	Short: "show node list",
 	Long:  `show node list`,
 	Run: func(cmd *cobra.Command, args []string) {
 		well.Go(func(ctx context.Context) error {
