@@ -77,7 +77,7 @@ Options:
   -data-dir string
         directory to store data (default "/var/scratch/placemat")
   -listen-addr string
-        listen address of API endpoint to control placemat. (default "0.0.0.0:10808")
+        listen address of API endpoint to control placemat. (default "127.0.0.1:10808")
   -debug
         show QEMU's and Pod's stdout and stderr        
   -force

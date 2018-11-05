@@ -22,7 +22,7 @@ const (
 	defaultCacheDir   = ""
 	defaultDataDir    = "/var/scratch/placemat"
 	defaultSharedPath = "/mnt/placemat"
-	defaultListenAddr = "0.0.0.0:10808"
+	defaultListenAddr = "127.0.0.1:10808"
 )
 
 var (
