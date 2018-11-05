@@ -64,6 +64,7 @@ func (s Server) newPodStatus(pod *Pod) *web.PodStatus {
 	status := &web.PodStatus{
 		Name:  pod.Name,
 		Veths: pod.veths,
+		PID:   pod.pid,
 		UUID:  pod.uuid,
 	}
 	status.Volumes = make([]string, len(pod.Volumes))

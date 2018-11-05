@@ -198,6 +198,7 @@ type Pod struct {
 	networks    []*Network
 	veths       map[string]string
 	uuid        string
+	pid         int
 }
 
 // NewPod creates a Pod from spec.
@@ -401,6 +402,7 @@ RETRY:
 		goto RETRY
 	}
 	p.uuid = string(uuid)
+	p.pid = rkt.Process.Pid
 
 	go func() {
 		<-ctx.Done()

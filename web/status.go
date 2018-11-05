@@ -23,6 +23,7 @@ type NodeStatus struct {
 // PodStatus represents status of a Pod
 type PodStatus struct {
 	Name    string            `json:"name"`
+	PID     int               `json:"pid"`
 	UUID    string            `json:"uuid"`
 	Veths   map[string]string `json:"veths"`
 	Volumes []string          `json:"volumes"`
