@@ -76,6 +76,34 @@ $ pmctl node list --json | jq .
 ]
 ```
 
+### `pmctl node show <NODE>`
+
+Show a node info.
+
+```console
+$ pmctl node node1 | jq .
+{
+  "name": "node1",
+  "taps": {
+    "mynet": "pm0"
+  },
+  "volumes": [
+    "root",
+    "data"
+  ],
+  "cpu": 1,
+  "memory": "3G",
+  "uefi": false,
+  "smbios": {
+    "manufacturer": "",
+    "product": "",
+    "serial": "e5e2a9518607915ae99ab77d575bfe7a7dcf2a99"
+  },
+  "is_running": true,
+  "socket_path": "/tmp/host1.socket"
+}
+```
+
 ### `pmctl node enter <NODE>`
 
 Connect to a node via serial console.
@@ -158,6 +186,7 @@ $ pmctl pod list --json | jq .
 [
   {
     "name": "pod1",
+    "pid": 1023,
     "uuid": "03464bd4-eff7-408a-8bc2-1f218bd7b83f",
     "veths": {
       "mynet": "pm8"
@@ -168,6 +197,26 @@ $ pmctl pod list --json | jq .
     ]
   }
 ]
+```
+
+### `pmctl pod show <POD>`
+
+Show a pod info.
+
+```console
+$ pmctl pod show pod1 | jq .
+{
+  "name": "pod1",
+  "pid": 1023,
+  "uuid": "03464bd4-eff7-408a-8bc2-1f218bd7b83f",
+  "veths": {
+    "mynet": "pm8"
+  },
+  "volumes": [],
+  "apps": [
+    "ubuntu"
+  ]
+}
 ```
 
 ### `pmctl pod enter [--app=<APP>] [COMMANDS...]`
@@ -198,16 +247,16 @@ Linux pod1 4.15.0-38-generic #41-Ubuntu SMP Wed Oct 10 10:59:38 UTC 2018 x86_64 
 
 In this subcommand you need to specify network device name.
 
-The name can be obtained with `pmclt node list` or `pmctl pod list` as following.
+The name can be obtained with `pmclt node show` or `pmctl pod show` as following.
 
 ```console
-$ DEVICE=$(pmctl node list --json | jq -r '.[] | select(.name=="node1").taps."mynet"')
+$ DEVICE=$(pmctl node show node1 | jq -r '.taps."mynet"')
 $ echo $DEVICE
 pm0
 ```
 
 ```console
-$ DEVICE=$(pmctl pod list --json | jq -r '.[] | select(.name=="pod1").veths."mynet"')
+$ DEVICE=$(pmctl pod show pod1 | jq -r '.veths."mynet"')
 $ echo $DEVICE
 pm8
 ```
