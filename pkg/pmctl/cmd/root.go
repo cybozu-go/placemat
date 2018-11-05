@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/well"
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +18,12 @@ var rootCmd = &cobra.Command{
 	Use:   "pmctl",
 	Short: "control nodes, pods, and networks on placemat",
 	Long:  `pmctl is a command-line tool to control nodes, pods, and networks on placemat`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		err := well.LogConfig{}.Apply()
+		if err != nil {
+			log.ErrorExit(err)
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
