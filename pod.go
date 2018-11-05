@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/well"
@@ -194,12 +196,16 @@ type Pod struct {
 	initScripts []string
 	volumes     []PodVolume
 	networks    []*Network
+	veths       map[string]string
+	uuid        string
+	pid         int
 }
 
 // NewPod creates a Pod from spec.
 func NewPod(spec *PodSpec) (*Pod, error) {
 	p := &Pod{
 		PodSpec: spec,
+		veths:   make(map[string]string),
 	}
 
 	if len(spec.Name) == 0 {
@@ -334,12 +340,13 @@ func (p *Pod) Start(ctx context.Context, r *Runtime) error {
 	veths := make([]string, len(p.networks))
 	ips := make(map[string][]string)
 	for i, n := range p.networks {
-		veth, err := n.CreateVeth()
+		veth, vethInNS, err := n.CreateVeth()
 		if err != nil {
 			return err
 		}
-		veths[i] = veth
-		ips[veth] = p.Interfaces[i].Addresses
+		veths[i] = vethInNS
+		ips[vethInNS] = p.Interfaces[i].Addresses
+		p.veths[n.Name] = veth
 	}
 
 	err := makePodNS(ctx, p.Name, veths, ips)
@@ -355,11 +362,15 @@ func (p *Pod) Start(ctx context.Context, r *Runtime) error {
 		}
 	}
 
+	uuidFile := filepath.Join(r.runDir, p.Name+".uuid")
+	defer os.RemoveAll(uuidFile)
+
 	params := []string{
 		"--insecure-options=all-run",
 		"run",
 		"--net=host",
 		"--dns=host",
+		"--uuid-file-save=" + uuidFile,
 	}
 	params = p.appendParams(params)
 
@@ -378,6 +389,20 @@ func (p *Pod) Start(ctx context.Context, r *Runtime) error {
 		})
 		return err
 	}
+
+	count := 10
+RETRY:
+	count--
+	if count == 0 {
+		return errors.New("could not read a uuid file of the container: " + p.Name)
+	}
+	uuid, err := ioutil.ReadFile(uuidFile)
+	if err != nil || len(uuid) == 0 {
+		time.Sleep(time.Second)
+		goto RETRY
+	}
+	p.uuid = string(uuid)
+	p.pid = rkt.Process.Pid
 
 	go func() {
 		<-ctx.Done()

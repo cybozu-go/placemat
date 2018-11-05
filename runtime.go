@@ -43,10 +43,11 @@ type Runtime struct {
 	dataCache    *cache
 	sharedDir    string
 	tempDir      string
+	listenAddr   string
 }
 
 // NewRuntime initializes a new Runtime.
-func NewRuntime(force, graphic, enableVirtFS bool, runDir, dataDir, cacheDir, sharedDir string) (*Runtime, error) {
+func NewRuntime(force, graphic, enableVirtFS bool, runDir, dataDir, cacheDir, sharedDir, listenAddr string) (*Runtime, error) {
 	r := &Runtime{
 		force:        force,
 		graphic:      graphic,
@@ -54,6 +55,7 @@ func NewRuntime(force, graphic, enableVirtFS bool, runDir, dataDir, cacheDir, sh
 		runDir:       runDir,
 		dataDir:      dataDir,
 		sharedDir:    sharedDir,
+		listenAddr:   listenAddr,
 	}
 
 	r.ng.prefix = "pm"

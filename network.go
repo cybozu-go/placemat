@@ -186,8 +186,8 @@ func (n *Network) CreateTap() (string, error) {
 }
 
 // CreateVeth creates a veth pair and add one of the pair to the bridge.
-// It returns the name of the other side of the pair.
-func (n *Network) CreateVeth() (string, error) {
+// It returns both names of the pair.
+func (n *Network) CreateVeth() (string, string, error) {
 	name := n.ng.New()
 	nameInNS := name + "_"
 
@@ -197,11 +197,11 @@ func (n *Network) CreateVeth() (string, error) {
 	}
 	err := execCommands(context.Background(), cmds)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	n.vethNames = append(n.vethNames, name)
-	return nameInNS, nil
+	return name, nameInNS, nil
 }
 
 // CleanupNetworks removes all remaining network resources.

@@ -22,6 +22,7 @@ const (
 	defaultCacheDir   = ""
 	defaultDataDir    = "/var/scratch/placemat"
 	defaultSharedPath = "/mnt/placemat"
+	defaultListenAddr = "127.0.0.1:10808"
 )
 
 var (
@@ -29,6 +30,7 @@ var (
 	flgCacheDir     = flag.String("cache-dir", defaultCacheDir, "directory for cache data")
 	flgDataDir      = flag.String("data-dir", defaultDataDir, "directory to store data")
 	flgSharedDir    = flag.String("shared-dir", defaultSharedPath, "shared directory")
+	flgListenAddr   = flag.String("listen-addr", defaultListenAddr, "listen address")
 	flgGraphic      = flag.Bool("graphic", false, "run QEMU with graphical console")
 	flgDebug        = flag.Bool("debug", false, "show QEMU's and Pod's stdout and stderr")
 	flgForce        = flag.Bool("force", false, "force run with removal of garbage")
@@ -135,7 +137,7 @@ func run(yamls []string) error {
 	dataDir := os.ExpandEnv(*flgDataDir)
 	cacheDir := os.ExpandEnv(*flgCacheDir)
 	sharedDir := os.ExpandEnv(*flgSharedDir)
-	r, err := placemat.NewRuntime(*flgForce, *flgGraphic, *flgEnableVirtFS, runDir, dataDir, cacheDir, sharedDir)
+	r, err := placemat.NewRuntime(*flgForce, *flgGraphic, *flgEnableVirtFS, runDir, dataDir, cacheDir, sharedDir, *flgListenAddr)
 	if err != nil {
 		return err
 	}

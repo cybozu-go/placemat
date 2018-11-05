@@ -12,10 +12,14 @@ require (
 	github.com/kubernetes/apimachinery v0.0.0-20180912233634-99c5fa21f872
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
+	github.com/mitchellh/go-homedir v1.0.0
 	github.com/onsi/ginkgo v1.6.1-0.20180917065038-2445fc1ddb3b
 	github.com/onsi/gomega v1.4.2
 	github.com/rmxymh/go-virtualbox v0.0.0-20160520145709-e1ed85288c0a // indirect
 	github.com/rmxymh/infra-ecosphere v0.0.0-20160601082221-353d14945925
+	github.com/spf13/cobra v0.0.3
+	github.com/spf13/viper v1.2.1
 	golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b
+	golang.org/x/tools v0.0.0-20181024171208-a2dc47679d30 // indirect
 	gopkg.in/yaml.v2 v2.2.1
 )

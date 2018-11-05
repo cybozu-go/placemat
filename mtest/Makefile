@@ -56,7 +56,7 @@ $(OUTPUT)/network2.yml: network.yml
 
 $(OUTPUT)/placemat:
 	mkdir -p $(OUTPUT)
-	cd ..; go get ./... && GOBIN=$(abspath $(OUTPUT)) go install ./cmd/$(notdir $@)
+	cd ..; go get ./... && GOBIN=$(abspath $(OUTPUT)) go install ./pkg/$(notdir $@)
 
 test: $(GENERATED_FILES)
 	sudo rm -rf $(PLACEMAT_DATADIR)/volumes/node1
