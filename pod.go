@@ -390,18 +390,28 @@ func (p *Pod) Start(ctx context.Context, r *Runtime) error {
 		return err
 	}
 
+	err = well.CommandContext(ctx, "sync").Run()
+	if err != nil {
+		return err
+	}
+
 	count := 10
 RETRY:
 	count--
 	if count == 0 {
 		return errors.New("could not read a uuid file of the container: " + p.Name)
 	}
-	uuid, err := ioutil.ReadFile(uuidFile)
-	if err != nil || len(uuid) == 0 {
+	u, err := ioutil.ReadFile(uuidFile)
+	if err != nil {
 		time.Sleep(time.Second)
 		goto RETRY
 	}
-	p.uuid = string(uuid)
+	uuid := strings.TrimSpace(string(u))
+	if len(uuid) == 0 || rkt.Process.Pid == 0 {
+		time.Sleep(time.Second)
+		goto RETRY
+	}
+	p.uuid = uuid
 	p.pid = rkt.Process.Pid
 
 	go func() {
