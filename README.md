@@ -143,8 +143,9 @@ $ sudo dpkg -i rkt_1.30.0-1_amd64.deb
 Install `placemat` and `placemat-connect`:
 
 ```console
-$ go get -u github.com/cybozu-go/placemat/cmd/placemat
-$ go get -u github.com/cybozu-go/placemat/cmd/placemat-connect
+$ go get -u github.com/cybozu-go/placemat/pkg/placemat
+$ go get -u github.com/cybozu-go/placemat/pkg/placemat-connect
+$ go get -u github.com/cybozu-go/placemat/pkg/pmctl
 ```
 
 ### Run examples
