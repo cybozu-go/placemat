@@ -253,9 +253,12 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 			vm.cleanup()
 		}
 	}()
+	env.Stop()
+	err = env.Wait()
 
 	bmcServer := newBMCServer(vms, c.Networks, nodeCh)
 
+	env = well.NewEnvironment(ctx)
 	env.Go(bmcServer.handleNode)
 	for _, p := range c.Pods {
 		p := p
@@ -280,5 +283,11 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	s.ListenAndServe()
 
 	env.Stop()
-	return env.Wait()
+	err = env.Wait()
+	if err != nil {
+		log.Error("error happened", map[string]interface{}{
+			log.FnError: err,
+		})
+	}
+	return err
 }

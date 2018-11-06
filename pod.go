@@ -379,6 +379,9 @@ func (p *Pod) Start(ctx context.Context, r *Runtime) error {
 	}
 
 	uuidFile := filepath.Join(r.runDir, p.Name+".uuid")
+	if _, err = os.Stat(uuidFile); err == nil {
+		return errors.New("uuid file is already exist: " + uuidFile)
+	}
 	defer os.RemoveAll(uuidFile)
 
 	params := []string{
