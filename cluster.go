@@ -93,11 +93,8 @@ func (c *Cluster) Resolve() error {
 
 // Cleanup remaining resources
 func (c *Cluster) Cleanup(r *Runtime) error {
-	err := CleanupNodes(r, c.Nodes)
-	if err != nil {
-		return err
-	}
-
+	CleanupNodes(r, c.Nodes)
+	CleanupPods(r, c.Pods)
 	CleanupNetworks(r, c)
 	return nil
 }
@@ -251,20 +248,14 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 			return nil
 		})
 	}
-	env.Stop()
-	err = env.Wait()
 	defer func() {
 		for _, vm := range vms {
 			vm.cleanup()
 		}
 	}()
-	if err != nil {
-		return err
-	}
 
 	bmcServer := newBMCServer(vms, c.Networks, nodeCh)
 
-	env = well.NewEnvironment(ctx)
 	env.Go(bmcServer.handleNode)
 	for _, p := range c.Pods {
 		p := p

@@ -239,6 +239,22 @@ func NewPod(spec *PodSpec) (*Pod, error) {
 	return p, nil
 }
 
+// CleanupPods cleans file created at runtime for rkt.
+func CleanupPods(r *Runtime, pods []*Pod) {
+	for _, pod := range pods {
+		uuidFile := filepath.Join(r.runDir, pod.Name+".uuid")
+		_, err := os.Stat(uuidFile)
+		if err == nil {
+			err = os.Remove(uuidFile)
+			if err != nil {
+				log.Warn("failed to clean file", map[string]interface{}{
+					"filename": uuidFile,
+				})
+			}
+		}
+	}
+}
+
 // Resolve resolves references to other resources in the cluster.
 func (p *Pod) Resolve(c *Cluster) error {
 	for _, iface := range p.Interfaces {
@@ -390,12 +406,7 @@ func (p *Pod) Start(ctx context.Context, r *Runtime) error {
 		return err
 	}
 
-	err = well.CommandContext(ctx, "sync").Run()
-	if err != nil {
-		return err
-	}
-
-	count := 10
+	count := 60
 RETRY:
 	count--
 	if count == 0 {
@@ -407,7 +418,7 @@ RETRY:
 		goto RETRY
 	}
 	uuid := strings.TrimSpace(string(u))
-	if len(uuid) == 0 || rkt.Process.Pid == 0 {
+	if len(uuid) != 36 || rkt.Process.Pid == 0 {
 		time.Sleep(time.Second)
 		goto RETRY
 	}
@@ -416,7 +427,18 @@ RETRY:
 
 	go func() {
 		<-ctx.Done()
+		log.Info("kill pod", map[string]interface{}{
+			"pod":  p.Name,
+			"pid":  p.pid,
+			"uuid": p.uuid,
+		})
 		rkt.Process.Signal(syscall.SIGTERM)
 	}()
-	return rkt.Wait()
+	err = rkt.Wait()
+	log.Info("pod finished", map[string]interface{}{
+		"pod":  p.Name,
+		"pid":  p.pid,
+		"uuid": p.uuid,
+	})
+	return err
 }

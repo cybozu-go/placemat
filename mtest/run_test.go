@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
@@ -11,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cybozu-go/well"
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"golang.org/x/crypto/ssh"
@@ -20,6 +23,7 @@ const sshTimeout = 2 * time.Minute
 
 var (
 	sshClients = make(map[string]*ssh.Client)
+	httpClient = &well.HTTPClient{Client: &http.Client{}}
 )
 
 func runPlacemt(cluster string, args ...string) *gexec.Session {
@@ -135,4 +139,28 @@ func execSafeAt(host string, args ...string) string {
 	stdout, _, err := execAt(host, args...)
 	ExpectWithOffset(1, err).To(Succeed())
 	return string(stdout)
+}
+
+func pmctl(args ...string) ([]byte, error) {
+	var stdout bytes.Buffer
+	command := exec.Command(pmctlPath, args...)
+	command.Stdout = &stdout
+	command.Stderr = GinkgoWriter
+	err := command.Run()
+	if err != nil {
+		return nil, err
+	}
+	return stdout.Bytes(), nil
+}
+
+func rkt(args ...string) ([]byte, error) {
+	var stdout bytes.Buffer
+	command := exec.Command("rkt", args...)
+	command.Stdout = &stdout
+	command.Stderr = GinkgoWriter
+	err := command.Run()
+	if err != nil {
+		return nil, err
+	}
+	return stdout.Bytes(), nil
 }

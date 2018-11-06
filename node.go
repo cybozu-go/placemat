@@ -124,7 +124,7 @@ func (n *Node) Resolve(c *Cluster) error {
 }
 
 // CleanupNodes cleans files created at runtime for QEMU.
-func CleanupNodes(r *Runtime, nodes []*Node) error {
+func CleanupNodes(r *Runtime, nodes []*Node) {
 	for _, d := range nodes {
 		files := []string{
 			r.guestSocketPath(d.Name),
@@ -136,12 +136,13 @@ func CleanupNodes(r *Runtime, nodes []*Node) error {
 			if err == nil {
 				err = os.Remove(f)
 				if err != nil {
-					return err
+					log.Warn("failed to clean file", map[string]interface{}{
+						"filename": f,
+					})
 				}
 			}
 		}
 	}
-	return nil
 }
 
 func nodeSerial(name string) string {

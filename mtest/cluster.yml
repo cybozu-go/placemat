@@ -40,3 +40,16 @@ volumes:
   name: seed
   user-data: user-data_node2.yml
   network-config: network2.yml
+---
+kind: Pod
+name: pod1
+interfaces:
+  - network: ext-net
+    addresses: @POD1@/24
+apps:
+  - name: ubuntu
+    image: docker://quay.io/cybozu/ubuntu-debug:18.04
+    readonly-rootfs: false
+    exec: /bin/sleep
+    args:
+      - infinity
