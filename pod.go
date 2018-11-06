@@ -239,6 +239,22 @@ func NewPod(spec *PodSpec) (*Pod, error) {
 	return p, nil
 }
 
+// CleanupPods cleans file created at runtime for rkt.
+func CleanupPods(r *Runtime, pods []*Pod) {
+	for _, pod := range pods {
+		uuidFile := filepath.Join(r.runDir, pod.Name+".uuid")
+		_, err := os.Stat(uuidFile)
+		if err == nil {
+			err = os.Remove(uuidFile)
+			if err != nil {
+				log.Warn("failed to clean file", map[string]interface{}{
+					"filename": uuidFile,
+				})
+			}
+		}
+	}
+}
+
 // Resolve resolves references to other resources in the cluster.
 func (p *Pod) Resolve(c *Cluster) error {
 	for _, iface := range p.Interfaces {
@@ -363,6 +379,9 @@ func (p *Pod) Start(ctx context.Context, r *Runtime) error {
 	}
 
 	uuidFile := filepath.Join(r.runDir, p.Name+".uuid")
+	if _, err = os.Stat(uuidFile); err == nil {
+		return errors.New("uuid file is already exist: " + uuidFile)
+	}
 	defer os.RemoveAll(uuidFile)
 
 	params := []string{
@@ -390,23 +409,39 @@ func (p *Pod) Start(ctx context.Context, r *Runtime) error {
 		return err
 	}
 
-	count := 10
+	count := 60
 RETRY:
 	count--
 	if count == 0 {
 		return errors.New("could not read a uuid file of the container: " + p.Name)
 	}
-	uuid, err := ioutil.ReadFile(uuidFile)
-	if err != nil || len(uuid) == 0 {
+	u, err := ioutil.ReadFile(uuidFile)
+	if err != nil {
 		time.Sleep(time.Second)
 		goto RETRY
 	}
-	p.uuid = string(uuid)
+	uuid := strings.TrimSpace(string(u))
+	if len(uuid) != 36 || rkt.Process.Pid == 0 {
+		time.Sleep(time.Second)
+		goto RETRY
+	}
+	p.uuid = uuid
 	p.pid = rkt.Process.Pid
 
 	go func() {
 		<-ctx.Done()
+		log.Info("kill pod", map[string]interface{}{
+			"pod":  p.Name,
+			"pid":  p.pid,
+			"uuid": p.uuid,
+		})
 		rkt.Process.Signal(syscall.SIGTERM)
 	}()
-	return rkt.Wait()
+	err = rkt.Wait()
+	log.Info("pod finished", map[string]interface{}{
+		"pod":  p.Name,
+		"pid":  p.pid,
+		"uuid": p.uuid,
+	})
+	return err
 }

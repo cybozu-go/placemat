@@ -4,21 +4,24 @@
 BRIDGE_ADDRESS = 10.0.0.1
 NODE1 = 10.0.0.11
 NODE2 = 10.0.0.12
+POD1 = 10.0.0.21
 GINKGO = $(GOPATH)/bin/ginkgo
 PLACEMAT_DATADIR = /var/scratch/placemat
 
-export BRIDGE_ADDRESS NODE1 NODE2 GINKGO
+export BRIDGE_ADDRESS NODE1 NODE2 POD1 GINKGO
 
 # non-configuration variables
 SSH_PRIVKEY := ./mtest_key
 OUTPUT := ./output
 UBUNTU_IMAGE := ubuntu-18.04-server-cloudimg-amd64.img
 PLACEMAT = $(OUTPUT)/placemat
+PMCTL = $(OUTPUT)/pmctl
 CLUSTER_YAML = $(OUTPUT)/cluster.yml
 
-export SSH_PRIVKEY PLACEMAT CLUSTER_YAML
+export SSH_PRIVKEY PLACEMAT PMCTL CLUSTER_YAML
 
 GENERATED_FILES = $(OUTPUT)/placemat \
+	$(OUTPUT)/pmctl \
 	$(OUTPUT)/cluster.yml \
 	$(OUTPUT)/user-data_node1.yml \
 	$(OUTPUT)/user-data_node2.yml \
@@ -34,6 +37,7 @@ $(UBUNTU_IMAGE):
 $(OUTPUT)/cluster.yml: cluster.yml
 	mkdir -p $(OUTPUT)
 	sed -e 's/@BRIDGE_ADDRESS@/$(BRIDGE_ADDRESS)/' \
+		-e 's/@POD1@/$(POD1)/' \
 		-e 's/@UBUNTU_IMAGE@/$(UBUNTU_IMAGE)/' $< > $@
 
 $(OUTPUT)/user-data_node1.yml: user-data.yml
@@ -55,6 +59,10 @@ $(OUTPUT)/network2.yml: network.yml
 		-e 's/@HOST@/$(NODE2)/' $< > $@
 
 $(OUTPUT)/placemat:
+	mkdir -p $(OUTPUT)
+	cd ..; go get ./... && GOBIN=$(abspath $(OUTPUT)) go install ./pkg/$(notdir $@)
+
+$(OUTPUT)/pmctl:
 	mkdir -p $(OUTPUT)
 	cd ..; go get ./... && GOBIN=$(abspath $(OUTPUT)) go install ./pkg/$(notdir $@)
 

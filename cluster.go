@@ -93,11 +93,8 @@ func (c *Cluster) Resolve() error {
 
 // Cleanup remaining resources
 func (c *Cluster) Cleanup(r *Runtime) error {
-	err := CleanupNodes(r, c.Nodes)
-	if err != nil {
-		return err
-	}
-
+	CleanupNodes(r, c.Nodes)
+	CleanupPods(r, c.Pods)
 	CleanupNetworks(r, c)
 	return nil
 }
@@ -289,5 +286,11 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	s.ListenAndServe()
 
 	env.Stop()
-	return env.Wait()
+	err = env.Wait()
+	if err != nil {
+		log.Error("error happened", map[string]interface{}{
+			log.FnError: err,
+		})
+	}
+	return err
 }
