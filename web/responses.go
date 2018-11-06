@@ -9,7 +9,7 @@ import (
 	"github.com/cybozu-go/well"
 )
 
-// RenderJSON renders responce in JSON format
+// RenderJSON renders response in JSON format
 func RenderJSON(w http.ResponseWriter, data interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
