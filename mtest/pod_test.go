@@ -3,6 +3,7 @@ package mtest
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/cybozu-go/placemat/web"
@@ -50,7 +51,7 @@ var _ = Describe("pod launch test", func() {
 				}
 			}
 			Expect(rktStatus["state"]).Should(Equal("running"))
-			Expect(rktStatus["pid"]).Should(Equal(status.PID))
+			Expect(rktStatus["pid"]).Should(Equal(strconv.Itoa(status.PID)))
 		})
 
 		By("terminate placemat", func() {

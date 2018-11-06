@@ -45,7 +45,8 @@ kind: Pod
 name: pod1
 interfaces:
   - network: ext-net
-    addresses: @POD1@/24
+    addresses: 
+      - @POD1@/24
 apps:
   - name: ubuntu
     image: docker://quay.io/cybozu/ubuntu-debug:18.04

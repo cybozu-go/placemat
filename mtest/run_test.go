@@ -155,7 +155,8 @@ func pmctl(args ...string) ([]byte, error) {
 
 func rkt(args ...string) ([]byte, error) {
 	var stdout bytes.Buffer
-	command := exec.Command("rkt", args...)
+	args = append([]string{"rkt"}, args...)
+	command := exec.Command("sudo", args...)
 	command.Stdout = &stdout
 	command.Stderr = GinkgoWriter
 	err := command.Run()
