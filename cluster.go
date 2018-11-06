@@ -248,13 +248,16 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 			return nil
 		})
 	}
+	env.Stop()
+	err = env.Wait()
 	defer func() {
 		for _, vm := range vms {
 			vm.cleanup()
 		}
 	}()
-	env.Stop()
-	err = env.Wait()
+	if err != nil {
+		return err
+	}
 
 	bmcServer := newBMCServer(vms, c.Networks, nodeCh)
 
