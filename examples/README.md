@@ -37,8 +37,8 @@ provisioned by the boot server, they will boot [iPXE][] provided from boot
 server.
 
 ```console
-$ sudo placemat-connect boot        # login with ubuntu/ubuntu
-$ sudo placemat-connect worker-1
+$ sudo pmctl node enter boot        # login with ubuntu/ubuntu
+$ sudo pmctl node enter worker-1
 ```
 
 [Ubuntu Cloud Image]: https://cloud-images.ubuntu.com/

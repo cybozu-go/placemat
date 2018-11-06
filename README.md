@@ -51,7 +51,6 @@ Usage
 This project provides these commands:
 
 * `placemat` is the main tool to build networks and virtual machines.
-* `placemat-connect` is a utility to connect to VM serial console.
 * `pmctl` is a utility tool to control VMs and Pods.
 
 ### placemat command
@@ -89,25 +88,6 @@ if `sudo` is used for `placemat`.  If `sudo` is not used, cache directory will b
 the same as `-data-dir`.
 `-force` is used for forced run. Remaining garbage, for example virtual networks, mounts, socket files will be removed.
 
-### placemat-connect command
-
-**DEPRECATED** : `placemat-connect` will be replaced by `pmctl node enter`.
-
-If placemat starts without `-graphic` option, VMs will have no graphic console.
-Instead, they have serial consoles exposed via UNIX domain sockets.
-
-`placemat-connect` is a tool to connect to the serial console.
-
-```console
-$ placemat-connect [-run-dir=/tmp] your-vm-name
-
-Options:
-  -run-dir
-        the directory specified for placemat by -run-dir.
-```
-
-**To exit** from the console, press Ctrl-Q, Ctrl-X in this order.
-
 ### pmctl command
 
 `pmctl` is a command line tool to control VMs, Pods and Networks.
@@ -121,7 +101,7 @@ Getting started
 
 - [QEMU][]
 - [OVMF][] for UEFI.
-- [picocom](https://github.com/npat-efault/picocom) for `placemat-connect`
+- [picocom](https://github.com/npat-efault/picocom) for `pmctl`.
 - [rkt][] for `Pod` resource.
 
 For Ubuntu or Debian, you can install them as follows:
@@ -140,11 +120,10 @@ $ sudo dpkg -i rkt_1.30.0-1_amd64.deb
 
 ### Install placemat
 
-Install `placemat` and `placemat-connect`:
+Install `placemat` and `pmctl`:
 
 ```console
 $ go get -u github.com/cybozu-go/placemat/pkg/placemat
-$ go get -u github.com/cybozu-go/placemat/pkg/placemat-connect
 $ go get -u github.com/cybozu-go/placemat/pkg/pmctl
 ```
 
@@ -158,10 +137,10 @@ To launch placemat from YAML files, run it with `sudo` as follows:
 $ sudo $GOPATH/bin/placemat cluster.yml
 ```
 
-To connect to a serial console of a VM, use `placemat-connect`:
+To connect to a serial console of a VM, use `pmctl node enter`:
 
 ```console
-$ sudo $GOPATH/bin/placemat-connect VM
+$ sudo $GOPATH/bin/pmctl node enter VM
 ```
 
 This will launch `picocom`.  To exit, type `Ctrl-Q`, then `Ctrl-X`.
