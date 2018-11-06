@@ -33,7 +33,7 @@ func runPlacemt(cluster string, args ...string) *gexec.Session {
 	args = append(args, cluster)
 	command := exec.Command("sudo", args...)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	session, err := gexec.Start(command, nil, nil)
+	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Expect(err).To(Succeed())
 	return session
 }
