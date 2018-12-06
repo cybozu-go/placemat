@@ -319,3 +319,15 @@ Clear the effect by "delay" and "loss" action.
 ```console
 $ pmctl net action clear $DEVICE
 ```
+
+`completion` subcommand
+-----------------------
+
+Generates bash completion functions.
+
+Usage:
+
+```console
+$ complete -r pmctl
+$ . <(pmctl completion)
+```
