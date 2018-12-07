@@ -2,7 +2,6 @@
 
 SUDO = sudo
 FAKEROOT = fakeroot
-TAGS =
 
 ### for Go
 GOFLAGS = -mod=vendor
@@ -14,7 +13,8 @@ WORKDIR := $(CURDIR)/work
 CONTROL := $(WORKDIR)/DEBIAN/control
 DOCDIR := $(WORKDIR)/usr/share/doc/placemat
 EXAMPLEDIR := $(WORKDIR)/usr/share/doc/placemat/examples
-SBINDIR := $(WORKDIR)/usr/sbin
+BASH_COMPLETION_DIR := $(WORKDIR)/etc/bash_completion.d
+BINDIR := $(WORKDIR)/usr/bin
 VERSION = 1.1.0-master
 DEB = placemat_$(VERSION)_amd64.deb
 DEST = .
@@ -22,10 +22,10 @@ SBIN_PKGS = ./pkg/placemat ./pkg/pmctl
 
 test:
 	test -z "$$(gofmt -s -l . | grep -v '^vendor' | tee /dev/stderr)"
-	golint -set_exit_status $$(go list -tags='$(TAGS)' ./... | grep -v /vendor/)
-	go build -tags='$(TAGS)' ./...
-	go test -tags='$(TAGS)' -race -v ./...
-	go vet -tags='$(TAGS)' ./...
+	golint -set_exit_status $$(go list ./... | grep -v /vendor/)
+	go build ./...
+	go test -race -v ./...
+	go vet ./...
 
 mod:
 	go mod tidy
@@ -39,11 +39,13 @@ $(DEB):
 	rm -rf $(WORKDIR)
 	cp -r debian $(WORKDIR)
 	sed 's/@VERSION@/$(patsubst v%,%,$(VERSION))/' debian/DEBIAN/control > $(CONTROL)
-	mkdir -p $(SBINDIR)
-	GOBIN=$(SBINDIR) go install -tags='$(TAGS)' $(SBIN_PKGS)
+	mkdir -p $(BINDIR)
+	GOBIN=$(BINDIR) go install $(SBIN_PKGS)
 	mkdir -p $(DOCDIR)
 	cp README.md LICENSE docs/pmctl.md $(DOCDIR)
 	cp -r examples $(DOCDIR)
+	mkdir -p $(BASH_COMPLETION_DIR)
+	$(BINDIR)/pmctl completion > $(BASH_COMPLETION_DIR)/placemat
 	chmod -R g-w $(WORKDIR)
 	$(FAKEROOT) dpkg-deb --build $(WORKDIR) $(DEST)
 	rm -rf $(WORKDIR)

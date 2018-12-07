@@ -8,7 +8,7 @@ jobs:
       - checkout
       - run: make SUDO="" setup
       - run: make test
-      - run: make deb VERSION=${CIRCLE_TAG:-v0.1}
+      - run: make deb VERSION=${CIRCLE_TAG:1}
       - persist_to_workspace:
           root: .
           paths:
