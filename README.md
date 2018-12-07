@@ -120,11 +120,20 @@ $ sudo dpkg -i rkt_1.30.0-1_amd64.deb
 
 ### Install placemat
 
+You can choose `go get` or debian package for installation.
+
 Install `placemat` and `pmctl`:
 
 ```console
 $ go get -u github.com/cybozu-go/placemat/pkg/placemat
 $ go get -u github.com/cybozu-go/placemat/pkg/pmctl
+```
+
+or
+
+```console
+$ wget https://github.com/cybozu-go/placemat/releases/download/v${VERSION}/placemat_${VERSION}_amd64.deb
+$ sudo dpkg -i placemat_${VERSION}_amd64.deb
 ```
 
 ### Run examples
