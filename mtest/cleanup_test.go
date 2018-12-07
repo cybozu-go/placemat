@@ -10,7 +10,7 @@ var _ = Describe("-force option test", func() {
 	It("should remove remaining resources and launch placemat", func() {
 		var session *gexec.Session
 		By("launch placemat", func() {
-			session = runPlacemt(clusterYaml, "-force")
+			session = runPlacemat(clusterYAML, "-force")
 			err := prepareSSHClients(node1, node2)
 			Expect(err).To(Succeed())
 		})
@@ -21,12 +21,12 @@ var _ = Describe("-force option test", func() {
 		})
 
 		By("run placemat without -force option", func() {
-			session = runPlacemt(clusterYaml)
+			session = runPlacemat(clusterYAML)
 			Eventually(session.Exited).Should(BeClosed())
 		})
 
 		By("run placemat with -force option", func() {
-			session = runPlacemt(clusterYaml, "-force")
+			session = runPlacemat(clusterYAML, "-force")
 			err := prepareSSHClients(node1, node2)
 			Expect(err).To(Succeed())
 		})

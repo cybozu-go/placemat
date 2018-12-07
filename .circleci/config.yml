@@ -3,14 +3,16 @@ jobs:
   build:
     docker:
       - image: quay.io/cybozu/golang:1.11-bionic
+    working_directory: /work
     steps:
       - checkout
-      - run: apt-get update && apt-get install -y qemu-utils
-      - run: go get -v -d ./...
-      - run: test -z "$(gofmt -s -d . | tee /dev/stderr)"
-      - run: golint -set_exit_status ./...
-      - run: go vet ./...
-      - run: go test -race -v ./...
+      - run: make SUDO="" setup
+      - run: make test
+      - run: make deb VERSION=${CIRCLE_TAG:-v0.1}
+      - persist_to_workspace:
+          root: .
+          paths:
+            - "*.deb"
   mtest:
     docker:
       - image: google/cloud-sdk
@@ -22,10 +24,25 @@ jobs:
             echo $GCLOUD_SERVICE_ACCOUNT > account.json
             gcloud auth activate-service-account --key-file=account.json
       - run: ./bin/run-mtest.sh
-
+  publish-github-release:
+    docker:
+      - image: quay.io/cybozu/golang:1.11-bionic
+    steps:
+      - attach_workspace:
+          at: ./artifacts
+      - run: ghr -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} ${CIRCLE_TAG} ./artifacts/
 workflows:
   version: 2
   main:
     jobs:
       - build
       - mtest
+      - publish-github-release:
+          requires:
+            - build
+            - mtest
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/

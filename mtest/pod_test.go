@@ -16,7 +16,7 @@ var _ = Describe("pod launch test", func() {
 	It("should launch pods", func() {
 		var session *gexec.Session
 		By("launch placemat", func() {
-			session = runPlacemt(clusterYaml, "-force")
+			session = runPlacemat(clusterYAML, "-force")
 			err := prepareSSHClients(node1, node2)
 			Expect(err).To(Succeed())
 		})

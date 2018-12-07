@@ -19,18 +19,18 @@ the following:
 To run the example, launch placemat by following:
 
 ```console
-$ sudo placemat cluster.yaml
+$ sudo placemat cluster.yml
 ```
 
-The cluster configuration is described in [`cluster.yaml`](cluster.yaml).
+The cluster configuration is described in [`cluster.example.yml`](cluster.example.yml).
 The cluster contains a Network resource named `net0`, a Node resource named
 `boot`, and a NodeSet resource named `worker`.
 
 Network resource `net0` expose an interface as bridge to host, with IP address
 `172.16.0.1`.  The `boot` node boots Ubuntu from [Ubuntu Cloud Image][] and it
 initialized by cloud-init.  Its settings are described in
-[`user-data.yaml`](user-data.yaml) and
-[`network-config.yaml`](network-config.yaml).
+[`user-data.example.yml`](user-data.example.yml) and
+[`network-config.example.yml`](network-config.example.yml).
 
 You can log-in to `boot` node by `ubuntu`/`ubuntu`.  For `worker-N` nodes
 provisioned by the boot server, they will boot [iPXE][] provided from boot

@@ -17,8 +17,9 @@ UBUNTU_IMAGE := ubuntu-18.04-server-cloudimg-amd64.img
 PLACEMAT = $(OUTPUT)/placemat
 PMCTL = $(OUTPUT)/pmctl
 CLUSTER_YAML = $(OUTPUT)/cluster.yml
+EXAMPLE_CLUSTER_YAML = $(OUTPUT)/cluster.example.yml
 
-export SSH_PRIVKEY PLACEMAT PMCTL CLUSTER_YAML
+export SSH_PRIVKEY PLACEMAT PMCTL CLUSTER_YAML EXAMPLE_CLUSTER_YAML
 
 GENERATED_FILES = $(OUTPUT)/placemat \
 	$(OUTPUT)/pmctl \
@@ -27,6 +28,9 @@ GENERATED_FILES = $(OUTPUT)/placemat \
 	$(OUTPUT)/user-data_node2.yml \
 	$(OUTPUT)/network1.yml \
 	$(OUTPUT)/network2.yml \
+	$(OUTPUT)/cluster.example.yml \
+	$(OUTPUT)/network-config.example.yml \
+	$(OUTPUT)/user-data.example.yml \
 	$(UBUNTU_IMAGE)
 
 all: test
@@ -57,6 +61,18 @@ $(OUTPUT)/network2.yml: network.yml
 	mkdir -p $(OUTPUT)
 	sed -e 's/@BRIDGE_ADDRESS@/$(BRIDGE_ADDRESS)/' \
 		-e 's/@HOST@/$(NODE2)/' $< > $@
+
+$(OUTPUT)/cluster.example.yml: ../examples/cluster.example.yml
+	mkdir -p $(OUTPUT)
+	cp $< $@
+
+$(OUTPUT)/network-config.example.yml: ../examples/network-config.example.yml
+	mkdir -p $(OUTPUT)
+	cp $< $@
+
+$(OUTPUT)/user-data.example.yml: ../examples/user-data.example.yml
+	mkdir -p $(OUTPUT)
+	cp $< $@
 
 $(OUTPUT)/placemat:
 	mkdir -p $(OUTPUT)
