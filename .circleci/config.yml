@@ -35,8 +35,14 @@ workflows:
   version: 2
   main:
     jobs:
-      - build
-      - mtest
+      - build:
+          filters:
+            tags:
+              only: /^v.*/
+      - mtest:
+          filters:
+            tags:
+              only: /^v.*/
       - publish-github-release:
           requires:
             - build
