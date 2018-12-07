@@ -26,7 +26,7 @@ var (
 	httpClient = &well.HTTPClient{Client: &http.Client{}}
 )
 
-func runPlacemt(cluster string, args ...string) *gexec.Session {
+func runPlacemat(cluster string, args ...string) *gexec.Session {
 	cleanupPlacemat()
 
 	args = append([]string{placemat}, args...)
