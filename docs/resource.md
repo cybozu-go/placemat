@@ -105,7 +105,7 @@ volumes:
     copy-on-write: true
   - kind: localds
     name: seed
-    user-data: user-data.yml
+    user-data: user-data.example.yml
     network-config: network.yml
   - kind: raw
     name: data

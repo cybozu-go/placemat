@@ -18,7 +18,7 @@ volumes:
     image: ubuntu-image
   - kind: localds
     name: seed
-    user-data: user-data.yaml
-    network-config: network-config.yaml
+    user-data: user-data.example.yml
+    network-config: network-config.example.yml
 cpu: 1
 memory: 2G
