@@ -24,3 +24,7 @@
 
 # ctags
 tags
+
+# Debian package
+/work
+/placemat_*_amd64.deb
