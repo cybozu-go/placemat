@@ -64,7 +64,7 @@ $(OUTPUT)/network2.yml: network.yml
 
 $(OUTPUT)/cluster.example.yml: ../examples/cluster.example.yml
 	mkdir -p $(OUTPUT)
-	cp $< $@
+	sed -e 's/^url: .*/file: ..\/$(UBUNTU_IMAGE)/' $< > $@
 
 $(OUTPUT)/network-config.example.yml: ../examples/network-config.example.yml
 	mkdir -p $(OUTPUT)
