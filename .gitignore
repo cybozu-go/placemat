@@ -28,3 +28,6 @@ tags
 # Debian package
 /work
 /placemat_*_amd64.deb
+
+# ignore go.sum
+/go.sum
