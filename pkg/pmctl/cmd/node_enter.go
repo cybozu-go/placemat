@@ -62,7 +62,7 @@ var nodeEnterCmd = &cobra.Command{
 			}
 			defer os.Remove(pty)
 			ptyCh <- pty
-			return exec.CommandContext(ctx, "socat", "UNIX-CONNECT:"+sock, "PTY,link="+pty).Run()
+			return well.CommandContext(ctx, "socat", "UNIX-CONNECT:"+sock, "PTY,link="+pty).Run()
 		})
 
 		well.Go(func(ctx context.Context) error {
