@@ -249,9 +249,6 @@ func (n *Network) Destroy() error {
 	for _, name := range n.tapNames {
 		cmds = append(cmds, []string{"ip", "tuntap", "delete", name, "mode", "tap"})
 	}
-	for _, name := range n.vethNames {
-		cmds = append(cmds, []string{"ip", "link", "delete", name})
-	}
 	cmds = append(cmds, []string{"ip", "link", "delete", n.Name, "type", "bridge"})
 
 	return execCommandsForce(cmds)
