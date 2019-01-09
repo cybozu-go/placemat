@@ -237,6 +237,7 @@ func CleanupNetworks(r *Runtime, c *Cluster) {
 }
 
 // Destroy deletes all created tap devices, then the bridge.
+// Do not explicitly delete veth devices, because it will be removed along with the network namespace.
 func (n *Network) Destroy() error {
 	if n.v4forwarded {
 		setForwarding(v4ForwardKey, false)
