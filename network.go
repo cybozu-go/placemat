@@ -236,7 +236,7 @@ func CleanupNetworks(r *Runtime, c *Cluster) {
 	execCommandsForce(cmds)
 }
 
-// Destroy deletes all created tap and veth devices, then the bridge.
+// Destroy deletes all created tap devices, then the bridge.
 func (n *Network) Destroy() error {
 	if n.v4forwarded {
 		setForwarding(v4ForwardKey, false)
