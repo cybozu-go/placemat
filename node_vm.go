@@ -1,6 +1,7 @@
 package placemat
 
 import (
+	"fmt"
 	"io"
 	"net"
 
@@ -38,4 +39,26 @@ func (n *NodeVM) PowerOff() {
 
 	io.WriteString(n.monitor, "stop\n")
 	n.running = false
+}
+
+func (n *NodeVM) SaveVM(node *Node, tag string) {
+	io.WriteString(n.monitor, "stop\n")
+	for i, v := range node.Volumes {
+		if v.Kind == "localds" || v.Kind == "vvfat" {
+			io.WriteString(n.monitor, fmt.Sprintf("drive_del virtio%d\n", i))
+		}
+	}
+	io.WriteString(n.monitor, fmt.Sprintf("savevm %s\n", tag))
+	io.WriteString(n.monitor, "cont\n")
+}
+
+func (n *NodeVM) LoadVM(node *Node, tag string) {
+	io.WriteString(n.monitor, "stop\n")
+	for i, v := range node.Volumes {
+		if v.Kind == "localds" || v.Kind == "vvfat" {
+			io.WriteString(n.monitor, fmt.Sprintf("drive_del virtio%d\n", i))
+		}
+	}
+	io.WriteString(n.monitor, fmt.Sprintf("loadvm %s\n", tag))
+	io.WriteString(n.monitor, "cont\n")
 }

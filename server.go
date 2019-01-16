@@ -34,6 +34,9 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else if strings.HasPrefix(r.URL.Path, "/networks") {
 		s.handleNetworks(w, r)
 		return
+	} else if strings.HasPrefix(r.URL.Path, "/snapshots") {
+		s.handleSnapshots(w, r)
+		return
 	}
 	web.RenderError(r.Context(), w, web.APIErrBadRequest)
 }
@@ -205,6 +208,29 @@ func (s Server) handleNetworks(w http.ResponseWriter, r *http.Request) {
 			web.RenderError(r.Context(), w, web.InternalServerError(err))
 		} else {
 			web.RenderJSON(w, "ok", http.StatusOK)
+		}
+	} else {
+		web.RenderError(r.Context(), w, web.APIErrBadRequest)
+	}
+}
+
+func (s Server) handleSnapshots(w http.ResponseWriter, r *http.Request) {
+	params := splitParams(r.URL.Path)
+	if r.Method == "GET" && len(params) == 1 {
+	} else if r.Method == "POST" && len(params) == 3 {
+		switch params[1] {
+		case "save":
+			for _, node := range s.cluster.Nodes {
+				vm := s.vms[node.SMBIOS.Serial]
+				go vm.SaveVM(node, params[2])
+			}
+		case "load":
+			for _, node := range s.cluster.Nodes {
+				vm := s.vms[node.SMBIOS.Serial]
+				go vm.LoadVM(node, params[2])
+			}
+		default:
+			web.RenderError(r.Context(), w, web.APIErrBadRequest)
 		}
 	} else {
 		web.RenderError(r.Context(), w, web.APIErrBadRequest)

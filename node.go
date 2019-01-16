@@ -227,7 +227,8 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 		devParams := []string{
 			"virtio-net-pci",
 			fmt.Sprintf("netdev=%s", br.Name),
-			fmt.Sprintf("mac=%s", generateRandomMACForKVM()),
+			//fmt.Sprintf("mac=%s", generateRandomMACForKVM()),
+			fmt.Sprintf("mac=%s", generateMACForKVM(n.Name)),
 		}
 		if n.UEFI {
 			// disable iPXE boot
@@ -339,6 +340,12 @@ func generateRandomMACForKVM() string {
 	vendorPrefix := "52:54:00" // QEMU's vendor prefix
 	bytes := make([]byte, 3)
 	rand.Read(bytes)
+	return fmt.Sprintf("%s:%02x:%02x:%02x", vendorPrefix, bytes[0], bytes[1], bytes[2])
+}
+
+func generateMACForKVM(name string) string {
+	vendorPrefix := "52:54:00" // QEMU's vendor prefix
+	bytes := sha1.Sum([]byte(name))
 	return fmt.Sprintf("%s:%02x:%02x:%02x", vendorPrefix, bytes[0], bytes[1], bytes[2])
 }
 
