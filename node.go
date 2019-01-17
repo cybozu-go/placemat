@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"path"
@@ -299,14 +297,6 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 		}
 	}
 
-	connMonitor, err := net.Dial("unix", monitor)
-	if err != nil {
-		return nil, err
-	}
-	go func() {
-		io.Copy(ioutil.Discard, connMonitor)
-	}()
-
 	connGuest, err := net.Dial("unix", guest)
 	if err != nil {
 		return nil, err
@@ -321,14 +311,13 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 	cleanup := func() {
 		connGuest.Close()
 		os.Remove(guest)
-		connMonitor.Close()
 		os.Remove(monitor)
 		os.Remove(r.socketPath(n.Name))
 	}
 
 	vm := &NodeVM{
 		cmd:     qemuCommand,
-		monitor: connMonitor,
+		monitor: monitor,
 		running: true,
 		cleanup: cleanup,
 	}

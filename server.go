@@ -1,10 +1,12 @@
 package placemat
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/cybozu-go/placemat/web"
+	"github.com/cybozu-go/well"
 )
 
 // Server is the API Server of placemat.
@@ -220,15 +222,25 @@ func (s Server) handleSnapshots(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == "POST" && len(params) == 3 {
 		switch params[1] {
 		case "save":
+			env := well.NewEnvironment(r.Context())
 			for _, node := range s.cluster.Nodes {
 				vm := s.vms[node.SMBIOS.Serial]
-				go vm.SaveVM(node, params[2])
+				env.Go(func(ctx context.Context) error {
+					return vm.SaveVM(ctx, node, params[2])
+				})
 			}
+			env.Stop()
+			env.Wait()
 		case "load":
+			env := well.NewEnvironment(r.Context())
 			for _, node := range s.cluster.Nodes {
 				vm := s.vms[node.SMBIOS.Serial]
-				go vm.LoadVM(node, params[2])
+				env.Go(func(ctx context.Context) error {
+					return vm.LoadVM(ctx, node, params[2])
+				})
 			}
+			env.Stop()
+			env.Wait()
 		default:
 			web.RenderError(r.Context(), w, web.APIErrBadRequest)
 		}
