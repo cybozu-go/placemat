@@ -320,6 +320,33 @@ Clear the effect by "delay" and "loss" action.
 $ pmctl net action clear $DEVICE
 ```
 
+`snapshot` subcommand
+----------------
+
+### `pmctl snapshot save TAG`
+
+Save a snapshot of the all VMs as the 'TAG'.
+
+If specify the same tag as before, the snapshot will be overwritten.
+
+NOTE: To save a snapshot, localds and vvfat devices have to be detached.
+
+```console
+$ pmctl snapshot save test
+```
+
+### `pmctl snapshot load TAG`
+
+Restore all VMs from snapshot specified by the 'TAG'.
+
+If there is no snapshot of the tag, restoration is not done, but not reported.
+
+NOTE: To load a snapshot, localds and vvfat devices have to be detached.
+
+```console
+$ pmctl snapshot load test
+```
+
 `completion` subcommand
 -----------------------
 
