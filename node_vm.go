@@ -41,6 +41,7 @@ func (n *NodeVM) PowerOff() {
 	n.running = false
 }
 
+// SaveVM saves a snapshot of the VM.
 func (n *NodeVM) SaveVM(node *Node, tag string) {
 	io.WriteString(n.monitor, "stop\n")
 	for i, v := range node.Volumes {
@@ -52,6 +53,7 @@ func (n *NodeVM) SaveVM(node *Node, tag string) {
 	io.WriteString(n.monitor, "cont\n")
 }
 
+// LoadVM load a snapshot of the VM.
 func (n *NodeVM) LoadVM(node *Node, tag string) {
 	io.WriteString(n.monitor, "stop\n")
 	for i, v := range node.Volumes {
