@@ -123,7 +123,7 @@ func removeBlockDevices(ctx context.Context, monitor string, volumes []NodeVolum
 }
 
 // SaveVM saves a snapshot of the VM. To save a snapshot, localds and vvfat devices have to be detached.
-// NOTE: virtio block device does not support hot add. After save snapshot, you will no longer access mounted block device other than rootfs
+// NOTE: virtio block device does not support hot add. After saving snapshot, you will no longer access mounted block device other than rootfs.
 //       https://github.com/ceph/qemu-kvm/blob/de4eb6c5347e40b02dbe72cda18b58654ad11242/hw/pci-hotplug.c#L143
 func (n *NodeVM) SaveVM(ctx context.Context, node *Node, tag string) error {
 	if !n.running {
@@ -166,8 +166,8 @@ func (n *NodeVM) SaveVM(ctx context.Context, node *Node, tag string) error {
 	return nil
 }
 
-// LoadVM loads a snapshot of the VM. To save a snapshot, localds and vvfat devices have to be detached.
-// NOTE: virtio block device does not support hot add. After save snapshot, you will no longer access mounted block device other than rootfs
+// LoadVM loads a snapshot of the VM. To load a snapshot, localds and vvfat devices have to be detached.
+// NOTE: virtio block device does not support hot add. After loading snapshot, you will no longer access mounted block device other than rootfs.
 //       https://github.com/ceph/qemu-kvm/blob/de4eb6c5347e40b02dbe72cda18b58654ad11242/hw/pci-hotplug.c#L143
 func (n *NodeVM) LoadVM(ctx context.Context, node *Node, tag string) error {
 	if !n.running {
