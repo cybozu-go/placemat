@@ -1,10 +1,12 @@
 package placemat
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/cybozu-go/placemat/web"
+	"github.com/cybozu-go/well"
 )
 
 // Server is the API Server of placemat.
@@ -33,6 +35,9 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if strings.HasPrefix(r.URL.Path, "/networks") {
 		s.handleNetworks(w, r)
+		return
+	} else if strings.HasPrefix(r.URL.Path, "/snapshots") {
+		s.handleSnapshots(w, r)
 		return
 	}
 	web.RenderError(r.Context(), w, web.APIErrBadRequest)
@@ -205,6 +210,39 @@ func (s Server) handleNetworks(w http.ResponseWriter, r *http.Request) {
 			web.RenderError(r.Context(), w, web.InternalServerError(err))
 		} else {
 			web.RenderJSON(w, "ok", http.StatusOK)
+		}
+	} else {
+		web.RenderError(r.Context(), w, web.APIErrBadRequest)
+	}
+}
+
+func (s Server) handleSnapshots(w http.ResponseWriter, r *http.Request) {
+	params := splitParams(r.URL.Path)
+	if r.Method == "GET" && len(params) == 1 {
+	} else if r.Method == "POST" && len(params) == 3 {
+		switch params[1] {
+		case "save":
+			env := well.NewEnvironment(r.Context())
+			for _, node := range s.cluster.Nodes {
+				vm := s.vms[node.SMBIOS.Serial]
+				env.Go(func(ctx context.Context) error {
+					return vm.SaveVM(ctx, node, params[2])
+				})
+			}
+			env.Stop()
+			env.Wait()
+		case "load":
+			env := well.NewEnvironment(r.Context())
+			for _, node := range s.cluster.Nodes {
+				vm := s.vms[node.SMBIOS.Serial]
+				env.Go(func(ctx context.Context) error {
+					return vm.LoadVM(ctx, node, params[2])
+				})
+			}
+			env.Stop()
+			env.Wait()
+		default:
+			web.RenderError(r.Context(), w, web.APIErrBadRequest)
 		}
 	} else {
 		web.RenderError(r.Context(), w, web.APIErrBadRequest)

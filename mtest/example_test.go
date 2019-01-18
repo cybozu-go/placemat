@@ -31,6 +31,14 @@ var _ = Describe("example launch test", func() {
 				return nil
 			}).Should(Succeed())
 		})
+		By("saving a snapshot", func() {
+			_, err := pmctl("snapshot", "save", "test")
+			Expect(err).NotTo(HaveOccurred())
+		})
+		By("loading a snapshot", func() {
+			_, err := pmctl("snapshot", "load", "test")
+			Expect(err).NotTo(HaveOccurred())
+		})
 		By("terminate placemat", func() {
 			terminatePlacemat(session)
 			Eventually(session.Exited).Should(BeClosed())
