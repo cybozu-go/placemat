@@ -347,6 +347,26 @@ NOTE: To load a snapshot, localds and vvfat devices have to be detached.
 $ pmctl snapshot load test
 ```
 
+### `pmctl snapshot list`
+
+List all available snapshots of the all VMs.
+
+```console
+$ pmctl snapshot list | jq .
+{
+  "boot-0": "List of snapshots present on all disks:\nID        TAG                 VM SIZE                DATE       VM CLOCK\n--        1                      2.0G 2019-01-22 06:30:54   00:02:38.524",
+  "boot-1": "List of snapshots present on all disks:\nID        TAG                 VM SIZE                DATE       VM CLOCK\n--        1                      2.0G 2019-01-22 06:30:54   00:02:38.523",
+  "boot-2": "List of snapshots present on all disks:\nID        TAG                 VM SIZE                DATE       VM CLOCK\n--        1                      2.0G 2019-01-22 06:30:54   00:02:38.645",
+  "boot-3": "List of snapshots present on all disks:\nID        TAG                 VM SIZE                DATE       VM CLOCK\n--        1                      2.0G 2019-01-22 06:30:54   00:02:38.512",
+  "rack0-cs1": "List of snapshots present on all disks:\nID        TAG                 VM SIZE                DATE       VM CLOCK\n--        1                       15M 2019-01-22 06:30:54   00:02:38.516",
+  "rack0-cs2": "List of snapshots present on all disks:\nID        TAG                 VM SIZE                DATE       VM CLOCK\n--        1                       15M 2019-01-22 06:30:54   00:02:38.446",
+  "rack1-cs1": "List of snapshots present on all disks:\nID        TAG                 VM SIZE                DATE       VM CLOCK\n--        1                       15M 2019-01-22 06:30:54   00:02:38.563",
+  "rack1-cs2": "List of snapshots present on all disks:\nID        TAG                 VM SIZE                DATE       VM CLOCK\n--        1                       15M 2019-01-22 06:30:54   00:02:38.445",
+  "rack2-cs1": "List of snapshots present on all disks:\nID        TAG                 VM SIZE                DATE       VM CLOCK\n--        1                       15M 2019-01-22 06:30:54   00:02:38.372",
+  "rack3-cs1": "List of snapshots present on all disks:\nID        TAG                 VM SIZE                DATE       VM CLOCK\n--        1                       15M 2019-01-22 06:30:54   00:02:38.399"
+}
+```
+
 `completion` subcommand
 -----------------------
 

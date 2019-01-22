@@ -219,6 +219,17 @@ func (s Server) handleNetworks(w http.ResponseWriter, r *http.Request) {
 func (s Server) handleSnapshots(w http.ResponseWriter, r *http.Request) {
 	params := splitParams(r.URL.Path)
 	if r.Method == "GET" && len(params) == 1 {
+		list := make(map[string]interface{})
+		for _, node := range s.cluster.Nodes {
+			vm := s.vms[node.SMBIOS.Serial]
+			out, err := vm.ListSnapshots(r.Context(), node)
+			if err != nil {
+				// Skip to show list of snapshots
+				continue
+			}
+			list[node.Name] = out
+		}
+		web.RenderJSON(w, list, http.StatusOK)
 	} else if r.Method == "POST" && len(params) == 3 {
 		switch params[1] {
 		case "save":
@@ -231,7 +242,10 @@ func (s Server) handleSnapshots(w http.ResponseWriter, r *http.Request) {
 				})
 			}
 			env.Stop()
-			env.Wait()
+			err := env.Wait()
+			if err != nil {
+				web.RenderError(r.Context(), w, web.InternalServerError(err))
+			}
 		case "load":
 			env := well.NewEnvironment(r.Context())
 			for _, node := range s.cluster.Nodes {
@@ -242,7 +256,10 @@ func (s Server) handleSnapshots(w http.ResponseWriter, r *http.Request) {
 				})
 			}
 			env.Stop()
-			env.Wait()
+			err := env.Wait()
+			if err != nil {
+				web.RenderError(r.Context(), w, web.InternalServerError(err))
+			}
 		default:
 			web.RenderError(r.Context(), w, web.APIErrBadRequest)
 		}
