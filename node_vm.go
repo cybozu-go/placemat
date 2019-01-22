@@ -3,6 +3,7 @@ package placemat
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,6 +17,12 @@ import (
 const (
 	stopCommand   = "stop\n"
 	resumeCommand = "cont\n"
+	listCommand   = "info snapshots\n"
+)
+
+var (
+	qemuPrompt = []byte("\r\n(qemu) ")
+	ansiCSInK  = []byte("\x1b[K")
 )
 
 // NodeVM holds resources to manage and monitor a QEMU process.
@@ -79,11 +86,6 @@ func (n *NodeVM) PowerOff() error {
 	return nil
 }
 
-var (
-	qemuPrompt = []byte("\r\n(qemu) ")
-	ansiCSI_K  = []byte("\x1b[K")
-)
-
 func execQEMUCommand(ctx context.Context, monitor, cmd string) (string, error) {
 	var d net.Dialer
 	conn, err := d.DialContext(ctx, "unix", monitor)
@@ -103,12 +105,11 @@ func execQEMUCommand(ctx context.Context, monitor, cmd string) (string, error) {
 			}
 			buf.Write(b[:n])
 			have := buf.Bytes()
-			//fmt.Printf("---- %s\n", string(have))
 			if bytes.HasSuffix(have, qemuPrompt) {
 				buf.Reset()
 				ret := bytes.TrimSuffix(have, qemuPrompt)
-				if i := bytes.LastIndex(ret, ansiCSI_K); i != -1 {
-					ret = ret[i+len(ansiCSI_K):]
+				if i := bytes.LastIndex(ret, ansiCSInK); i != -1 {
+					ret = ret[i+len(ansiCSInK):]
 				}
 				r := strings.TrimSpace(strings.Replace(string(ret), "\r\n", "\n", -1))
 				if strings.Contains(r, "monitor - type 'help' for more information") {
@@ -139,7 +140,7 @@ func removeBlockDevices(ctx context.Context, monitor string, volumes []NodeVolum
 			}
 			log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 				"monitor": monitor,
-				"command": "drive_del",
+				"command": fmt.Sprintf("drive_del virtio%d\n", i),
 			})
 		}
 	}
@@ -171,7 +172,7 @@ func (n *NodeVM) SaveVM(ctx context.Context, node *Node, tag string) error {
 	}
 
 	// Save snapshot
-	out, err = execQEMUCommand(ctx, n.monitor, fmt.Sprintf("savevm %s\n", tag))
+	saveVMOut, err := execQEMUCommand(ctx, n.monitor, fmt.Sprintf("savevm %s\n", tag))
 	if err != nil {
 		return err
 	}
@@ -187,8 +188,12 @@ func (n *NodeVM) SaveVM(ctx context.Context, node *Node, tag string) error {
 	}
 	log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 		"monitor": n.monitor,
-		"command": "cont",
+		"command": resumeCommand,
 	})
+
+	if len(saveVMOut) != 0 {
+		return errors.New(saveVMOut)
+	}
 
 	return nil
 }
@@ -211,22 +216,14 @@ func (n *NodeVM) LoadVM(ctx context.Context, node *Node, tag string) error {
 		"command": stopCommand,
 	})
 
-	// Remove block devices
-	for i, v := range node.Volumes {
-		if v.Kind == "localds" || v.Kind == "vvfat" {
-			out, err := execQEMUCommand(ctx, n.monitor, fmt.Sprintf("drive_del virtio%d\n", i))
-			if err != nil {
-				return err
-			}
-			log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
-				"monitor": n.monitor,
-				"command": "drive_del",
-			})
-		}
+	// Detach localds and vvfat
+	err = removeBlockDevices(ctx, n.monitor, node.Volumes)
+	if err != nil {
+		return err
 	}
 
 	// Load snapshot
-	out, err = execQEMUCommand(ctx, n.monitor, fmt.Sprintf("loadvm %s\n", tag))
+	loadVMOut, err := execQEMUCommand(ctx, n.monitor, fmt.Sprintf("loadvm %s\n", tag))
 	if err != nil {
 		return err
 	}
@@ -242,8 +239,17 @@ func (n *NodeVM) LoadVM(ctx context.Context, node *Node, tag string) error {
 	}
 	log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 		"monitor": n.monitor,
-		"command": "cont",
+		"command": resumeCommand,
 	})
 
+	if len(loadVMOut) != 0 {
+		return errors.New(loadVMOut)
+	}
+
 	return nil
+}
+
+// ListSnapshots returns all available snapshots of VM
+func (n *NodeVM) ListSnapshots(ctx context.Context, node *Node) (string, error) {
+	return execQEMUCommand(ctx, n.monitor, listCommand)
 }

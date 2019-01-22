@@ -3,6 +3,7 @@ package mtest
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/cybozu-go/placemat/web"
 	. "github.com/onsi/ginkgo"
@@ -38,6 +39,17 @@ var _ = Describe("example launch test", func() {
 		By("loading a snapshot", func() {
 			_, err := pmctl("snapshot", "load", "test")
 			Expect(err).NotTo(HaveOccurred())
+		})
+		By("listing snapshots", func() {
+			out, err := pmctl("snapshot", "list")
+			Expect(err).NotTo(HaveOccurred())
+			var result map[string]interface{}
+			err = json.NewDecoder(strings.NewReader(string(out))).Decode(&result)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(result)).Should(Equal(1))
+			for _, node := range result {
+				Expect(node).NotTo(Equal("There is no snapshot available."))
+			}
 		})
 		By("terminate placemat", func() {
 			terminatePlacemat(session)
