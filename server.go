@@ -225,6 +225,7 @@ func (s Server) handleSnapshots(w http.ResponseWriter, r *http.Request) {
 			env := well.NewEnvironment(r.Context())
 			for _, node := range s.cluster.Nodes {
 				vm := s.vms[node.SMBIOS.Serial]
+				node := node
 				env.Go(func(ctx context.Context) error {
 					return vm.SaveVM(ctx, node, params[2])
 				})
@@ -235,6 +236,7 @@ func (s Server) handleSnapshots(w http.ResponseWriter, r *http.Request) {
 			env := well.NewEnvironment(r.Context())
 			for _, node := range s.cluster.Nodes {
 				vm := s.vms[node.SMBIOS.Serial]
+				node := node
 				env.Go(func(ctx context.Context) error {
 					return vm.LoadVM(ctx, node, params[2])
 				})

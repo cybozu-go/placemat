@@ -1,11 +1,13 @@
 package placemat
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
+	"strings"
 
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/well"
@@ -77,6 +79,11 @@ func (n *NodeVM) PowerOff() error {
 	return nil
 }
 
+var (
+	qemuPrompt = []byte("\r\n(qemu) ")
+	ansiCSI_K  = []byte("\x1b[K")
+)
+
 func execQEMUCommand(ctx context.Context, monitor, cmd string) (string, error) {
 	var d net.Dialer
 	conn, err := d.DialContext(ctx, "unix", monitor)
@@ -87,14 +94,30 @@ func execQEMUCommand(ctx context.Context, monitor, cmd string) (string, error) {
 
 	resp := make(chan string)
 	go func() error {
-		buf := make([]byte, 4096)
+		var buf bytes.Buffer
+		b := make([]byte, 100)
 		for {
-			n, err := conn.Read(buf[:])
+			n, err := conn.Read(b)
 			if err != nil {
 				return err
 			}
-			resp <- string(buf[0:n])
-			break
+			buf.Write(b[:n])
+			have := buf.Bytes()
+			//fmt.Printf("---- %s\n", string(have))
+			if bytes.HasSuffix(have, qemuPrompt) {
+				buf.Reset()
+				ret := bytes.TrimSuffix(have, qemuPrompt)
+				if i := bytes.LastIndex(ret, ansiCSI_K); i != -1 {
+					ret = ret[i+len(ansiCSI_K):]
+				}
+				r := strings.TrimSpace(strings.Replace(string(ret), "\r\n", "\n", -1))
+				if strings.Contains(r, "monitor - type 'help' for more information") {
+					buf.Reset()
+					continue
+				}
+				resp <- r
+				break
+			}
 		}
 		return nil
 	}()
@@ -104,7 +127,7 @@ func execQEMUCommand(ctx context.Context, monitor, cmd string) (string, error) {
 		return "", err
 	}
 	result := <-resp
-	return string(result), nil
+	return result, nil
 }
 
 func removeBlockDevices(ctx context.Context, monitor string, volumes []NodeVolumeSpec) error {
@@ -116,6 +139,7 @@ func removeBlockDevices(ctx context.Context, monitor string, volumes []NodeVolum
 			}
 			log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 				"monitor": monitor,
+				"command": "drive_del",
 			})
 		}
 	}
@@ -137,6 +161,7 @@ func (n *NodeVM) SaveVM(ctx context.Context, node *Node, tag string) error {
 	}
 	log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 		"monitor": n.monitor,
+		"command": stopCommand,
 	})
 
 	// Detach localds and vvfat
@@ -152,6 +177,7 @@ func (n *NodeVM) SaveVM(ctx context.Context, node *Node, tag string) error {
 	}
 	log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 		"monitor": n.monitor,
+		"command": "savevm",
 	})
 
 	// Resume VM
@@ -161,6 +187,7 @@ func (n *NodeVM) SaveVM(ctx context.Context, node *Node, tag string) error {
 	}
 	log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 		"monitor": n.monitor,
+		"command": "cont",
 	})
 
 	return nil
@@ -181,6 +208,7 @@ func (n *NodeVM) LoadVM(ctx context.Context, node *Node, tag string) error {
 	}
 	log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 		"monitor": n.monitor,
+		"command": stopCommand,
 	})
 
 	// Remove block devices
@@ -192,6 +220,7 @@ func (n *NodeVM) LoadVM(ctx context.Context, node *Node, tag string) error {
 			}
 			log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 				"monitor": n.monitor,
+				"command": "drive_del",
 			})
 		}
 	}
@@ -203,6 +232,7 @@ func (n *NodeVM) LoadVM(ctx context.Context, node *Node, tag string) error {
 	}
 	log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 		"monitor": n.monitor,
+		"command": "loadvm",
 	})
 
 	// Resume VM
@@ -212,6 +242,7 @@ func (n *NodeVM) LoadVM(ctx context.Context, node *Node, tag string) error {
 	}
 	log.Info(fmt.Sprintf("monitor log: %s", out), map[string]interface{}{
 		"monitor": n.monitor,
+		"command": "cont",
 	})
 
 	return nil
