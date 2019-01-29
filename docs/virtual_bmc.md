@@ -27,7 +27,7 @@ How it works
 ------------
 
 1. Each node chooses an IP address of BMC from the range and notify of it
-   to the Placemat process via a special character device `/dev/...`.
+   to the Placemat process via a special character device `/dev/virtio-ports/placemat`.
 
 2. The Placemat process starts listening on the address.
 
