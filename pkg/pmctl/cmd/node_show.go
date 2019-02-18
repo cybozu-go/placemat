@@ -29,7 +29,10 @@ var nodeShowCmd = &cobra.Command{
 		well.Go(func(ctx context.Context) error {
 			node := args[0]
 			var status web.NodeStatus
-			getJSON(ctx, "/nodes/"+node, nil, &status)
+			err := getJSON(ctx, "/nodes/"+node, nil, &status)
+			if err != nil {
+				return err
+			}
 			return json.NewEncoder(os.Stdout).Encode(status)
 		})
 		well.Stop()
