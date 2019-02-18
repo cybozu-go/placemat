@@ -23,9 +23,11 @@ var nodeListCmd = &cobra.Command{
 	Long:  `show node list`,
 	Run: func(cmd *cobra.Command, args []string) {
 		well.Go(func(ctx context.Context) error {
-
 			var status []web.NodeStatus
-			getJSON(ctx, "/nodes", nil, &status)
+			err := getJSON(ctx, "/nodes", nil, &status)
+			if err != nil {
+				return err
+			}
 			if nodeListParams.JSON {
 				return json.NewEncoder(os.Stdout).Encode(status)
 			}

@@ -29,7 +29,10 @@ var podShowCmd = &cobra.Command{
 		well.Go(func(ctx context.Context) error {
 			pod := args[0]
 			var status web.PodStatus
-			getJSON(ctx, "/pods/"+pod, nil, &status)
+			err := getJSON(ctx, "/pods/"+pod, nil, &status)
+			if err != nil {
+				return err
+			}
 			return json.NewEncoder(os.Stdout).Encode(status)
 		})
 		well.Stop()
