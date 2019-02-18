@@ -5,6 +5,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.2] - 2019-02-18
+
+### Changed
+- [`pmctl`](docs/pmctl.md) Exit abnormally when failed to connect to server (#81).
+
 ## [1.3.1] - 2019-01-22
 
 ### Added
@@ -42,7 +47,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/cybozu-go/placemat/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/cybozu-go/placemat/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/cybozu-go/placemat/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/cybozu-go/placemat/compare/v1.1.0...v1.2.0
