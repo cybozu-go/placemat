@@ -8,10 +8,6 @@ github.com/cybozu-go/well
 github.com/fatih/color
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
-# github.com/ghodss/yaml v1.0.0
-github.com/ghodss/yaml
-# github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-github.com/golang/glog
 # github.com/gorilla/context v1.1.1
 github.com/gorilla/context
 # github.com/gorilla/mux v1.6.2
@@ -37,8 +33,6 @@ github.com/hpcloud/tail/winfile
 github.com/htruong/go-md2
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
-# github.com/kubernetes/apimachinery v0.0.0-20180912233634-99c5fa21f872
-github.com/kubernetes/apimachinery/pkg/util/yaml
 # github.com/magiconair/properties v1.8.0
 github.com/magiconair/properties
 # github.com/mattn/go-colorable v0.0.9
@@ -144,3 +138,9 @@ gopkg.in/fsnotify.v1
 gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.2.1
 gopkg.in/yaml.v2
+# k8s.io/apimachinery v0.0.0-20190301173222-2f7e9cae4418
+k8s.io/apimachinery/pkg/util/yaml
+# k8s.io/klog v0.2.0
+k8s.io/klog
+# sigs.k8s.io/yaml v1.1.0
+sigs.k8s.io/yaml
