@@ -320,6 +320,59 @@ Clear the effect by "delay" and "loss" action.
 $ pmctl net action clear $DEVICE
 ```
 
+`forward` subcommand
+--------------------
+
+`forward` subcommand manages port-forward settings from the host to internal networks.
+
+### `pmctl forward list [--json]`
+
+Show list of forward settings.
+
+* `--json`: Show detailed information of forward settings in JSON format.
+
+```console
+$ pmctl forward list
+30000 external:10.72.32.0:80
+30001 external:10.72.32.1:80
+```
+
+```console
+$ pmctl forward list --json
+[
+  {
+    "local_port": 30000,
+    "pod": "external",
+    "remote_host": "10.72.32.0",
+    "remote_port": 80
+  },
+  {
+    "local_port": 30001,
+    "pod": "external",
+    "remote_host": "10.72.32.1",
+    "remote_port": 80
+  }
+]
+```
+
+### `pmctl forward add <LOCAL PORT> <POD>:<REMOTE HOST>:<REMOTE PORT>`
+
+Add a forward setting.
+
+This listens on `0.0.0.0:<LOCAL PORT>` in TCP, and forwards connections to `<REMOTE HOST>:<REMOTE PORT>` in the network namespace of `<POD>`.
+
+```console
+$ pmctl forward add 30000 external:10.72.32.0:80
+```
+
+### `pmctl forward delete <LOCAL PORT>`
+
+Delete a forward setting listening on `<LOCAL PORT>`.
+
+```console
+$ pmctl forward delete 30000
+```
+
 `snapshot` subcommand
 ----------------
 
