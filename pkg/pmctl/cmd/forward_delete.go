@@ -34,12 +34,18 @@ var forwardDeleteCmd = &cobra.Command{
 
 			service := fmt.Sprintf("pmctl-forward-%d.service", localPort)
 
-			err = exec.CommandContext(ctx, "systemctl", "stop", service).Run()
+			c := exec.CommandContext(ctx, "systemctl", "stop", service)
+			c.Stdout = os.Stdout
+			c.Stderr = os.Stderr
+			err = c.Run()
 			if err != nil {
 				return err
 			}
 
-			err = exec.CommandContext(ctx, "systemctl", "disable", service).Run()
+			c = exec.CommandContext(ctx, "systemctl", "disable", service)
+			c.Stdout = os.Stdout
+			c.Stderr = os.Stderr
+			err = c.Run()
 			if err != nil {
 				return err
 			}
@@ -49,12 +55,18 @@ var forwardDeleteCmd = &cobra.Command{
 				return err
 			}
 
-			err = exec.CommandContext(ctx, "systemctl", "daemon-reload").Run()
+			c = exec.CommandContext(ctx, "systemctl", "daemon-reload")
+			c.Stdout = os.Stdout
+			c.Stderr = os.Stderr
+			err = c.Run()
 			if err != nil {
 				return err
 			}
 
-			return exec.CommandContext(ctx, "systemctl", "reset-failed", service).Run()
+			c = exec.CommandContext(ctx, "systemctl", "reset-failed", service)
+			c.Stdout = os.Stdout
+			c.Stderr = os.Stderr
+			return c.Run()
 		})
 		well.Stop()
 		err := well.Wait()
@@ -62,4 +74,8 @@ var forwardDeleteCmd = &cobra.Command{
 			log.ErrorExit(err)
 		}
 	},
+}
+
+func init() {
+	forwardCmd.AddCommand(forwardDeleteCmd)
 }
