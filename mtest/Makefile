@@ -7,8 +7,11 @@ NODE2 = 10.0.0.12
 POD1 = 10.0.0.21
 GINKGO = $(GOPATH)/bin/ginkgo
 PLACEMAT_DATADIR = /var/scratch/placemat
-
 export BRIDGE_ADDRESS NODE1 NODE2 POD1 GINKGO
+
+### for Go
+GOFLAGS = -mod=vendor
+export GOFLAGS
 
 # non-configuration variables
 SSH_PRIVKEY := ./mtest_key
@@ -76,11 +79,11 @@ $(OUTPUT)/user-data.example.yml: ../examples/user-data.example.yml
 
 $(OUTPUT)/placemat:
 	mkdir -p $(OUTPUT)
-	cd ..; go get ./... && GOBIN=$(abspath $(OUTPUT)) go install ./pkg/$(notdir $@)
+	GOBIN=$(abspath $(OUTPUT)) go install ../pkg/$(notdir $@)
 
 $(OUTPUT)/pmctl:
 	mkdir -p $(OUTPUT)
-	cd ..; go get ./... && GOBIN=$(abspath $(OUTPUT)) go install ./pkg/$(notdir $@)
+	GOBIN=$(abspath $(OUTPUT)) go install ../pkg/$(notdir $@)
 
 test: $(GENERATED_FILES)
 	sudo rm -rf $(PLACEMAT_DATADIR)/volumes/node1
