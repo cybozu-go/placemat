@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.5] - 2019-03-15
+
+### Added
+
+- [`pmctl`](docs/pmctl.md) Add forward subcommand (#85).
+
 ## [1.3.4] - 2019-03-11
 
 ### Changed
@@ -57,7 +63,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.4...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.5...HEAD
+[1.3.5]: https://github.com/cybozu-go/placemat/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/cybozu-go/placemat/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/cybozu-go/placemat/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/cybozu-go/placemat/compare/v1.3.1...v1.3.2
