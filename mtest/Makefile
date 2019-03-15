@@ -5,6 +5,7 @@ BRIDGE_ADDRESS = 10.0.0.1
 NODE1 = 10.0.0.11
 NODE2 = 10.0.0.12
 POD1 = 10.0.0.21
+POD2 = 10.0.0.22
 GINKGO = $(GOPATH)/bin/ginkgo
 PLACEMAT_DATADIR = /var/scratch/placemat
 export BRIDGE_ADDRESS NODE1 NODE2 POD1 GINKGO
@@ -45,6 +46,7 @@ $(OUTPUT)/cluster.yml: cluster.yml
 	mkdir -p $(OUTPUT)
 	sed -e 's/@BRIDGE_ADDRESS@/$(BRIDGE_ADDRESS)/' \
 		-e 's/@POD1@/$(POD1)/' \
+		-e 's/@POD2@/$(POD2)/' \
 		-e 's/@UBUNTU_IMAGE@/$(UBUNTU_IMAGE)/' $< > $@
 
 $(OUTPUT)/user-data_node1.yml: user-data.yml
