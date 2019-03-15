@@ -3,6 +3,7 @@ package mtest
 import (
 	"encoding/json"
 	"errors"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -52,6 +53,21 @@ var _ = Describe("pod launch test", func() {
 			}
 			Expect(rktStatus["state"]).Should(Equal("running"))
 			Expect(rktStatus["pid"]).Should(Equal(strconv.Itoa(status.PID)))
+		})
+
+		By("forwarding to pod2 through pod1", func() {
+			err := exec.Command("sudo", pmctlPath, "forward", "add", "30000", "pod1:"+pod2+":80").Run()
+			Expect(err).NotTo(HaveOccurred())
+
+			stdout, err := pmctl("forward", "list")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(stdout)).NotTo(BeZero())
+
+			err = exec.Command("curl", "localhost:30000").Run()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = exec.Command("sudo", pmctlPath, "forward", "delete", "30000").Run()
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		By("terminate placemat", func() {

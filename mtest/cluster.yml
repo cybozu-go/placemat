@@ -54,3 +54,13 @@ apps:
     exec: /bin/sleep
     args:
       - infinity
+---
+kind: Pod
+name: pod2
+interfaces:
+  - network: ext-net
+    addresses:
+      - @POD2@/24
+apps:
+  - name: ubuntu
+    image: docker://nginx
