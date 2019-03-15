@@ -5,10 +5,14 @@ BRIDGE_ADDRESS = 10.0.0.1
 NODE1 = 10.0.0.11
 NODE2 = 10.0.0.12
 POD1 = 10.0.0.21
+POD2 = 10.0.0.22
 GINKGO = $(GOPATH)/bin/ginkgo
 PLACEMAT_DATADIR = /var/scratch/placemat
+export BRIDGE_ADDRESS NODE1 NODE2 POD1 POD2 GINKGO
 
-export BRIDGE_ADDRESS NODE1 NODE2 POD1 GINKGO
+### for Go
+GOFLAGS = -mod=vendor
+export GOFLAGS
 
 # non-configuration variables
 SSH_PRIVKEY := ./mtest_key
@@ -42,6 +46,7 @@ $(OUTPUT)/cluster.yml: cluster.yml
 	mkdir -p $(OUTPUT)
 	sed -e 's/@BRIDGE_ADDRESS@/$(BRIDGE_ADDRESS)/' \
 		-e 's/@POD1@/$(POD1)/' \
+		-e 's/@POD2@/$(POD2)/' \
 		-e 's/@UBUNTU_IMAGE@/$(UBUNTU_IMAGE)/' $< > $@
 
 $(OUTPUT)/user-data_node1.yml: user-data.yml
@@ -76,11 +81,11 @@ $(OUTPUT)/user-data.example.yml: ../examples/user-data.example.yml
 
 $(OUTPUT)/placemat:
 	mkdir -p $(OUTPUT)
-	cd ..; go get ./... && GOBIN=$(abspath $(OUTPUT)) go install ./pkg/$(notdir $@)
+	GOBIN=$(abspath $(OUTPUT)) go install ../pkg/$(notdir $@)
 
 $(OUTPUT)/pmctl:
 	mkdir -p $(OUTPUT)
-	cd ..; go get ./... && GOBIN=$(abspath $(OUTPUT)) go install ./pkg/$(notdir $@)
+	GOBIN=$(abspath $(OUTPUT)) go install ../pkg/$(notdir $@)
 
 test: $(GENERATED_FILES)
 	sudo rm -rf $(PLACEMAT_DATADIR)/volumes/node1
@@ -91,7 +96,6 @@ clean:
 	rm -rf $(OUTPUT)
 
 setup:
-	GO111MODULE=off \
-		    go get -u github.com/onsi/ginkgo/ginkgo
+	go install -mod=vendor github.com/onsi/ginkgo/ginkgo
 
 .PHONY:	all clean setup test

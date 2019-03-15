@@ -103,6 +103,7 @@ Getting started
 - [OVMF][] for UEFI.
 - [picocom](https://github.com/npat-efault/picocom) for `pmctl`.
 - [rkt][] for `Pod` resource.
+- [socat](http://www.dest-unreach.org/socat/) for `pmctl`.
 
 For Ubuntu or Debian, you can install them as follows:
 
