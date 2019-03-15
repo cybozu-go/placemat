@@ -91,7 +91,6 @@ clean:
 	rm -rf $(OUTPUT)
 
 setup:
-	GO111MODULE=off \
-		    go get -u github.com/onsi/ginkgo/ginkgo
+	go install -mod=vendor github.com/onsi/ginkgo/ginkgo
 
 .PHONY:	all clean setup test
