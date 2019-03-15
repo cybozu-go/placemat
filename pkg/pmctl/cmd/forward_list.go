@@ -32,7 +32,7 @@ var forwardListCmd = &cobra.Command{
 				return err
 			}
 
-			var forwards []*forwardSetting
+			var forwards []*ForwardSetting
 			scanner := bufio.NewScanner(bytes.NewReader(output))
 			for scanner.Scan() {
 				line := scanner.Bytes()
@@ -40,7 +40,7 @@ var forwardListCmd = &cobra.Command{
 					continue
 				}
 
-				forward := new(forwardSetting)
+				forward := new(ForwardSetting)
 				err := json.Unmarshal(line, forward)
 				if err != nil {
 					return err

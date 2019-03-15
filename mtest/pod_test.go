@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	pmctlCmd "github.com/cybozu-go/placemat/pkg/pmctl/cmd"
 	"github.com/cybozu-go/placemat/web"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -59,9 +60,15 @@ var _ = Describe("pod launch test", func() {
 			err := exec.Command("sudo", pmctlPath, "forward", "add", "30000", "pod1:"+pod2+":80").Run()
 			Expect(err).NotTo(HaveOccurred())
 
-			stdout, err := pmctl("forward", "list")
+			var forwards []*pmctlCmd.ForwardSetting
+			stdout, err := pmctl("forward", "list", "--json")
+			err = json.NewDecoder(strings.NewReader(string(stdout))).Decode(&forwards)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(len(stdout)).NotTo(BeZero())
+			Expect(len(forwards)).Should(Equal(1))
+			Expect(forwards[0].LocalPort).Should(Equal(30000))
+			Expect(forwards[0].PodName).Should(Equal("pod1"))
+			Expect(forwards[0].RemoteHost).Should(Equal(pod2))
+			Expect(forwards[0].RemotePort).Should(Equal(80))
 
 			err = exec.Command("curl", "localhost:30000").Run()
 			Expect(err).NotTo(HaveOccurred())

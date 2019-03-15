@@ -4,7 +4,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type forwardSetting struct {
+// ForwardSetting is forward setting
+type ForwardSetting struct {
 	LocalPort  int    `json:"local_port"`
 	PodName    string `json:"pod"`
 	RemoteHost string `json:"remote_host"`
