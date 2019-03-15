@@ -8,7 +8,7 @@ POD1 = 10.0.0.21
 POD2 = 10.0.0.22
 GINKGO = $(GOPATH)/bin/ginkgo
 PLACEMAT_DATADIR = /var/scratch/placemat
-export BRIDGE_ADDRESS NODE1 NODE2 POD1 GINKGO
+export BRIDGE_ADDRESS NODE1 NODE2 POD1 POD2 GINKGO
 
 ### for Go
 GOFLAGS = -mod=vendor
