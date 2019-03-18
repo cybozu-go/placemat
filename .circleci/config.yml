@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: quay.io/cybozu/golang:1.11-bionic
+      - image: quay.io/cybozu/golang:1.12-bionic
     working_directory: /work
     steps:
       - checkout
@@ -26,7 +26,7 @@ jobs:
       - run: ./bin/run-mtest.sh
   publish-github-release:
     docker:
-      - image: quay.io/cybozu/golang:1.11-bionic
+      - image: quay.io/cybozu/golang:1.12-bionic
     steps:
       - attach_workspace:
           at: ./artifacts
