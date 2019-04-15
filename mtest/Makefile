@@ -6,7 +6,7 @@ NODE1 = 10.0.0.11
 NODE2 = 10.0.0.12
 POD1 = 10.0.0.21
 POD2 = 10.0.0.22
-GINKGO = $(GOPATH)/bin/ginkgo
+GINKGO = env GOFLAGS=-mod=vendor $(GOPATH)/bin/ginkgo
 PLACEMAT_DATADIR = /var/scratch/placemat
 export BRIDGE_ADDRESS NODE1 NODE2 POD1 POD2 GINKGO
 
@@ -15,17 +15,25 @@ GOFLAGS = -mod=vendor
 export GOFLAGS
 
 # non-configuration variables
-SSH_PRIVKEY := ./mtest_key
+SSH_PRIVKEY = $(realpath ./mtest_key)
 OUTPUT := ./output
 UBUNTU_IMAGE := ubuntu-18.04-server-cloudimg-amd64.img
-PLACEMAT = $(OUTPUT)/placemat
-PMCTL = $(OUTPUT)/pmctl
-CLUSTER_YAML = $(OUTPUT)/cluster.yml
-EXAMPLE_CLUSTER_YAML = $(OUTPUT)/cluster.example.yml
+PLACEMAT = $(abspath $(OUTPUT))/placemat
+PMCTL = $(abspath $(OUTPUT))/pmctl
+CLUSTER_YAML = $(abspath $(OUTPUT))/cluster.yml
+EXAMPLE_CLUSTER_YAML = $(abspath $(OUTPUT))/cluster.example.yml
+PLACEMAT := $(abspath $(OUTPUT))/placemat
+PMCTL := $(abspath $(OUTPUT))/pmctl
+SUITE = ./functions
+ifeq ($(findstring /,$(SUITE)),)
+  SUITE_PACKAGE = ./$(SUITE)
+else
+  SUITE_PACKAGE = $(SUITE)
+endif
 
-export SSH_PRIVKEY PLACEMAT PMCTL CLUSTER_YAML EXAMPLE_CLUSTER_YAML
+export SSH_PRIVKEY PLACEMAT PMCTL CLUSTER_YAML EXAMPLE_CLUSTER_YAML PLACEMAT PMCTL
 
-GENERATED_FILES = $(OUTPUT)/placemat \
+TEST_DEPS = $(OUTPUT)/placemat \
 	$(OUTPUT)/pmctl \
 	$(OUTPUT)/cluster.yml \
 	$(OUTPUT)/user-data_node1.yml \
@@ -37,7 +45,13 @@ GENERATED_FILES = $(OUTPUT)/placemat \
 	$(OUTPUT)/user-data.example.yml \
 	$(UBUNTU_IMAGE)
 
-all: test
+all:
+	@echo "Specify one of these targets:"
+	@echo
+	@echo "    test     - run test."
+	@echo "    setup    - install dependencies."
+	@echo
+	@echo "'make test' accepts SUITE."
 
 $(UBUNTU_IMAGE):
 	curl -sSLf -o $@ https://cloud-images.ubuntu.com/releases/18.04/release/$@
@@ -87,15 +101,16 @@ $(OUTPUT)/pmctl:
 	mkdir -p $(OUTPUT)
 	GOBIN=$(abspath $(OUTPUT)) go install ../pkg/$(notdir $@)
 
-test: $(GENERATED_FILES)
-	sudo rm -rf $(PLACEMAT_DATADIR)/volumes/node1
-	sudo rm -rf $(PLACEMAT_DATADIR)/volumes/node2
-	$(GINKGO) -v
+# Targets
+test: $(TEST_DEPS)
+	sudo rm -rf $(PLACEMAT_DATADIR)
+	sudo rm -rf $(VM_SHARED_DIR)
+	$(GINKGO) -v -focus="${TARGET}" $(SUITE_PACKAGE)
 
 clean:
 	rm -rf $(OUTPUT)
 
 setup:
-	go install -mod=vendor github.com/onsi/ginkgo/ginkgo
+	go install github.com/onsi/ginkgo/ginkgo
 
-.PHONY:	all clean setup test
+.PHONY: all test placemat stop clean setup

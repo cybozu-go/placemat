@@ -14,7 +14,8 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("pod launch test", func() {
+// TestPod tests pod launch
+func TestPod() {
 	It("should launch pods", func() {
 		var session *gexec.Session
 		By("launch placemat", func() {
@@ -82,4 +83,4 @@ var _ = Describe("pod launch test", func() {
 			Eventually(session.Exited).Should(BeClosed())
 		})
 	})
-})
+}

@@ -1,6 +1,6 @@
 // +build tools
 
-package dctest
+package mtest
 
 import (
 	_ "github.com/onsi/ginkgo/ginkgo"
