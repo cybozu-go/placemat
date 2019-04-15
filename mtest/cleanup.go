@@ -6,7 +6,8 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("-force option test", func() {
+// TestCleanup tests -force option test
+func TestCleanup() {
 	It("should remove remaining resources and launch placemat", func() {
 		var session *gexec.Session
 		By("launch placemat", func() {
@@ -36,4 +37,4 @@ var _ = Describe("-force option test", func() {
 			Eventually(session.Exited).Should(BeClosed())
 		})
 	})
-})
+}
