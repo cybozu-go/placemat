@@ -1,8 +1,7 @@
 #!/bin/sh -ex
 
-CONTAINER_RUNTIME=$1
-SUITE=$2
-TARGET=$3
+SUITE=$1
+TARGET=$2
 
 . $(dirname $0)/env
 
@@ -60,7 +59,7 @@ git checkout -qf ${CIRCLE_SHA1}
 cd mtest
 cp /assets/ubuntu-*.img .
 make setup
-exec make test CONTAINER_RUNTIME=${CONTAINER_RUNTIME} SUITE=${SUITE} TARGET="${TARGET}"
+exec make test SUITE=${SUITE} TARGET="${TARGET}"
 EOF
 chmod +x run.sh
 
