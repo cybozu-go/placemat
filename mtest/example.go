@@ -11,7 +11,8 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("example launch test", func() {
+// TestExample tests example launch
+func TestExample() {
 	It("should launch nodes", func() {
 		var session *gexec.Session
 		By("checking that boot is running", func() {
@@ -56,4 +57,4 @@ var _ = Describe("example launch test", func() {
 			Eventually(session.Exited).Should(BeClosed())
 		})
 	})
-})
+}
