@@ -29,7 +29,7 @@ Synopsis
 
 * `make test`
 
-    Run mtest on a running `placemat`.
+    Run mtest by running `placemat`.
 
 Options
 -------

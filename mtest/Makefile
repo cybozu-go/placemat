@@ -22,8 +22,6 @@ PLACEMAT = $(abspath $(OUTPUT))/placemat
 PMCTL = $(abspath $(OUTPUT))/pmctl
 CLUSTER_YAML = $(abspath $(OUTPUT))/cluster.yml
 EXAMPLE_CLUSTER_YAML = $(abspath $(OUTPUT))/cluster.example.yml
-PLACEMAT := $(abspath $(OUTPUT))/placemat
-PMCTL := $(abspath $(OUTPUT))/pmctl
 SUITE = ./functions
 ifeq ($(findstring /,$(SUITE)),)
   SUITE_PACKAGE = ./$(SUITE)
@@ -31,7 +29,7 @@ else
   SUITE_PACKAGE = $(SUITE)
 endif
 
-export SSH_PRIVKEY PLACEMAT PMCTL CLUSTER_YAML EXAMPLE_CLUSTER_YAML PLACEMAT PMCTL
+export SSH_PRIVKEY PLACEMAT PMCTL CLUSTER_YAML EXAMPLE_CLUSTER_YAML
 
 TEST_DEPS = $(OUTPUT)/placemat \
 	$(OUTPUT)/pmctl \
@@ -112,4 +110,4 @@ clean:
 setup:
 	go install github.com/onsi/ginkgo/ginkgo
 
-.PHONY: all test placemat stop clean setup
+.PHONY: all test clean setup
