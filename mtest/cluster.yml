@@ -15,6 +15,7 @@ interfaces:
 - ext-net
 cpu: 1
 memory: 1G
+tpm: true
 volumes:
 - kind: image
   name: root

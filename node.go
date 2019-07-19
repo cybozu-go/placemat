@@ -40,15 +40,17 @@ type NodeSpec struct {
 	CPU          int              `yaml:"cpu,omitempty"`
 	Memory       string           `yaml:"memory,omitempty"`
 	UEFI         bool             `yaml:"uefi,omitempty"`
+	TPM          bool             `yaml:"tpm,omitempty"`
 	SMBIOS       SMBIOSConfig     `yaml:"smbios,omitempty"`
 }
 
 // Node represents a virtual machine.
 type Node struct {
 	*NodeSpec
-	networks []*Network
-	taps     map[string]string
-	volumes  []NodeVolume
+	networks    []*Network
+	taps        map[string]string
+	volumes     []NodeVolume
+	swtpmSocket string
 }
 
 func createNodeVolume(spec NodeVolumeSpec) (NodeVolume, error) {
@@ -242,6 +244,12 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 		}
 	}
 
+	if n.TPM {
+		params = append(params, "-chardev", "socket,id=chrtpm,path="+n.swtpmSocket)
+		params = append(params, "-tpmdev", "emulator,id=tpm0,chardev=chrtpm")
+		params = append(params, "-device", "tpm-tis,tpmdev=tpm0")
+	}
+
 	if r.enableVirtFS {
 		p := path.Join(r.sharedDir, n.Name)
 		err := os.MkdirAll(p, 0755)
@@ -333,4 +341,38 @@ func createNVRAM(ctx context.Context, p string) error {
 		return nil
 	}
 	return well.CommandContext(ctx, "cp", defaultOVMFVarsPath, p).Run()
+}
+
+// StartSWTPM creates swtpm socket and waits for it to be created
+func (n *Node) StartSWTPM(ctx context.Context) error {
+	dirName := filepath.Join("/tmp", n.Name)
+	fileName := filepath.Join(dirName, "swtpm.socket")
+	err := os.Mkdir(dirName, 0755)
+	if err != nil {
+		return err
+	}
+	err = well.CommandContext(ctx, "swtpm", "socket",
+		"--tpmstate", "dir="+dirName,
+		"--tpm2",
+		"--ctrl",
+		"type=unixio,path="+fileName,
+	).Start()
+	if err != nil {
+		return err
+	}
+	for {
+		_, err := os.Stat(fileName)
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		if err == nil {
+			n.swtpmSocket = fileName
+		}
+
+		select {
+		case <-time.After(100 * time.Millisecond):
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }
