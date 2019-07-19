@@ -82,9 +82,14 @@ func createNodeVolume(spec NodeVolumeSpec) (NodeVolume, error) {
 
 // NewNode creates a Node from spec.
 func NewNode(spec *NodeSpec) (*Node, error) {
+	var socket string
+	if spec.TPM {
+		socket = filepath.Join("/tmp", spec.Name, "swtpm.socket")
+	}
 	n := &Node{
-		NodeSpec: spec,
-		taps:     make(map[string]string),
+		NodeSpec:    spec,
+		taps:        make(map[string]string),
+		swtpmSocket: socket,
 	}
 	if spec.Name == "" {
 		return nil, errors.New("node name is empty")
@@ -346,28 +351,25 @@ func createNVRAM(ctx context.Context, p string) error {
 
 // StartSWTPM creates swtpm socket and waits for it to be created
 func (n *Node) StartSWTPM(ctx context.Context) error {
-	dirName := filepath.Join("/tmp", n.Name)
-	fileName := filepath.Join(dirName, "swtpm.socket")
+	dirName := filepath.Dir(n.swtpmSocket)
 	err := os.Mkdir(dirName, 0755)
 	if err != nil {
 		return err
 	}
+
 	err = well.CommandContext(ctx, "swtpm", "socket",
 		"--tpmstate", "dir="+dirName,
 		"--tpm2",
 		"--ctrl",
-		"type=unixio,path="+fileName,
+		"type=unixio,path="+n.swtpmSocket,
 	).Start()
 	if err != nil {
 		return err
 	}
 	for {
-		_, err := os.Stat(fileName)
+		_, err := os.Stat(n.swtpmSocket)
 		if err != nil && !os.IsNotExist(err) {
 			return err
-		}
-		if err == nil {
-			n.swtpmSocket = fileName
 		}
 
 		select {

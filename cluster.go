@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/well"
@@ -238,6 +239,16 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 		n := n
 		if n.TPM {
 			env.Go(n.StartSWTPM)
+			for {
+				_, err := os.Stat(n.swtpmSocket)
+				if err == nil {
+					break
+				}
+
+				select {
+				case <-time.After(100 * time.Millisecond):
+				}
+			}
 		}
 		env.Go(func(ctx2 context.Context) error {
 			// reference the original context because ctx2 will soon be cancelled.
