@@ -1,6 +1,8 @@
 package mtest
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -14,6 +16,15 @@ func TestCleanup() {
 			session = runPlacemat(clusterYAML, "-force")
 			err := prepareSSHClients(node1, node2)
 			Expect(err).To(Succeed())
+		})
+
+		By("confirm that a socket file exists on host", func() {
+			_, err := os.Stat("/tmp/node1/swtpm.socket")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		By("confirm that a device file exists on guest", func() {
+			execSafeAt(node1, "test", "-c", "/dev/tpm0")
 		})
 
 		By("kill placemat process", func() {

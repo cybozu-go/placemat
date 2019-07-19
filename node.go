@@ -317,6 +317,7 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 		os.Remove(guest)
 		os.Remove(monitor)
 		os.Remove(r.socketPath(n.Name))
+		os.RemoveAll(filepath.Dir(n.swtpmSocket))
 	}
 
 	vm := &NodeVM{
