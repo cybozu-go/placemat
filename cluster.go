@@ -238,7 +238,10 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	for _, n := range c.Nodes {
 		n := n
 		if n.TPM {
-			env.Go(n.StartSWTPM)
+			env.Go(func(ctx2 context.Context) error {
+				// reference the original context because ctx2 will soon be cancelled.
+				return n.StartSWTPM(ctx)
+			})
 			for {
 				_, err := os.Stat(n.swtpmSocket)
 				if err == nil {

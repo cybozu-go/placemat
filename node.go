@@ -357,12 +357,16 @@ func (n *Node) StartSWTPM(ctx context.Context) error {
 		return err
 	}
 
-	err = well.CommandContext(ctx, "swtpm", "socket",
+	c := well.CommandContext(ctx, "swtpm", "socket",
 		"--tpmstate", "dir="+dirName,
 		"--tpm2",
 		"--ctrl",
 		"type=unixio,path="+n.swtpmSocket,
-	).Start()
+	)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+
+	err = c.Start()
 	if err != nil {
 		return err
 	}
