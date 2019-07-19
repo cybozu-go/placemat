@@ -104,6 +104,7 @@ Getting started
 - [picocom](https://github.com/npat-efault/picocom) for `pmctl`.
 - [rkt][] for `Pod` resource.
 - [socat](http://www.dest-unreach.org/socat/) for `pmctl`.
+- *(Optional)* [swtpm](https://github.com/stefanberger/swtpm) for providing TPM of `Node` resource. If you do not use this feature, `swtpm` is not required.
 
 For Ubuntu or Debian, you can install them as follows:
 

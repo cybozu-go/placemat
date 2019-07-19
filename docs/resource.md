@@ -121,6 +121,7 @@ smbios:
   product: mk2
   serial: 1234abcd
 uefi: false
+tpm: true
 ```
 
 The properties are:
@@ -138,6 +139,9 @@ The properties are:
 - `uefi`: BIOS mode of the VM.
     - If false: The VM will load Qemu's default BIOS (SeaBIO) and enable iPXE boot by a net device.
     - If true: The VM loads OVMF as BIOS and disable iPXE boot by a net device.
+- `tpm`: Create Trusted Platform Module(TPM) for the VM. This feature requires [swtpm](https://github.com/stefanberger/swtpm).
+    - If false: Provide no TPM device.
+    - If true: Provide a TPM device as `/dev/tpm0` on the VM.
 
 ### `image` volume
 
