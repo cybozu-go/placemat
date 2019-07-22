@@ -47,10 +47,9 @@ type NodeSpec struct {
 // Node represents a virtual machine.
 type Node struct {
 	*NodeSpec
-	networks    []*Network
-	taps        map[string]string
-	volumes     []NodeVolume
-	swtpmSocket string
+	networks []*Network
+	taps     map[string]string
+	volumes  []NodeVolume
 }
 
 func createNodeVolume(spec NodeVolumeSpec) (NodeVolume, error) {
@@ -82,14 +81,9 @@ func createNodeVolume(spec NodeVolumeSpec) (NodeVolume, error) {
 
 // NewNode creates a Node from spec.
 func NewNode(spec *NodeSpec) (*Node, error) {
-	var socket string
-	if spec.TPM {
-		socket = filepath.Join("/tmp", spec.Name, "swtpm.socket")
-	}
 	n := &Node{
-		NodeSpec:    spec,
-		taps:        make(map[string]string),
-		swtpmSocket: socket,
+		NodeSpec: spec,
+		taps:     make(map[string]string),
 	}
 	if spec.Name == "" {
 		return nil, errors.New("node name is empty")
@@ -133,17 +127,34 @@ func CleanupNodes(r *Runtime, nodes []*Node) {
 			r.monitorSocketPath(d.Name),
 			r.socketPath(d.Name),
 		}
+		dirs := []string{
+			r.swtpmSocketDirPath(d.Name),
+		}
 		for _, f := range files {
 			_, err := os.Stat(f)
 			if err == nil {
 				err = os.Remove(f)
 				if err != nil {
-					log.Warn("failed to clean file", map[string]interface{}{
-						"filename": f,
+					log.Warn("failed to clean", map[string]interface{}{
+						"filename":  f,
+						log.FnError: err,
 					})
 				}
 			}
 		}
+		for _, d := range dirs {
+			_, err := os.Stat(d)
+			if err == nil {
+				err = os.RemoveAll(d)
+				if err != nil {
+					log.Warn("failed to clean", map[string]interface{}{
+						"directory": d,
+						log.FnError: err,
+					})
+				}
+			}
+		}
+
 	}
 }
 
@@ -250,7 +261,7 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 	}
 
 	if n.TPM {
-		params = append(params, "-chardev", "socket,id=chrtpm,path="+n.swtpmSocket)
+		params = append(params, "-chardev", "socket,id=chrtpm,path="+r.swtpmSocketPath(n.Name))
 		params = append(params, "-tpmdev", "emulator,id=tpm0,chardev=chrtpm")
 		params = append(params, "-device", "tpm-tis,tpmdev=tpm0")
 	}
@@ -322,7 +333,7 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 		os.Remove(guest)
 		os.Remove(monitor)
 		os.Remove(r.socketPath(n.Name))
-		os.RemoveAll(filepath.Dir(n.swtpmSocket))
+		os.RemoveAll(r.swtpmSocketDirPath(n.Name))
 	}
 
 	vm := &NodeVM{
@@ -349,37 +360,20 @@ func createNVRAM(ctx context.Context, p string) error {
 	return well.CommandContext(ctx, "cp", defaultOVMFVarsPath, p).Run()
 }
 
-// StartSWTPM creates swtpm socket and waits for it to be created
-func (n *Node) StartSWTPM(ctx context.Context) error {
-	dirName := filepath.Dir(n.swtpmSocket)
-	err := os.Mkdir(dirName, 0755)
+// StartSWTPM starts swtpm with software TPM socket
+func (n *Node) StartSWTPM(ctx context.Context, r *Runtime) error {
+	err := os.Mkdir(r.swtpmSocketDirPath(n.Name), 0755)
 	if err != nil {
 		return err
 	}
 
 	c := well.CommandContext(ctx, "swtpm", "socket",
-		"--tpmstate", "dir="+dirName,
+		"--tpmstate", "dir="+r.swtpmSocketDirPath(n.Name),
 		"--tpm2",
 		"--ctrl",
-		"type=unixio,path="+n.swtpmSocket,
+		"type=unixio,path="+r.swtpmSocketPath(n.Name),
 	)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-
-	err = c.Start()
-	if err != nil {
-		return err
-	}
-	for {
-		_, err := os.Stat(n.swtpmSocket)
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		}
-
-		select {
-		case <-time.After(100 * time.Millisecond):
-		case <-ctx.Done():
-			return nil
-		}
-	}
+	return c.Start()
 }
