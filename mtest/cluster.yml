@@ -24,6 +24,7 @@ volumes:
   name: seed
   user-data: user-data_node1.yml
   network-config: network1.yml
+tpm: true
 ---
 kind: Node
 name: node2
@@ -40,12 +41,13 @@ volumes:
   name: seed
   user-data: user-data_node2.yml
   network-config: network2.yml
+tpm: true
 ---
 kind: Pod
 name: pod1
 interfaces:
   - network: ext-net
-    addresses: 
+    addresses:
       - @POD1@/24
 apps:
   - name: ubuntu
