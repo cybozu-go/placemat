@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"time"
 
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/well"
@@ -238,19 +237,9 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	for _, n := range c.Nodes {
 		n := n
 		if n.TPM {
-			env.Go(func(ctx2 context.Context) error {
-				// reference the original context because ctx2 will soon be cancelled.
-				return n.StartSWTPM(ctx, r)
-			})
-			for {
-				_, err := os.Stat(r.swtpmSocketPath(n.Name))
-				if err == nil {
-					break
-				}
-
-				select {
-				case <-time.After(100 * time.Millisecond):
-				}
+			err := n.StartSWTPM(ctx, r)
+			if err != nil {
+				return err
 			}
 		}
 		env.Go(func(ctx2 context.Context) error {

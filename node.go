@@ -379,5 +379,26 @@ func (n *Node) StartSWTPM(ctx context.Context, r *Runtime) error {
 	)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-	return c.Start()
+	err = c.Start()
+	if err != nil {
+		return err
+	}
+
+	for {
+		_, err := os.Stat(r.swtpmSocketPath(n.Name))
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		if err == nil {
+			break
+		}
+
+		select {
+		case <-time.After(100 * time.Millisecond):
+		case <-ctx.Done():
+			return nil
+		}
+	}
+
+	return nil
 }
