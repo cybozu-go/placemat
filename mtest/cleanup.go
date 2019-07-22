@@ -18,13 +18,16 @@ func TestCleanup() {
 			Expect(err).To(Succeed())
 		})
 
-		By("confirm that a socket file exists on host", func() {
+		By("confirm that socket files exist on host", func() {
 			_, err := os.Stat("/tmp/node1/swtpm.socket")
+			Expect(err).NotTo(HaveOccurred())
+			_, err = os.Stat("/tmp/node2/swtpm.socket")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		By("confirm that a device file exists on guest", func() {
 			execSafeAt(node1, "test", "-c", "/dev/tpm0")
+			execSafeAt(node2, "test", "-c", "/dev/tpm0")
 		})
 
 		By("kill placemat process", func() {
