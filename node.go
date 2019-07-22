@@ -367,6 +367,10 @@ func (n *Node) StartSWTPM(ctx context.Context, r *Runtime) error {
 		return err
 	}
 
+	log.Info("Starting swtpm for node", map[string]interface{}{
+		"name":   n.Name,
+		"socket": r.swtpmSocketPath(n.Name),
+	})
 	c := well.CommandContext(ctx, "swtpm", "socket",
 		"--tpmstate", "dir="+r.swtpmSocketDirPath(n.Name),
 		"--tpm2",
