@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.7] - 2019-07-26
+
+### Added
+
+- Add qemu option to use para-virtualized RNG for fast boot (#92).
+
 ## [1.3.6] - 2019-07-22
 
 ### Added
@@ -80,7 +86,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.6...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.7...HEAD
+[1.3.7]: https://github.com/cybozu-go/placemat/compare/v1.3.6...v1.3.7
 [1.3.6]: https://github.com/cybozu-go/placemat/compare/v1.3.5...v1.3.6
 [1.3.5]: https://github.com/cybozu-go/placemat/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/cybozu-go/placemat/compare/v1.3.3...v1.3.4
