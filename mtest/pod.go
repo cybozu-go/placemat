@@ -63,6 +63,7 @@ func TestPod() {
 
 			var forwards []*pmctlCmd.ForwardSetting
 			stdout, err := pmctl("forward", "list", "--json")
+			Expect(err).NotTo(HaveOccurred())
 			err = json.NewDecoder(strings.NewReader(string(stdout))).Decode(&forwards)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(forwards)).Should(Equal(1))
