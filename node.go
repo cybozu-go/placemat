@@ -25,23 +25,23 @@ const (
 
 // SMBIOSConfig represents a Node's SMBIOS definition in YAML
 type SMBIOSConfig struct {
-	Manufacturer string `yaml:"manufacturer,omitempty"`
-	Product      string `yaml:"product,omitempty"`
-	Serial       string `yaml:"serial,omitempty"`
+	Manufacturer string `json:"manufacturer,omitempty"`
+	Product      string `json:"product,omitempty"`
+	Serial       string `json:"serial,omitempty"`
 }
 
 // NodeSpec represents a Node specification in YAML
 type NodeSpec struct {
-	Kind         string           `yaml:"kind"`
-	Name         string           `yaml:"name"`
-	Interfaces   []string         `yaml:"interfaces,omitempty"`
-	Volumes      []NodeVolumeSpec `yaml:"volumes,omitempty"`
-	IgnitionFile string           `yaml:"ignition,omitempty"`
-	CPU          int              `yaml:"cpu,omitempty"`
-	Memory       string           `yaml:"memory,omitempty"`
-	UEFI         bool             `yaml:"uefi,omitempty"`
-	TPM          bool             `yaml:"tpm,omitempty"`
-	SMBIOS       SMBIOSConfig     `yaml:"smbios,omitempty"`
+	Kind         string           `json:"kind"`
+	Name         string           `json:"name"`
+	Interfaces   []string         `json:"interfaces,omitempty"`
+	Volumes      []NodeVolumeSpec `json:"volumes,omitempty"`
+	IgnitionFile string           `json:"ignition,omitempty"`
+	CPU          int              `json:"cpu,omitempty"`
+	Memory       string           `json:"memory,omitempty"`
+	UEFI         bool             `json:"uefi,omitempty"`
+	TPM          bool             `json:"tpm,omitempty"`
+	SMBIOS       SMBIOSConfig     `json:"smbios,omitempty"`
 }
 
 // Node represents a virtual machine.
