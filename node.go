@@ -289,6 +289,9 @@ func (n *Node) Start(ctx context.Context, r *Runtime, nodeCh chan<- bmcInfo) (*N
 	params = append(params, "-object", "rng-random,id=rng0,filename=/dev/urandom")
 	params = append(params, "-device", "virtio-rng-pci,rng=rng0")
 
+	// Use host CPU flags for stability
+	params = append(params, "-cpu", "host")
+
 	log.Info("Starting VM", map[string]interface{}{"name": n.Name})
 	qemuCommand := well.CommandContext(ctx, "qemu-system-x86_64", params...)
 	qemuCommand.Stdout = newColoredLogWriter("qemu", n.Name, os.Stdout)
