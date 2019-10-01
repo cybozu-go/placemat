@@ -5,6 +5,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.8] - 2019-10-01
+
+### Changed
+
+- Use host CPU flags with `qemu -cpu host` for stability (#96).
+- Replace yaml library (#94).
+
 ## [1.3.7] - 2019-07-26
 
 ### Added
@@ -86,7 +93,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.7...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.8...HEAD
+[1.3.8]: https://github.com/cybozu-go/placemat/compare/v1.3.7...v1.3.8
 [1.3.7]: https://github.com/cybozu-go/placemat/compare/v1.3.6...v1.3.7
 [1.3.6]: https://github.com/cybozu-go/placemat/compare/v1.3.5...v1.3.6
 [1.3.5]: https://github.com/cybozu-go/placemat/compare/v1.3.4...v1.3.5
