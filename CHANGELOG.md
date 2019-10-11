@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.9] - 2019-10-11
+
+### Changed
+
+- Add `iptables` rules for internal networking (#98).
+
 ## [1.3.8] - 2019-10-01
 
 ### Changed
@@ -40,7 +46,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- use formal import path for k8s.io/apimachinery (#82).
+- Use formal import path for k8s.io/apimachinery (#82).
 
 ## [1.3.2] - 2019-02-18
 
@@ -93,7 +99,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.8...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.9...HEAD
+[1.3.9]: https://github.com/cybozu-go/placemat/compare/v1.3.8...v1.3.9
 [1.3.8]: https://github.com/cybozu-go/placemat/compare/v1.3.7...v1.3.8
 [1.3.7]: https://github.com/cybozu-go/placemat/compare/v1.3.6...v1.3.7
 [1.3.6]: https://github.com/cybozu-go/placemat/compare/v1.3.5...v1.3.6
