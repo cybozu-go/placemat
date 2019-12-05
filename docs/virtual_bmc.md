@@ -5,7 +5,7 @@ Overview
 --------
 
 Placemat provides virtual BMC functionality.
-Users in a placemat node can controll other nodes via BMCs.
+Users in a placemat node can control other nodes via BMCs.
 They can, for example, power-on/off nodes, reset nodes, and retrieve info
 of nodes by communicating with BMCs.
 
@@ -40,3 +40,26 @@ Supported IPMI commands
 -----------------------
 
 (TBD)
+
+HTTPS server
+------------
+
+For test purpose, Placemat deploys HTTPS servers on https://<BMC address>:443.
+They return 200 OK only.
+
+**If you use this feature, prepare `bmc-https` Certificate resource:**
+
+```yaml
+kind: Certificate
+name: bmc-https
+key: |
+  -----BEGIN PRIVATE KEY-----
+  MIIJQwIBADANBgkqhkiG9w0BAQEFAASCCS0wggkpAgEAAoICAQCt8W40/mkvUIxm
+  JeKRFdzjxVy+syGWx8z8lZPntm+BwsS9QFsssKCLMkhutayLIH4hQoZR5p95fu0o
+  ...
+cert: |
+  -----BEGIN CERTIFICATE-----
+  MIIFmTCCA4GgAwIBAgIUFqmXYMnPdBu3AGwxUOQe+mjib08wDQYJKoZIhvcNAQEL
+  BQAwXDELMAkGA1UEBhMCVVMxDzANBgNVBAgMBkRlbmlhbDEUMBIGA1UEBwwLU3By
+  ...
+```

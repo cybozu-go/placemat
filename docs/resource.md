@@ -259,4 +259,25 @@ See [Mounting Volumes in rkt manual](https://coreos.com/rkt/docs/latest/subcomma
 In rkt, a container is called an app.  A pod have one or more apps.
 See [Options in rkt manual](https://coreos.com/rkt/docs/latest/subcommands/run.html#options) for details.
 
+Certificate
+-----------
+
+Placemat uses certificate file for some feature, if you want to use them, prepare Certificate resource with specified name.
+Currently, this resource is used in BMC virtual console. 
+
+```yaml
+kind: Certificate
+name: foo
+key: |
+  -----BEGIN PRIVATE KEY-----
+  MIIJQwIBADANBgkqhkiG9w0BAQEFAASCCS0wggkpAgEAAoICAQCt8W40/mkvUIxm
+  JeKRFdzjxVy+syGWx8z8lZPntm+BwsS9QFsssKCLMkhutayLIH4hQoZR5p95fu0o
+  ...
+cert: |
+  -----BEGIN CERTIFICATE-----
+  MIIFmTCCA4GgAwIBAgIUFqmXYMnPdBu3AGwxUOQe+mjib08wDQYJKoZIhvcNAQEL
+  BQAwXDELMAkGA1UEBhMCVVMxDzANBgNVBAgMBkRlbmlhbDEUMBIGA1UEBwwLU3By
+  ...
+```
+
 [rkt]: https://coreos.com/rkt/

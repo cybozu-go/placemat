@@ -32,6 +32,11 @@ name: pod1
 apps:
   - name: bird
     image: docker://quay.io/cybozu/bird:2.0
+---
+kind: Certificate
+name: cert1
+key: xxx
+cert: yyy
 `
 
 	cluster, err := ReadYaml(bufio.NewReader(bytes.NewReader([]byte(yaml))))
@@ -52,6 +57,9 @@ apps:
 	}
 	if len(cluster.Pods) != 1 {
 		t.Error("len(cluster.Pod) != 1,", len(cluster.Pods))
+	}
+	if len(cluster.Certificates) != 1 {
+		t.Error("len(cluster.Certificates) != 1,", len(cluster.Certificates))
 	}
 }
 

@@ -88,6 +88,14 @@ func ReadYaml(r *bufio.Reader) (*Cluster, error) {
 				return nil, err
 			}
 			cluster.Pods = append(cluster.Pods, pod)
+		case "Certificate":
+			spec := new(CertificateSpec)
+			err = yaml.Unmarshal(data, spec)
+			if err != nil {
+				return nil, err
+			}
+			cert := NewCertificate(spec)
+			cluster.Certificates = append(cluster.Certificates, cert)
 		default:
 			return nil, errors.New("unknown resource: " + c.Kind)
 		}

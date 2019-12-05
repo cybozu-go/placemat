@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"strconv"
 	"sync"
 
@@ -31,13 +32,16 @@ type bmcServer struct {
 
 	muSerials   sync.Mutex
 	nodeSerials map[string]string // key: address
+
+	certificate *Certificate
 }
 
-func newBMCServer(vms map[string]*NodeVM, networks []*Network, ch <-chan bmcInfo) *bmcServer {
+func newBMCServer(vms map[string]*NodeVM, networks []*Network, cert *Certificate, ch <-chan bmcInfo) *bmcServer {
 	s := &bmcServer{
 		nodeCh:      ch,
 		nodeVMs:     vms,
 		nodeSerials: make(map[string]string),
+		certificate: cert,
 	}
 	for _, n := range networks {
 		if n.typ == NetworkBMC {
@@ -201,6 +205,25 @@ func (s *bmcServer) listenIPMI(ctx context.Context, addr string) error {
 	}
 }
 
+func (s *bmcServer) listenHTTPS(ctx context.Context, addr string) error {
+	serv := &well.HTTPServer{
+		Server: &http.Server{
+			Addr:    addr,
+			Handler: http.FileServer(http.Dir(s.certificate.CertFilePath)),
+		},
+	}
+
+	err := serv.ListenAndServeTLS(s.certificate.CertFilePath, s.certificate.KeyFilePath)
+	if err != nil {
+		return err
+	}
+	go func() {
+		<-ctx.Done()
+		serv.Close()
+	}()
+	return nil
+}
+
 func (s *bmcServer) handleNode(ctx context.Context) error {
 	env := well.NewEnvironment(ctx)
 
@@ -219,6 +242,12 @@ OUTER:
 			env.Go(func(ctx context.Context) error {
 				return s.listenIPMI(ctx, info.bmcAddress)
 			})
+
+			if s.certificate != nil {
+				env.Go(func(ctx context.Context) error {
+					return s.listenHTTPS(ctx, info.bmcAddress)
+				})
+			}
 		case <-ctx.Done():
 			break OUTER
 		}
