@@ -217,11 +217,8 @@ func (s *bmcServer) listenHTTPS(ctx context.Context, addr string) error {
 	if err != nil {
 		return err
 	}
-	go func() {
-		<-ctx.Done()
-		serv.Close()
-	}()
-	return nil
+	<-ctx.Done()
+	return serv.Close()
 }
 
 func (s *bmcServer) handleNode(ctx context.Context) error {
