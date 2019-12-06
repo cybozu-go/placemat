@@ -35,6 +35,8 @@ var (
 	flgDebug        = flag.Bool("debug", false, "show QEMU's and Pod's stdout and stderr")
 	flgForce        = flag.Bool("force", false, "force run with removal of garbage")
 	flgEnableVirtFS = flag.Bool("enable-virtfs", false, "enable VirtFS to share files between guest and host OS.")
+	flgBMCCert      = flag.String("bmc-cert", "", "Certificate file for BMC HTTPS servers.")
+	flgBMCKey       = flag.String("bmc-key", "", "Key file for BMC HTTPS servers.")
 )
 
 func loadClusterFromFile(p string) (*placemat.Cluster, error) {
@@ -137,7 +139,7 @@ func run(yamls []string) error {
 	dataDir := os.ExpandEnv(*flgDataDir)
 	cacheDir := os.ExpandEnv(*flgCacheDir)
 	sharedDir := os.ExpandEnv(*flgSharedDir)
-	r, err := placemat.NewRuntime(*flgForce, *flgGraphic, *flgEnableVirtFS, runDir, dataDir, cacheDir, sharedDir, *flgListenAddr)
+	r, err := placemat.NewRuntime(*flgForce, *flgGraphic, *flgEnableVirtFS, runDir, dataDir, cacheDir, sharedDir, *flgListenAddr, *flgBMCCert, *flgBMCKey)
 	if err != nil {
 		return err
 	}

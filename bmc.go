@@ -33,15 +33,17 @@ type bmcServer struct {
 	muSerials   sync.Mutex
 	nodeSerials map[string]string // key: address
 
-	certificate *Certificate
+	cert string
+	key  string
 }
 
-func newBMCServer(vms map[string]*NodeVM, networks []*Network, cert *Certificate, ch <-chan bmcInfo) *bmcServer {
+func newBMCServer(vms map[string]*NodeVM, networks []*Network, cert, key string, ch <-chan bmcInfo) *bmcServer {
 	s := &bmcServer{
 		nodeCh:      ch,
 		nodeVMs:     vms,
 		nodeSerials: make(map[string]string),
-		certificate: cert,
+		cert:        cert,
+		key:         key,
 	}
 	for _, n := range networks {
 		if n.typ == NetworkBMC {
@@ -209,11 +211,11 @@ func (s *bmcServer) listenHTTPS(ctx context.Context, addr string) error {
 	serv := &well.HTTPServer{
 		Server: &http.Server{
 			Addr:    addr,
-			Handler: http.FileServer(http.Dir(s.certificate.CertFilePath)),
+			Handler: http.FileServer(http.Dir(s.cert)),
 		},
 	}
 
-	err := serv.ListenAndServeTLS(s.certificate.CertFilePath, s.certificate.KeyFilePath)
+	err := serv.ListenAndServeTLS(s.cert, s.key)
 	if err != nil {
 		return err
 	}
@@ -240,7 +242,11 @@ OUTER:
 				return s.listenIPMI(ctx, info.bmcAddress)
 			})
 
-			if s.certificate != nil {
+			if s.cert != "" && s.key != "" {
+				log.Info("start HTTPS server for BMC", map[string]interface{}{
+					"cert": s.cert,
+					"key":  s.key,
+				})
 				env.Go(func(ctx context.Context) error {
 					return s.listenHTTPS(ctx, info.bmcAddress)
 				})

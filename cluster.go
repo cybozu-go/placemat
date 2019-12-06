@@ -12,16 +12,13 @@ import (
 	"github.com/cybozu-go/well"
 )
 
-const bmcCertName = "bmc-https"
-
 // Cluster is a set of resources in a virtual data center.
 type Cluster struct {
-	Networks     []*Network
-	Images       []*Image
-	DataFolders  []*DataFolder
-	Nodes        []*Node
-	Pods         []*Pod
-	Certificates []*Certificate
+	Networks    []*Network
+	Images      []*Image
+	DataFolders []*DataFolder
+	Nodes       []*Node
+	Pods        []*Pod
 
 	// private fields will be initialized by Resolve.
 	netMap    map[string]*Network
@@ -99,7 +96,6 @@ func (c *Cluster) Cleanup(r *Runtime) error {
 	CleanupNodes(r, c.Nodes)
 	CleanupPods(r, c.Pods)
 	CleanupNetworks(r, c)
-	CleanupCertificates(r, c.Certificates)
 	return nil
 }
 
@@ -232,13 +228,6 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 		}
 	}
 
-	for _, cert := range c.Certificates {
-		err := cert.saveFile()
-		if err != nil {
-			return err
-		}
-	}
-
 	nodeCh := make(chan bmcInfo, len(c.Nodes))
 
 	var mu sync.Mutex
@@ -276,13 +265,7 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 		return err
 	}
 
-	var cert *Certificate
-	for _, c := range c.Certificates {
-		if c.Name == bmcCertName {
-			cert = c
-		}
-	}
-	bmcServer := newBMCServer(vms, c.Networks, cert, nodeCh)
+	bmcServer := newBMCServer(vms, c.Networks, r.bmcCert, r.bmcKey, nodeCh)
 
 	env = well.NewEnvironment(ctx)
 	env.Go(bmcServer.handleNode)
