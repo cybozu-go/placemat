@@ -5,6 +5,12 @@ type: external
 use-nat: true
 address: @BRIDGE_ADDRESS@/24
 ---
+kind: Network
+name: bmc-net
+type: bmc
+use-nat: false
+address: @BMC_NETWORK@/24
+---
 kind: Image
 name: ubuntu
 file: ../@UBUNTU_IMAGE@

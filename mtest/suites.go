@@ -7,4 +7,5 @@ var FunctionsSuite = func() {
 	Context("cleanup", TestCleanup)
 	Context("example", TestExample)
 	Context("pod", TestPod)
+	Context("BMC", TestBMC)
 }

@@ -2,10 +2,13 @@
 
 # configuration variables
 BRIDGE_ADDRESS = 10.0.0.1
+BMC_NETWORK = 10.1.0.1
 NODE1 = 10.0.0.11
 NODE2 = 10.0.0.12
 POD1 = 10.0.0.21
 POD2 = 10.0.0.22
+BMC1 = 10.1.0.11
+BMC2 = 10.1.0.12
 GINKGO = env GOFLAGS=-mod=vendor $(GOPATH)/bin/ginkgo
 PLACEMAT_DATADIR = /var/scratch/placemat
 export BRIDGE_ADDRESS NODE1 NODE2 POD1 POD2 GINKGO
@@ -57,6 +60,7 @@ $(UBUNTU_IMAGE):
 $(OUTPUT)/cluster.yml: cluster.yml
 	mkdir -p $(OUTPUT)
 	sed -e 's/@BRIDGE_ADDRESS@/$(BRIDGE_ADDRESS)/' \
+		-e 's/@BMC_NETWORK@/$(BMC_NETWORK)/' \
 		-e 's/@POD1@/$(POD1)/' \
 		-e 's/@POD2@/$(POD2)/' \
 		-e 's/@UBUNTU_IMAGE@/$(UBUNTU_IMAGE)/' $< > $@
