@@ -9,7 +9,7 @@ kind: Network
 name: bmc-net
 type: bmc
 use-nat: false
-address: @BMC_NETWORK@/24
+address: @BMC_ADDRESS@/24
 ---
 kind: Image
 name: ubuntu

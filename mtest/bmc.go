@@ -15,7 +15,7 @@ func TestBMC() {
 	It("should launch pods", func() {
 		var session *gexec.Session
 		By("launch placemat", func() {
-			session = runPlacemat(clusterYAML, "-force")
+			session = runPlacemat(clusterYAML, "-force", "-bmc-cert", bmcCert, "-bmc-key", bmcKey)
 			err := prepareSSHClients(node1, node2)
 			Expect(err).To(Succeed())
 		})
