@@ -11,7 +11,6 @@ var (
 	pod1               = os.Getenv("POD1")
 	pod2               = os.Getenv("POD2")
 	bmc1               = os.Getenv("BMC1")
-	bmc2               = os.Getenv("BMC2")
 	sshKeyFile         = os.Getenv("SSH_PRIVKEY")
 	placematPath       = os.Getenv("PLACEMAT")
 	pmctlPath          = os.Getenv("PMCTL")

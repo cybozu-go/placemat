@@ -21,7 +21,7 @@ func TestBMC() {
 		})
 
 		By("writing to "+virtualBMCPort, func() {
-			execSafeAt(node1, "echo", bmc1, ">", virtualBMCPort)
+			execSafeAt(node1, "echo", bmc1, "|", "sudo", "dd", "of="+virtualBMCPort)
 		})
 
 		By("starting HTTPS server", func() {
