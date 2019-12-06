@@ -210,7 +210,7 @@ func (s *bmcServer) listenIPMI(ctx context.Context, addr string) error {
 func (s *bmcServer) listenHTTPS(ctx context.Context, addr string) error {
 	serv := &well.HTTPServer{
 		Server: &http.Server{
-			Addr:    addr,
+			Addr:    addr + ":443",
 			Handler: http.FileServer(http.Dir(s.cert)),
 		},
 	}
