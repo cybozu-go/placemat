@@ -211,7 +211,7 @@ func (s *bmcServer) listenHTTPS(ctx context.Context, addr string) error {
 	serv := &well.HTTPServer{
 		Server: &http.Server{
 			Addr:    addr + ":443",
-			Handler: http.FileServer(http.Dir(s.cert)),
+			Handler: BMCHandler{},
 		},
 	}
 
@@ -334,4 +334,10 @@ func (g *guestConnection) Handle() {
 		}
 		g.sent = true
 	}
+}
+
+type BMCHandler struct{}
+
+func (b BMCHandler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
+	fmt.Fprintln(w, "Hello I am BMC.")
 }
