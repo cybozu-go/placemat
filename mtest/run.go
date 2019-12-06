@@ -201,7 +201,7 @@ func execAtLocal(cmd string, args ...string) ([]byte, error) {
 func runPlacemat(cluster string, args ...string) *gexec.Session {
 	cleanupPlacemat()
 
-	args = append([]string{"env", "GODEBUG=http2server=0", placematPath}, args...)
+	args = append([]string{placematPath}, args...)
 	args = append(args, cluster)
 	command := exec.Command("sudo", args...)
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
