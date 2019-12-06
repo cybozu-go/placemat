@@ -111,6 +111,9 @@ func NewRuntime(force, graphic, enableVirtFS bool, runDir, dataDir, cacheDir, sh
 	}
 
 	for _, filename := range []string{bmcCert, bmcKey} {
+		if filename == "" {
+			continue
+		}
 		fi, err = os.Stat(filename)
 		switch {
 		case err == nil:
