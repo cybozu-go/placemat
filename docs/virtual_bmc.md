@@ -44,7 +44,7 @@ Supported IPMI commands
 HTTPS server
 ------------
 
-For test purpose, Placemat deploys HTTPS servers on https://<BMC address>:443.
+For test purpose, Placemat deploys HTTPS servers on `https://<BMC address>:443`.
 They return 200 OK only.
 
-**If you use this feature, prepare certificate files and specify command line option**
+If you use this feature, prepare certificate files and specify command line options `-bmc-cert` and `-bmc-key`.
