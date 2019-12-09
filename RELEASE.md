@@ -40,7 +40,7 @@ Bump version
 5. Commit the change and push it.
 
     ```console
-    $ git commit -a -m "Bump version to $VERSION"
+    $ git commit -a -s -m "Bump version to $VERSION"
     $ git neco review
     ```
 
