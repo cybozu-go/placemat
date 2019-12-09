@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2019-12-09
+
+### Added
+
+- Add stub HTTPS server for virtual BMC (#101).
+
 ## [1.3.9] - 2019-10-11
 
 ### Changed
@@ -99,7 +105,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.3.9...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/cybozu-go/placemat/compare/v1.3.9...v1.4.0
 [1.3.9]: https://github.com/cybozu-go/placemat/compare/v1.3.8...v1.3.9
 [1.3.8]: https://github.com/cybozu-go/placemat/compare/v1.3.7...v1.3.8
 [1.3.7]: https://github.com/cybozu-go/placemat/compare/v1.3.6...v1.3.7
