@@ -54,7 +54,7 @@ func TestExample() {
 			var result map[string]interface{}
 			err = json.NewDecoder(strings.NewReader(string(out))).Decode(&result)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(len(result)).Should(Equal(1))
+			Expect(len(result)).Should(Equal(3)) // for boot, worker-1, and worker-2
 			for _, node := range result {
 				Expect(node).NotTo(Equal("There is no snapshot available."))
 			}
