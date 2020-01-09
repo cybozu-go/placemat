@@ -22,3 +22,31 @@ volumes:
     network-config: network-config.example.yml
 cpu: 1
 memory: 2G
+---
+kind: Node
+name: worker-1
+interfaces:
+  - net0
+volumes:
+  - kind: raw
+    name: data
+    size: 10G
+cpu: 1
+memory: 2G
+smbios:
+  serial: 1234abcd
+uefi: false
+---
+kind: Node
+name: worker-2
+interfaces:
+  - net0
+volumes:
+  - kind: raw
+    name: data
+    size: 10G
+cpu: 1
+memory: 2G
+smbios:
+  serial: 5678efgh
+uefi: false
