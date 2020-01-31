@@ -17,7 +17,13 @@ commands:
       - run:
           command: |
             ./bin/run-mtest.sh <<parameters.suite>> <<parameters.target>>
-
+      - run:
+          name: Set the instance lifetime to 10 minutes
+          command: |
+            . ./bin/env
+            $GCLOUD compute instances add-metadata ${INSTANCE_NAME} --zone ${ZONE} \
+              --metadata shutdown-at=$(date -Iseconds -d+10minutes)
+          when: on_fail
 jobs:
   build:
     docker:
