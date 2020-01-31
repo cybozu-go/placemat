@@ -33,7 +33,7 @@ commands:
                   \"type\": \"section\", \
                   \"text\": { \
                     \"type\": \"mrkdwn\", \
-                    \"text\": \"${CIRCLE_JOB} was failed.\n Do you extend the lifetime of ${INSTANCE_NAME}?\" \
+                    \"text\": \"${CIRCLE_JOB} was failed. Do you extend the lifetime of ${INSTANCE_NAME}?\" \
                   }, \
                   \"accessory\": { \
                     \"type\": \"button\", \
