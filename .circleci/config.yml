@@ -24,6 +24,29 @@ commands:
             $GCLOUD compute instances add-metadata ${INSTANCE_NAME} --zone ${ZONE} \
               --metadata shutdown-at=$(date -Iseconds -d+10minutes)
           when: on_fail
+      - run:
+          name: notify to slack
+          command: |
+            curl -X POST -H 'Content-type: application/json' --data '{ \
+              "blocks": [ \
+                { \
+                  "type": "section", \
+                  "text": { \
+                    "type": "mrkdwn", \
+                    "text": "Do you extend the lifetime of ${INSTANCE_NAME}?" \
+                  }, \
+                  "accessory": { \
+                    "type": "button", \
+                    "text": { \
+                      "type": "plain_text", \
+                      "text": "Extend", \
+                      "emoji": true \
+                    }, \
+                    "value": "${INSTANCE_NAME}" \
+                  } \
+                } \
+              ] \
+            }' $SLACK_WEBHOOK_URL
 jobs:
   build:
     docker:
