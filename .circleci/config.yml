@@ -27,25 +27,25 @@ commands:
       - run:
           name: notify to slack
           command: |
-            curl -X POST -H 'Content-type: application/json' --data "{ \
-              \"blocks\": [ \
-                { \
-                  \"type\": \"section\", \
-                  \"text\": { \
-                    \"type\": \"mrkdwn\", \
-                    \"text\": \"${CIRCLE_JOB} was failed. Do you extend the lifetime of ${INSTANCE_NAME}?\" \
-                  }, \
-                  \"accessory\": { \
-                    \"type\": \"button\", \
-                    \"text\": { \
-                      \"type\": \"plain_text\", \
-                      \"text\": \"Extend\", \
-                      \"emoji\": true \
-                    }, \
-                    \"value\": \"${INSTANCE_NAME}\" \
-                  } \
-                } \
-              ]\
+            curl -X POST -H 'Content-type: application/json' --data "{
+              \"blocks\": [
+                {
+                  \"type\": \"section\",
+                  \"text\": {
+                    \"type\": \"mrkdwn\",
+                    \"text\": \"${CIRCLE_JOB} was failed. Do you extend the lifetime of ${INSTANCE_NAME}?\"
+                  },
+                  \"accessory\": {
+                    \"type\": \"button\",
+                    \"text\": {
+                      \"type\": \"plain_text\",
+                      \"text\": \"Extend\",
+                      \"emoji\": true
+                    },
+                    \"value\": \"${INSTANCE_NAME}\"
+                  }
+                }
+              ]
             }" $SLACK_WEBHOOK_URL
 jobs:
   build:
