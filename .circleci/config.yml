@@ -27,6 +27,7 @@ commands:
       - run:
           name: notify to slack
           command: |
+            . ./bin/env
             curl -X POST -H 'Content-type: application/json' --data "{
               \"blocks\": [
                 {
