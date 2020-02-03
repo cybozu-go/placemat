@@ -25,7 +25,7 @@ commands:
               --metadata shutdown-at=$(date -Iseconds -d+10minutes)
           when: on_fail
       - run:
-          name: notify to slack
+          name: Notify to Slack
           command: |
             . ./bin/env
             curl -X POST -H 'Content-type: application/json' --data "{
@@ -48,6 +48,7 @@ commands:
                 }
               ]
             }" $SLACK_WEBHOOK_URL
+          when: on_fail
 jobs:
   build:
     docker:
