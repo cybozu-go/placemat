@@ -34,7 +34,7 @@ commands:
                   \"type\": \"section\",
                   \"text\": {
                     \"type\": \"mrkdwn\",
-                    \"text\": \"${CIRCLE_JOB} was failed. Do you extend the lifetime of ${INSTANCE_NAME}?\"
+                    \"text\": \"<font color="Red">Failed</font>: ${CIRCLE_USERNAME}'s workflow (${CIRCLE_WORKFLOW_ID}) in ${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} (${CIRCLE_BRANCH})\n Do you extend the lifetime of ${INSTANCE_NAME}?\"
                   },
                   \"accessory\": {
                     \"type\": \"button\",
