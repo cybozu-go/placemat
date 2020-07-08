@@ -138,7 +138,7 @@ func (v *imageVolume) Create(ctx context.Context, dataDir string) ([]string, err
 }
 
 func createCoWImageFromBase(ctx context.Context, base, dest string) error {
-	c := well.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-o", "backing_file="+base, dest)
+	c := well.CommandContext(ctx, "qemu-img", "create", "-f", "raw", "-o", "backing_file="+base, dest)
 	return c.Run()
 }
 
@@ -216,7 +216,7 @@ func (v *rawVolume) Create(ctx context.Context, dataDir string) ([]string, error
 	_, err := os.Stat(p)
 	switch {
 	case os.IsNotExist(err):
-		err = well.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, v.size).Run()
+		err = well.CommandContext(ctx, "qemu-img", "create", "-f", "raw", p, v.size).Run()
 		if err != nil {
 			return nil, err
 		}
