@@ -230,6 +230,13 @@ func (v *rawVolume) Create(ctx context.Context, dataDir string) ([]string, error
 	return v.qemuArgs(p), nil
 }
 
+func (v *rawVolume) qemuArgs(p string) []string {
+	return []string{
+		"-drive",
+		"if=virtio,cache=none,aio=native,format=raw,file=" + p,
+	}
+}
+
 type vvfatVolume struct {
 	baseVolume
 	folderName string
