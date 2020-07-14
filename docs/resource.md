@@ -173,6 +173,7 @@ Attaches a RAW, empty block device.
 This volume type has the following parameter:
 
 * `size`: Disk size.  Required.
+* `format`: QEMU disk image format.  `qcow2` (default) or `raw`.
 
 ### `vvfat` volume
 

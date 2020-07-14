@@ -21,6 +21,7 @@ type NodeVolumeSpec struct {
 	Folder        string `json:"folder,omitempty"`
 	CopyOnWrite   bool   `json:"copy-on-write,omitempty"`
 	Cache         string `json:"cache,omitempty"`
+	Format        string `json:"format,omitempty"`
 }
 
 // NodeVolume defines the interface for Node volumes.
@@ -30,6 +31,11 @@ type NodeVolume interface {
 	Resolve(*Cluster) error
 	Create(context.Context, string) ([]string, error)
 }
+
+const (
+	nodeVolumeFormatQcow2 = "qcow2"
+	nodeVolumeFormatRaw   = "raw"
+)
 
 type baseVolume struct {
 	name  string
@@ -195,14 +201,16 @@ func (v *localDSVolume) Create(ctx context.Context, dataDir string) ([]string, e
 
 type rawVolume struct {
 	baseVolume
-	size string
+	size   string
+	format string
 }
 
 // NewRawVolume creates a volume for type "raw".
-func NewRawVolume(name string, cache string, size string) NodeVolume {
+func NewRawVolume(name string, cache string, size, format string) NodeVolume {
 	return &rawVolume{
 		baseVolume: baseVolume{name: name, cache: cache},
 		size:       size,
+		format:     format,
 	}
 }
 
@@ -219,7 +227,7 @@ func (v *rawVolume) Create(ctx context.Context, dataDir string) ([]string, error
 	_, err := os.Stat(p)
 	switch {
 	case os.IsNotExist(err):
-		err = well.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", p, v.size).Run()
+		err = well.CommandContext(ctx, "qemu-img", "create", "-f", v.format, p, v.size).Run()
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +241,7 @@ func (v *rawVolume) Create(ctx context.Context, dataDir string) ([]string, error
 func (v *rawVolume) qemuArgs(p string) []string {
 	return []string{
 		"-drive",
-		"if=virtio,cache=none,aio=native,format=raw,file=" + p,
+		fmt.Sprintf("if=virtio,cache=%s,aio=native,format=%s,file=%s", v.cache, v.format, p),
 	}
 }
 
