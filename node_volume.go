@@ -2,6 +2,7 @@ package placemat
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,6 +20,7 @@ type NodeVolumeSpec struct {
 	Size          string `json:"size,omitempty"`
 	Folder        string `json:"folder,omitempty"`
 	CopyOnWrite   bool   `json:"copy-on-write,omitempty"`
+	Cache         string `json:"cache,omitempty"`
 }
 
 // NodeVolume defines the interface for Node volumes.
@@ -30,7 +32,8 @@ type NodeVolume interface {
 }
 
 type baseVolume struct {
-	name string
+	name  string
+	cache string
 }
 
 func (v baseVolume) Name() string {
@@ -44,7 +47,7 @@ func volumePath(dataDir, name string) string {
 func (v baseVolume) qemuArgs(p string) []string {
 	return []string{
 		"-drive",
-		"if=virtio,cache=none,aio=native,file=" + p,
+		fmt.Sprintf("if=virtio,cache=%s,aio=native,file=%s", v.cache, p),
 	}
 }
 
@@ -56,9 +59,9 @@ type imageVolume struct {
 }
 
 // NewImageVolume creates a volume for type "image".
-func NewImageVolume(name string, imageName string, cow bool) NodeVolume {
+func NewImageVolume(name string, cache string, imageName string, cow bool) NodeVolume {
 	return &imageVolume{
-		baseVolume:  baseVolume{name: name},
+		baseVolume:  baseVolume{name: name, cache: cache},
 		imageName:   imageName,
 		copyOnWrite: cow,
 	}
@@ -149,9 +152,9 @@ type localDSVolume struct {
 }
 
 // NewLocalDSVolume creates a volume for type "localds".
-func NewLocalDSVolume(name string, u, n string) NodeVolume {
+func NewLocalDSVolume(name, cache string, u, n string) NodeVolume {
 	return &localDSVolume{
-		baseVolume:    baseVolume{name: name},
+		baseVolume:    baseVolume{name: name, cache: cache},
 		userData:      u,
 		networkConfig: n,
 	}
@@ -196,9 +199,9 @@ type rawVolume struct {
 }
 
 // NewRawVolume creates a volume for type "raw".
-func NewRawVolume(name string, size string) NodeVolume {
+func NewRawVolume(name string, cache string, size string) NodeVolume {
 	return &rawVolume{
-		baseVolume: baseVolume{name: name},
+		baseVolume: baseVolume{name: name, cache: cache},
 		size:       size,
 	}
 }

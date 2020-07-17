@@ -143,6 +143,11 @@ The properties are:
     - If false: Provide no TPM device.
     - If true: Provide a TPM device as `/dev/tpm0` on the VM.
 
+### common volume parameters
+* `kind`: kind of the volume.  Required.
+* `name`: name of the volume.  Required.
+* `cache`: determine how to access backend storage. Possible values are `writeback`, `none`, `writethrough`, `directsync`, `unsafe`.  Defaulted to `none`.
+
 ### `image` volume
 
 Attaches `Image` resource as a VM disk.
