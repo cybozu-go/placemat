@@ -33,6 +33,12 @@ type NodeVolume interface {
 }
 
 const (
+	nodeVolumeCacheWriteback    = "writeback"
+	nodeVolumeCacheNone         = "none"
+	nodeVolumeCacheWritethrough = "writethrough"
+	nodeVolumeCacheDirectSync   = "directsync"
+	nodeVolumeCacheUnsafe       = "unsafe"
+
 	nodeVolumeFormatQcow2 = "qcow2"
 	nodeVolumeFormatRaw   = "raw"
 )

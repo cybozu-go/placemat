@@ -53,10 +53,16 @@ type Node struct {
 }
 
 func createNodeVolume(spec NodeVolumeSpec) (NodeVolume, error) {
-	cache := spec.Cache
-	if cache == "" {
-		cache = "none"
+	var cache string
+	switch spec.Cache {
+	case "":
+		cache = nodeVolumeCacheNone
+	case nodeVolumeCacheWriteback, nodeVolumeCacheNone, nodeVolumeCacheWritethrough, nodeVolumeCacheDirectSync, nodeVolumeCacheUnsafe:
+		cache = spec.Cache
+	default:
+		return nil, errors.New("invalid cache type for volume")
 	}
+
 	switch spec.Kind {
 	case "image":
 		if spec.Image == "" {
