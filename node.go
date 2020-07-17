@@ -88,6 +88,14 @@ func createNodeVolume(spec NodeVolumeSpec) (NodeVolume, error) {
 			return nil, errors.New("invalid format for raw volume")
 		}
 		return NewRawVolume(spec.Name, cache, spec.Size, format), nil
+	case "lv":
+		if spec.Size == "" {
+			return nil, errors.New("lv volume must specify size")
+		}
+		if spec.VG == "" {
+			return nil, errors.New("lv volume must specify vg")
+		}
+		return NewLVVolume(spec.Name, cache, spec.Size, spec.VG), nil
 	case "vvfat":
 		if spec.Folder == "" {
 			return nil, errors.New("VVFAT volume must specify a folder name")
