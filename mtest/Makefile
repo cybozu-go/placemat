@@ -32,8 +32,18 @@ ifeq ($(findstring /,$(SUITE)),)
 else
   SUITE_PACKAGE = $(SUITE)
 endif
+ifdef VG
+  KIND_LV = lv
+  LV_VG_KEY = vg
+  LV_VG_VALUE = $(VG)
+else
+  # skip creation of "lv" volume
+  KIND_LV = raw
+  LV_VG_KEY = format
+  LV_VG_VALUE = qcow2
+endif
 
-export SSH_PRIVKEY PLACEMAT PMCTL CLUSTER_YAML EXAMPLE_CLUSTER_YAML BMC_CERT BMC_KEY
+export SSH_PRIVKEY PLACEMAT PMCTL CLUSTER_YAML EXAMPLE_CLUSTER_YAML BMC_CERT BMC_KEY VG
 
 TEST_DEPS = $(OUTPUT)/placemat \
 	$(OUTPUT)/pmctl \
@@ -66,7 +76,10 @@ $(OUTPUT)/cluster.yml: cluster.yml
 		-e 's/@BMC_ADDRESS@/$(BMC_ADDRESS)/' \
 		-e 's/@POD1@/$(POD1)/' \
 		-e 's/@POD2@/$(POD2)/' \
-		-e 's/@UBUNTU_IMAGE@/$(UBUNTU_IMAGE)/' $< > $@
+		-e 's/@UBUNTU_IMAGE@/$(UBUNTU_IMAGE)/' \
+		-e 's/@KIND_LV@/$(KIND_LV)/' \
+		-e 's/@LV_VG_KEY@/$(LV_VG_KEY)/' \
+		-e 's/@LV_VG_VALUE@/$(LV_VG_VALUE)/' $< > $@
 
 $(OUTPUT)/user-data_node1.yml: user-data.yml
 	mkdir -p $(OUTPUT)
