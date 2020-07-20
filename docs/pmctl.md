@@ -382,7 +382,15 @@ Save a snapshot of the all VMs as the 'TAG'.
 
 If specify the same tag as before, the snapshot will be overwritten.
 
-NOTE: To save a snapshot, localds and vvfat devices have to be detached.
+Only a limited number of volume types are available for creating a snapshot.  To save a snapshot, unsupported devices have to be detached beforehand.
+* supported devies
+  * `image` volume
+  * `raw` volume with `qcow2` format
+* unsupported devices
+  * `localds` volume
+  * `raw` volume with `raw` format
+  * `lv` volume
+  * `vvfat` volume
 
 ```console
 $ pmctl snapshot save test
@@ -394,7 +402,7 @@ Restore all VMs from snapshot specified by the 'TAG'.
 
 If there is no snapshot of the tag, restoration is not done, but not reported.
 
-NOTE: To load a snapshot, localds and vvfat devices have to be detached.
+To load a snapshot, unsupported devices have to be detached beforehand.
 
 ```console
 $ pmctl snapshot load test

@@ -30,6 +30,17 @@ volumes:
   name: seed
   user-data: user-data_node1.yml
   network-config: network1.yml
+- kind: raw
+  name: raw-qcow2
+  size: 5G
+- kind: raw
+  name: raw-raw
+  size: 5G
+  format: raw
+- kind: @KIND_LV@
+  name: lv
+  size: 5G
+  @LV_VG_KEY@: @LV_VG_VALUE@
 tpm: true
 ---
 kind: Node

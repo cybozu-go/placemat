@@ -8,4 +8,5 @@ var FunctionsSuite = func() {
 	Context("example", TestExample)
 	Context("pod", TestPod)
 	Context("BMC", TestBMC)
+	Context("volume", TestVolume)
 }

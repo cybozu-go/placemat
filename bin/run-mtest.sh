@@ -38,9 +38,13 @@ cat >run.sh <<EOF
 #!/bin/sh -e
 
 # mkfs and mount local SSD on /var/scratch
-mkfs -t ext4 -F /dev/disk/by-id/google-local-ssd-0
+pvcreate /dev/disk/by-id/google-local-ssd-0
+vgcreate vg1 /dev/disk/by-id/google-local-ssd-0
+lvcreate -n scratch -L 100g vg1
+while [ ! -e /dev/vg1/scratch ]; do sleep 1; done
+mkfs -t ext4 -F /dev/vg1/scratch
 mkdir -p /var/scratch
-mount -t ext4 /dev/disk/by-id/google-local-ssd-0 /var/scratch
+mount -t ext4 /dev/vg1/scratch /var/scratch
 chmod 1777 /var/scratch
 
 # Run mtest
@@ -59,7 +63,7 @@ git checkout -qf ${CIRCLE_SHA1}
 cd mtest
 cp /assets/ubuntu-*.img .
 make setup
-exec make test SUITE=${SUITE} TARGET="${TARGET}"
+exec make test SUITE=${SUITE} TARGET="${TARGET}" VG=vg1
 EOF
 chmod +x run.sh
 

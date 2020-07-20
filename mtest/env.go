@@ -18,4 +18,5 @@ var (
 	exampleClusterYAML = os.Getenv("EXAMPLE_CLUSTER_YAML")
 	bmcCert            = os.Getenv("BMC_CERT")
 	bmcKey             = os.Getenv("BMC_KEY")
+	vg                 = os.Getenv("VG")
 )

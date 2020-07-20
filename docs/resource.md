@@ -110,6 +110,11 @@ volumes:
   - kind: raw
     name: data
     size: 10G
+  - kind: lv
+    name: data2
+    size: 10G
+    vg: vg1
+    cache: writeback
   - kind: vvfat
     name: host-data
     folder: host-dir
@@ -130,7 +135,8 @@ The properties are:
 - `volumes`: Volumes attached to the VM.  These kind of volumes are supported:
     - `image`: Image resource for QEMU disk image.
     - `localds`: [cloud-config](http://cloudinit.readthedocs.io/en/latest/topics/format.html#cloud-config-data) data.
-    - `raw`: Raw (and empty) block device.
+    - `raw`: Raw (and empty) block device backed by a file.
+    - `lv`: Raw (and empty) block device backed by a logical volume in LVM.
     - `vvfat`: DataFolder resource for QEMU VVFAT volume.
 - `ignition`: [Ignition file](https://coreos.com/ignition/docs/latest/configuration-v2_1.html).
 - `cpu`: The amount of virtual CPUs.
@@ -142,6 +148,11 @@ The properties are:
 - `tpm`: Create Trusted Platform Module(TPM) for the VM. This feature requires [swtpm](https://github.com/stefanberger/swtpm).
     - If false: Provide no TPM device.
     - If true: Provide a TPM device as `/dev/tpm0` on the VM.
+
+### common volume parameters
+* `kind`: kind of the volume.  Required.
+* `name`: name of the volume.  Required.
+* `cache`: determine how to access backend storage. Possible values are `writeback`, `none`, `writethrough`, `directsync`, `unsafe`.  Defaulted to `none`.
 
 ### `image` volume
 
@@ -164,10 +175,19 @@ This volume type has the following parameters:
 
 ### `raw` volume
 
-Attaches a RAW, empty block device.
+Attaches a RAW, empty block device backed by a file.
+This volume type has the following parameters:
+
+* `size`: Disk size.  Required.
+* `format`: QEMU disk image format.  `qcow2` (default) or `raw`.
+
+### `lv` volume
+
+Attaches a RAW, empty block device backed by a logical volume in LVM.
 This volume type has the following parameter:
 
 * `size`: Disk size.  Required.
+* `vg`: Volume group.  Required.
 
 ### `vvfat` volume
 
