@@ -26,13 +26,18 @@ func TestVolume() {
 			Expect(err).To(Succeed())
 		})
 
+		By("writing to vde (raw volume, qcow2 format, cache=writeback)", func() {
+			_, _, err := execAt(node1, "sudo", "dd", "if=/dev/zero", "of=/dev/vde", "bs=1M", "count=1")
+			Expect(err).To(Succeed())
+		})
+
 		if vg != "" {
-			By("writing to vde (lv volume)", func() {
-				_, _, err := execAt(node1, "sudo", "dd", "if=/dev/zero", "of=/dev/vde", "bs=1M", "count=1")
+			By("writing to vdf (lv volume)", func() {
+				_, _, err := execAt(node1, "sudo", "dd", "if=/dev/zero", "of=/dev/vdf", "bs=1M", "count=1")
 				Expect(err).To(Succeed())
 			})
 		} else {
-			By("skipping test for vde (lv volume)")
+			By("skipping test for vdf (lv volume)")
 		}
 
 		By("terminating placemat", func() {

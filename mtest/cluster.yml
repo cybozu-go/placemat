@@ -37,6 +37,10 @@ volumes:
   name: raw-raw
   size: 5G
   format: raw
+- kind: raw
+  name: raw-writeback
+  size: 5G
+  cache: writeback
 - kind: @KIND_LV@
   name: lv
   size: 5G
