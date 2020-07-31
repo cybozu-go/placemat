@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/well"
@@ -272,7 +273,9 @@ func (c *Cluster) Start(ctx context.Context, r *Runtime) error {
 	for _, p := range c.Pods {
 		p := p
 		env.Go(func(ctx context.Context) error {
-			return p.Start(ctx, r)
+			err := p.Start(ctx, r)
+			time.Sleep(5 * time.Second)
+			return err
 		})
 	}
 	for _, vm := range vms {
