@@ -6,11 +6,11 @@ import (
 )
 
 func TestGenerateRandomMacForKVM(t *testing.T) {
-	sut := generateMACForKVM("test")
+	sut := generateMACForKVM()
 	if len(sut) != 17 {
 		t.Fatal("length of MAC address string is not 17")
 	}
-	if sut == generateMACForKVM("hoge") {
+	if sut == generateMACForKVM() {
 		t.Fatal("it should generate unique address")
 	}
 	_, err := net.ParseMAC(sut)
