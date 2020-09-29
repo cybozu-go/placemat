@@ -1,8 +1,10 @@
 package mtest
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -63,5 +65,11 @@ func TestExample() {
 			terminatePlacemat(session)
 			Eventually(session.Exited).Should(BeClosed())
 		})
+	})
+
+	It("should use vhost_net", func() {
+		data, err := ioutil.ReadFile("/proc/modules")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(bytes.Contains(data, []byte("vhost_net"))).To(BeTrue())
 	})
 }
