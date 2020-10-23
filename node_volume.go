@@ -356,6 +356,6 @@ func (v *vvfatVolume) Create(ctx context.Context, _ string) ([]string, error) {
 func (v vvfatVolume) qemuArgs(p string) []string {
 	return []string{
 		"-drive",
-		"file=fat:16:" + p + ",format=raw,if=virtio",
+		"file=fat:16:" + p + ",format=raw,if=virtio,read-only=on",
 	}
 }
