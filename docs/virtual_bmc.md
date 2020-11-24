@@ -46,8 +46,9 @@ Redfish API
 
 ### Supported Resources
 
-- [Chassis](https://www.dell.com/support/manuals/ja-jp/idrac9-lifecycle-controller-v4.x-series/idrac9_4.00.00.00_redfishapiguide_pub/chassis?guid=guid-8cf4bcc2-28b2-4304-9f9e-85549fe81ee8&lang=en-us)
-- [ChassisCollection](https://www.dell.com/support/manuals/ja-jp/idrac9-lifecycle-controller-v4.x-series/idrac9_4.00.00.00_redfishapiguide_pub/chassiscollection?guid=guid-c4ac8700-44d2-46e9-b90f-67eed0774fce&lang=en-us)
+- [ChassisCollection](https://www.dell.com/support/manuals/ja-jp/idrac9-lifecycle-controller-v3.3-series/idrac9_3.36_redfishapiguide/chassiscollection?guid=guid-c4ac8700-44d2-46e9-b90f-67eed0774fce&lang=en-us)
+- [Chassis](https://www.dell.com/support/manuals/ja-jp/idrac9-lifecycle-controller-v3.3-series/idrac9_3.36_redfishapiguide/chassiscollection?guid=guid-c4ac8700-44d2-46e9-b90f-67eed0774fce&lang=en-us)
+  - [Supported Action - Reset](https://www.dell.com/support/manuals/ja-jp/idrac9-lifecycle-controller-v3.3-series/idrac9_3.36_redfishapiguide/supported-action-%E2%80%94-reset?guid=guid-eae5f0af-bfdf-4915-b097-2f6f771e5c08&lang=en-us)
 
 Placemat v2 returns the following fixed ChassisCollection.
 
@@ -59,7 +60,7 @@ Placemat v2 returns the following fixed ChassisCollection.
   "Description": "Collection of Chassis",
   "Members": [
     {
-      "@odata.id": "/redfish/v1/Chassis/1"
+      "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
     }
   ],
   "Members@odata.count": 1,
@@ -69,7 +70,23 @@ Placemat v2 returns the following fixed ChassisCollection.
 
 If you use this feature, prepare certificate files and specify command line options `-bmc-cert` and `-bmc-key`.
 
-### Authentication
+### Supported Action
 
-Placemat v2 supports Basic authentication. In this method, user name and password are provided for each Redfish API request.
-For example, `https://<USER>:<PASSWORD>@<BMC ADDRESS>/redfish/v1/Chassis` The user name and password are fixed value `cybozu`.
+Placemat V2 supports Reset Action for Chassis resource. You can confirm the supported actions in the Actions field of the Chassis Resource.
+
+```json
+{
+  "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+  "@odata.id": "/redfish/v1/Chassis/System.Embedded.1",
+  "@odata.type": "#Chassis.v1_6_0.Chassis",
+  "Actions": {
+    "#Chassis.Reset": {
+      "ResetType@Redfish.AllowableValues": [
+        "On",
+        "ForceOff"
+      ],
+      "target": "/redfish/v1/Chassis/System.Embedded.1/Actions/Chassis.Reset"
+    }
+  },
+}
+```

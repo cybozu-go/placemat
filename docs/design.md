@@ -1,5 +1,5 @@
-V2 Design Note
-==============
+V2 Design Notes
+===============
 
 - [Overview](#overview)
   - [Background](#background)
@@ -7,8 +7,8 @@ V2 Design Note
 - [NetworkNamespace Resource](#networknamespace-resource)
 - [Running Placemat2 inside a kubernetes Pod](#running-placemat2-inside-a-kubernetes-pod)
 - [New Features](#new-features)
-  - [New Package Placemat2](#new-package-placemat2)
   - [Redfish API Support](#redfish-api-support)
+  - [Auto Tune MTU Value](#auto-tune-mtu-value)
 - [Obsolete Features](#obsolete-features)
 
 ## Overview
@@ -18,7 +18,7 @@ Placemat is a data center network and server simulation tool using QEMU/KVM virt
 ### Background
 
 Currently, the integration test suites of Neco, our data center management software, are running on a virtual data center built with Placemat v1 on a GCP instance, and they are unstable due to problems caused by nested VMs.
-To work around the issue, we're considering running the integration test suits in our Kubernetes cluster build on bare-metal servers instead of a GCP instance.
+To work around the issue, we're considering running the integration test suits in our Kubernetes cluster built on bare-metal servers instead of a GCP instance.
 
 ### Goals
 
@@ -26,7 +26,7 @@ To work around the issue, we're considering running the integration test suits i
 - Coexists with v1 to make the migration tasks easier.
 - Add new features and improvements
   - Support Redfish API in Virtual BMC.
-  - Auto Path MTU discovery and configuration
+  - Auto Tune MTU Value
   - Improve the implementation with modern methods
 
 ## NetworkNamespace Resource
@@ -37,13 +37,12 @@ Users need to be careful to set up socket files and pid files of applications su
 For example,
 
 ```yaml
-kind: NetworkStack
+kind: NetworkNamespace
 name: rack0-tor1
 apps:
 - name: bird
   command:
   - /usr/local/bird/sbin/bird
-  args:
   - -f
   - -c
   - /etc/bird/bird_rack0-tor1.conf
@@ -67,6 +66,8 @@ interfaces:
 - addresses:
   - 10.69.0.65/26
   network: r0-node1
+init-scripts:
+  - /path/to/script
 ```
 
 For more information, see [here](resource.md#networknamespace).
@@ -80,7 +81,7 @@ Also, `/dev/vhost-net` needs to be exposed in the container. Run `modprobe vhost
 
 ## New Package for v2
 
-The deb package for Placemat v2 is placemat2, and the binaries installed by the package are placemat2 and pmctl2 so that v1 and v2 can coexist.
+The deb package for Placemat v2 is `placemat2`, and the binaries installed by the package are `placemat2` and `pmctl2` so that v1 and v2 can coexist.
 This is because we will install both Placemat v1 and v2 in the GCP image we are using for our CI, and then we will modify each application's CI.
 
 ## New Features
@@ -89,9 +90,9 @@ This is because we will install both Placemat v1 and v2 in the GCP image we are 
 
 Placemat v2 supports Redfish API in addition to IPMI. For more information, see [here](virtual_bmc.md#redfish-api).
 
-### Auto path MTU discovery and configuration
+### Auto Tune MTU Value
 
-Placemat v2 discovers Path MTU and configures it to the links it added to fix the problem that some packets are dropped due to the lower MTU that GCP sets on its instance.
+Placemat v2 fixes the problem that some packets are dropped due to the lower MTU that GCP sets on its instance by tuning MTU value of the links it added.
 GCP sets MTU 1460, but Placemat v1 sets MTU 1500 to the links.
 
 ## Obsolete Features

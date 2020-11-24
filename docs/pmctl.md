@@ -167,53 +167,12 @@ Restart a node.
 $ pmctl node action restart node1
 ```
 
-`netns` subcommand
-------------------
-
-### `pmctl netns list [--json]`
-
-Show network namespace list.
-
-* `--json`: Show detailed information of a network namespace in JSON format.
-
-```console
-$ pmctl netns list --json | jq .
-[
-  {
-    "name": "netns1",
-    "veths": {
-      "mynet": "pm8"
-    },
-    "apps": [
-      "ubuntu"
-    ]
-  }
-]
-```
-
-### `pmctl netns show <NETWORK NS>`
-
-Show a network namespace info.
-
-```console
-$ pmctl netns show netns1 | jq .
-{
-  "name": "netns1",
-  "veths": {
-    "mynet": "pm8"
-  },
-  "apps": [
-    "ubuntu"
-  ]
-}
-```
-
 `net` subcommand
 ----------------
 
 In this subcommand you need to specify network device name.
 
-The name can be obtained with `pmclt node show` or `pmctl netns show` as following.
+The name can be obtained with `pmclt node show` or `ip netns exec ip link` as following.
 
 ```console
 $ DEVICE=$(pmctl node show node1 | jq -r '.taps."mynet"')
@@ -222,9 +181,14 @@ pm0
 ```
 
 ```console
-$ DEVICE=$(pmctl netns show netns | jq -r '.veths."mynet"')
-$ echo $DEVICE
-pm8
+# pm20 is the peer of the device eth0 inside the core network namespace, and it has been added to the bridge internet.
+$ ip netns exec core ip link
+51: eth0@if52: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether f6:55:f8:08:d4:61 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+
+$ ip link
+52: pm20@if51: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master internet state UP mode DEFAULT group default qlen 1000
+    link/ether 9e:42:e4:3b:bb:34 brd ff:ff:ff:ff:ff:ff link-netnsid 10
 ```
 
 ### `pmctl net action up <DEVICE>`

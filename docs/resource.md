@@ -225,7 +225,6 @@ apps:
   - name: bird
     command:
     - /usr/local/bird/sbin/bird
-    args:
     - -f
     - -c
     - /etc/bird/bird_core.conf
