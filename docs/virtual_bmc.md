@@ -68,8 +68,6 @@ Placemat v2 returns the following fixed ChassisCollection.
 }
 ```
 
-If you use this feature, prepare certificate files and specify command line options `-bmc-cert` and `-bmc-key`.
-
 ### Supported Action
 
 Placemat V2 supports Reset Action for Chassis resource. You can confirm the supported actions in the Actions field of the Chassis Resource.

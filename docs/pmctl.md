@@ -172,7 +172,7 @@ $ pmctl node action restart node1
 
 In this subcommand you need to specify network device name.
 
-The name can be obtained with `pmclt node show` or `ip netns exec ip link` as following.
+The name can be obtained with `pmctl node show` or `ip netns exec ip link` as following.
 
 ```console
 $ DEVICE=$(pmctl node show node1 | jq -r '.taps."mynet"')

@@ -51,7 +51,6 @@ apps:
 - name: dhcp-relay
   command:
   - /usr/sbin/dnsmasq
-  args: 
   - --pid-file=/var/run/dnsmasq_rack0-tor1.pid
   - --log-facility=-
   - --dhcp-relay 10.69.0.65,10.69.0.195
