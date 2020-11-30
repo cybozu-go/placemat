@@ -19,3 +19,4 @@ jobs:
         with:
           go-version: ${{ env.go-version }}
       - run: make test
+      - run: make test-dcnet

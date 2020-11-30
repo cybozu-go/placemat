@@ -1,3 +1,5 @@
+SUDO=sudo
+
 .PHONY: code-check
 code-check: test-tools
 	test -z "$$(gofmt -s -l . | tee /dev/stderr)"
@@ -11,6 +13,12 @@ code-check: test-tools
 .PHONY: test
 test: code-check
 	go test -race -v -count 1 ./...
+
+.PHONY: test-dcnet
+test-dcnet:
+	go test -c ./pkg/dcnet
+	$(SUDO) ./dcnet.test -test.v
+	rm -f dcnet.test
 
 .PHONY: test-tools
 test-tools: custom-checker staticcheck nilerr ineffassign
