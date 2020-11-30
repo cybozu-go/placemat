@@ -30,7 +30,7 @@ tags
 /placemat_*_amd64.deb
 
 # ignore go.sum
-/go.sum
+go.sum
 
 # Editors
 *~
