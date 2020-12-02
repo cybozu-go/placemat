@@ -6,7 +6,6 @@ code-check: test-tools
 	staticcheck ./...
 	test -z "$$(nilerr ./... 2>&1 | tee /dev/stderr)"
 	test -z "$$(custom-checker -restrictpkg.packages=html/template,log $$(go list -tags='$(GOTAGS)' ./...) 2>&1 | tee /dev/stderr)"
-	ineffassign .
 	go install ./...
 	go vet ./...
 
@@ -21,7 +20,7 @@ test-dcnet:
 	rm -f dcnet.test
 
 .PHONY: test-tools
-test-tools: custom-checker staticcheck nilerr ineffassign
+test-tools: custom-checker staticcheck nilerr
 
 .PHONY: custom-checker
 custom-checker:
@@ -39,10 +38,4 @@ staticcheck:
 nilerr:
 	if ! which nilerr >/dev/null; then \
 		cd /tmp; env GOFLAGS= GO111MODULE=on go get github.com/gostaticanalysis/nilerr/cmd/nilerr; \
-	fi
-
-.PHONY: ineffassign
-ineffassign:
-	if ! which ineffassign >/dev/null; then \
-		cd /tmp; env GOFLAGS= GO111MODULE=on go get github.com/gordonklaus/ineffassign; \
 	fi

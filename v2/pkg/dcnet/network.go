@@ -4,15 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/containernetworking/plugins/pkg/utils/sysctl"
+	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/vishvananda/netlink"
 )
 
 const (
 	maxNetworkNameLen = 15
-	v4ForwardKey      = "net.ipv4.ip_forward"
-	v6ForwardKey      = "net.ipv6.conf.all.forwarding"
 )
 
 // Network types.
@@ -33,21 +31,14 @@ type NetworkSpec struct {
 
 // Network represents a network configuration
 type Network struct {
-	name        string
-	typ         string
-	useNAT      bool
-	addr        *netlink.Addr
-	v4forwarded bool
-	v6forwarded bool
+	name   string
+	typ    string
+	useNAT bool
+	addr   *netlink.Addr
 }
 
 // NewNetwork creates *Network from spec.
 func NewNetwork(spec *NetworkSpec) (*Network, error) {
-	err := validate(spec)
-	if err != nil {
-		return nil, err
-	}
-
 	n := &Network{
 		name:   spec.Name,
 		typ:    spec.Type,
@@ -61,35 +52,39 @@ func NewNetwork(spec *NetworkSpec) (*Network, error) {
 		n.addr = addr
 	}
 
+	if err := n.validate(); err != nil {
+		return nil, err
+	}
+
 	return n, nil
 }
 
-func validate(spec *NetworkSpec) error {
-	if len(spec.Name) > maxNetworkNameLen {
-		return errors.New("too long name: " + spec.Name)
+func (n *Network) validate() error {
+	if len(n.name) > maxNetworkNameLen {
+		return errors.New("too long name: " + n.name)
 	}
 
-	switch spec.Type {
+	switch n.typ {
 	case NetworkInternal:
-		if spec.UseNAT {
+		if n.useNAT {
 			return errors.New("useNAT must be false for internal network")
 		}
-		if len(spec.Address) > 0 {
+		if n.addr != nil {
 			return errors.New("address cannot be specified for internal network")
 		}
 	case NetworkExternal:
-		if len(spec.Address) == 0 {
+		if n.addr == nil {
 			return errors.New("address must be specified for external network")
 		}
 	case NetworkBMC:
-		if spec.UseNAT {
+		if n.useNAT {
 			return errors.New("useNAT must be false for BMC network")
 		}
-		if len(spec.Address) == 0 {
+		if n.addr == nil {
 			return errors.New("address must be specified for BMC network")
 		}
 	default:
-		return errors.New("unknown type: " + spec.Type)
+		return errors.New("unknown type: " + n.typ)
 	}
 
 	return nil
@@ -127,29 +122,18 @@ func (n *Network) Create(mtu int) error {
 		return nil
 	}
 
-	if !isForwarding(v4ForwardKey) {
-		err = setForwarding(v4ForwardKey, true)
-		if err != nil {
-			return fmt.Errorf("failed to set %s: %w", v4ForwardKey, err)
-		}
-		n.v4forwarded = true
+	if err := ip.EnableIP4Forward(); err != nil {
+		return fmt.Errorf("failed to enable IPv4 forwarding: %w", err)
 	}
-
-	if !isForwarding(v6ForwardKey) {
-		err = setForwarding(v6ForwardKey, true)
-		if err != nil {
-			return fmt.Errorf("failed to set %s: %w", v6ForwardKey, err)
-		}
-		n.v6forwarded = true
+	if err := ip.EnableIP6Forward(); err != nil {
+		return fmt.Errorf("failed to enable IPv6 forwarding: %w", err)
 	}
-
 	var ipt *iptables.IPTables
 	if n.addr.IP.To4() != nil {
 		ipt = ipt4
 	} else {
 		ipt = ipt6
 	}
-
 	err = appendMasqueradeRule(ipt, n.addr.IPNet.String())
 	if err != nil {
 		return fmt.Errorf("failed to append append masquerade rule: %w", err)
@@ -180,23 +164,6 @@ func appendMasqueradeRule(ipt *iptables.IPTables, ipNet string) error {
 	return nil
 }
 
-func isForwarding(name string) bool {
-	val, err := sysctl.Sysctl(name)
-	if err != nil {
-		return false
-	}
-	return len(val) > 0 && val[0] != '0'
-}
-
-func setForwarding(name string, flag bool) error {
-	val := "1"
-	if !flag {
-		val = "0"
-	}
-	_, err := sysctl.Sysctl(name, val)
-	return err
-}
-
 // Cleanup deletes all the created bridges and restores all the modified configs.
 func (n *Network) Cleanup() error {
 	link, err := netlink.LinkByName(n.name)
@@ -207,13 +174,5 @@ func (n *Network) Cleanup() error {
 	if err != nil {
 		return err
 	}
-
-	if n.v4forwarded {
-		setForwarding(v4ForwardKey, false)
-	}
-	if n.v6forwarded {
-		setForwarding(v6ForwardKey, false)
-	}
-
 	return nil
 }

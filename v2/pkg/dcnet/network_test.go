@@ -1,6 +1,7 @@
 package dcnet
 
 import (
+	"github.com/containernetworking/plugins/pkg/utils/sysctl"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/vishvananda/netlink"
@@ -39,8 +40,8 @@ address: 10.0.0.1/24
 		Expect(bridge.Attrs().MTU).To(Equal(1460))
 
 		// Check if the ip forwarding is properly configured.
-		Expect(isForwarding(v4ForwardKey)).To(BeTrue())
-		Expect(isForwarding(v6ForwardKey)).To(BeTrue())
+		Expect(isForwarding("net.ipv4.ip_forward")).To(BeTrue())
+		Expect(isForwarding("net.ipv6.conf.all.forwarding")).To(BeTrue())
 
 		// Check if the masquerade rule is properly configured.
 		ipt4, _, err := newIptables()
@@ -153,3 +154,11 @@ use-nat: false
 		Expect(err).To(HaveOccurred())
 	})
 })
+
+func isForwarding(name string) bool {
+	val, err := sysctl.Sysctl(name)
+	if err != nil {
+		return false
+	}
+	return len(val) > 0 && val[0] != '0'
+}
