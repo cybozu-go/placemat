@@ -3,10 +3,6 @@
 SUDO = sudo
 FAKEROOT = fakeroot
 
-### for Go
-GOFLAGS = -mod=vendor
-export GOFLAGS
-
 ### for debian package
 PACKAGES := fakeroot
 WORKDIR := $(CURDIR)/work
@@ -23,10 +19,10 @@ SBIN_PKGS = ./pkg/placemat ./pkg/pmctl
 all: test
 
 test:
-	test -z "$$(gofmt -s -l . | grep -v '^vendor' | tee /dev/stderr)"
-	test -z "$$(golint $$(go list ./... | grep -v /vendor/) | grep -v '/mtest/.*: should not use dot imports' | tee /dev/stderr)"
+	test -z "$$(gofmt -s -l . | tee /dev/stderr)"
+	test -z "$$(golint $$(go list ./...) | grep -v '/mtest/.*: should not use dot imports' | tee /dev/stderr)"
 	test -z "$$(nilerr ./... 2>&1 | tee /dev/stderr)"
-	test -z "$$(custom-checker -restrictpkg.packages=html/template,log $$(go list -tags='$(GOTAGS)' ./... | grep -v /vendor/ ) 2>&1 | tee /dev/stderr)"
+	test -z "$$(custom-checker -restrictpkg.packages=html/template,log $$(go list -tags='$(GOTAGS)' ./...) 2>&1 | tee /dev/stderr)"
 	ineffassign .
 	go build ./...
 	go test -race -v ./...
@@ -34,8 +30,6 @@ test:
 
 mod:
 	go mod tidy
-	go mod vendor
-	git add -f vendor
 	git add go.mod
 
 deb: $(DEB)
@@ -47,8 +41,8 @@ $(DEB):
 	mkdir -p $(BINDIR)
 	GOBIN=$(BINDIR) go install $(SBIN_PKGS)
 	mkdir -p $(DOCDIR)
-	cp README.md LICENSE docs/pmctl.md $(DOCDIR)
-	cp -r examples $(DOCDIR)
+	cp ../README.md ../LICENSE ../docs/pmctl.md $(DOCDIR)
+	cp -r ../examples $(DOCDIR)
 	mkdir -p $(BASH_COMPLETION_DIR)
 	$(BINDIR)/pmctl completion > $(BASH_COMPLETION_DIR)/placemat
 	chmod -R g-w $(WORKDIR)
