@@ -3,6 +3,7 @@ package dcnet
 import (
 	"errors"
 	"fmt"
+	"net"
 
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/coreos/go-iptables/iptables"
@@ -95,14 +96,13 @@ func (n *Network) Create(mtu int) error {
 	la := netlink.NewLinkAttrs()
 	la.Name = n.name
 	la.MTU = mtu
+	la.Flags = net.FlagUp
 	bridge := &netlink.Bridge{LinkAttrs: la}
-	err := netlink.LinkAdd(bridge)
-	if err != nil {
+	if err := netlink.LinkAdd(bridge); err != nil {
 		return fmt.Errorf("failed to add the bridge %s: %w", n.name, err)
 	}
 	if n.addr != nil {
-		err = netlink.AddrAdd(bridge, n.addr)
-		if err != nil {
+		if err := netlink.AddrAdd(bridge, n.addr); err != nil {
 			return fmt.Errorf("failed to add the address %s: %w", n.addr.String(), err)
 		}
 	}
