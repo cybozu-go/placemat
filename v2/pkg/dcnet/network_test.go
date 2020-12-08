@@ -1,7 +1,10 @@
 package dcnet
 
 import (
+	"strings"
+
 	"github.com/containernetworking/plugins/pkg/utils/sysctl"
+	"github.com/cybozu-go/placemat/v2/pkg/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/vishvananda/netlink"
@@ -25,7 +28,9 @@ type: external
 use-nat: true
 address: 10.0.0.1/24
 `
-		spec := &NetworkSpec{}
+		cluster, err := types.Parse(strings.NewReader(networkYaml))
+		Expect(err).NotTo(HaveOccurred())
+		spec := cluster.Networks[0]
 		Expect(yaml.Unmarshal([]byte(networkYaml), spec)).NotTo(HaveOccurred())
 		network, err := NewNetwork(spec)
 		Expect(err).NotTo(HaveOccurred())
@@ -58,7 +63,9 @@ name: core-to-op
 type: internal
 use-nat: false
 `
-		spec := &NetworkSpec{}
+		cluster, err := types.Parse(strings.NewReader(networkYaml))
+		Expect(err).NotTo(HaveOccurred())
+		spec := cluster.Networks[0]
 		Expect(yaml.Unmarshal([]byte(networkYaml), spec)).NotTo(HaveOccurred())
 		network, err := NewNetwork(spec)
 		Expect(err).NotTo(HaveOccurred())
@@ -97,7 +104,9 @@ type: bmc
 use-nat: false
 address: 10.72.16.1/20
 `
-		spec := &NetworkSpec{}
+		cluster, err := types.Parse(strings.NewReader(networkYaml))
+		Expect(err).NotTo(HaveOccurred())
+		spec := cluster.Networks[0]
 		Expect(yaml.Unmarshal([]byte(networkYaml), spec)).NotTo(HaveOccurred())
 		network, err := NewNetwork(spec)
 		Expect(err).NotTo(HaveOccurred())
@@ -126,32 +135,6 @@ address: 10.72.16.1/20
 		exists, err = ipt6.Exists("filter", "PLACEMAT", "-o", network.name, "-j", "ACCEPT")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(exists).To(BeFalse())
-	})
-
-	It("should NOT create a network whose name is more than 15 characters", func() {
-		networkYaml := `
-kind: Network
-name: 1234567890123456
-type: external
-use-nat: false
-`
-		spec := &NetworkSpec{}
-		Expect(yaml.Unmarshal([]byte(networkYaml), spec)).NotTo(HaveOccurred())
-		_, err := NewNetwork(spec)
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("should NOT create an invalid network", func() {
-		networkYaml := `
-kind: Network
-name: invalid
-type: invalid
-use-nat: false
-`
-		spec := &NetworkSpec{}
-		Expect(yaml.Unmarshal([]byte(networkYaml), spec)).NotTo(HaveOccurred())
-		_, err := NewNetwork(spec)
-		Expect(err).To(HaveOccurred())
 	})
 })
 
