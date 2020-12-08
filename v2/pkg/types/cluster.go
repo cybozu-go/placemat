@@ -119,7 +119,7 @@ func Parse(r io.Reader) (*Cluster, error) {
 			break
 		}
 		b := &baseConfig{}
-		if err := yaml.Unmarshal([]byte(y), b); err != nil {
+		if err := yaml.Unmarshal(y, b); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal the yaml document %s: %w", y, err)
 		}
 
@@ -149,7 +149,7 @@ func Parse(r io.Reader) (*Cluster, error) {
 	return cluster, nil
 }
 
-func readSingleYamlDoc(reader io.Reader) (string, error) {
+func readSingleYamlDoc(reader io.Reader) ([]byte, error) {
 	buf := make([]byte, 1024)
 	maxBytes := 16 * 1024 * 1024
 	base := 0
@@ -157,19 +157,19 @@ func readSingleYamlDoc(reader io.Reader) (string, error) {
 		n, err := reader.Read(buf[base:])
 		if err == io.ErrShortBuffer {
 			if n == 0 {
-				return "", fmt.Errorf("got short buffer with n=0, base=%d, cap=%d", base, cap(buf))
+				return nil, fmt.Errorf("got short buffer with n=0, base=%d, cap=%d", base, cap(buf))
 			}
 			if len(buf) < maxBytes {
 				base += n
 				buf = append(buf, make([]byte, len(buf))...)
 				continue
 			}
-			return "", errors.New("yaml document is too large")
+			return nil, errors.New("yaml document is too large")
 		}
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		base += n
-		return string(buf[:base]), nil
+		return buf[:base], nil
 	}
 }
