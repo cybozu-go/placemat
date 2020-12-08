@@ -7,6 +7,7 @@ import (
 
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/coreos/go-iptables/iptables"
+	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/vishvananda/netlink"
 )
 
@@ -39,7 +40,7 @@ type Network struct {
 }
 
 // NewNetwork creates *Network from spec.
-func NewNetwork(spec *NetworkSpec) (*Network, error) {
+func NewNetwork(spec *types.NetworkSpec) (*Network, error) {
 	n := &Network{
 		name:   spec.Name,
 		typ:    spec.Type,

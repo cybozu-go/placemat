@@ -11,5 +11,6 @@ require (
 	github.com/onsi/gomega v1.10.3
 	github.com/vishvananda/netlink v1.1.0
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae
+	k8s.io/apimachinery v0.19.4
 	sigs.k8s.io/yaml v1.2.0
 )

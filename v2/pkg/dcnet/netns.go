@@ -2,7 +2,6 @@ package dcnet
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -13,31 +12,11 @@ import (
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/well"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
 )
-
-// NetNSInterfaceSpec represents a NetworkNamespace's Interface definition in YAML
-type NetNSInterfaceSpec struct {
-	Network   string   `json:"network"`
-	Addresses []string `json:"addresses,omitempty"`
-}
-
-// NetNSAppSpec represents a NetworkNamespace's App definition in YAML
-type NetNSAppSpec struct {
-	Name    string   `json:"name"`
-	Command []string `json:"command"`
-}
-
-// NetNSSpec represents a NetworkNamespace specification in YAML
-type NetNSSpec struct {
-	Kind        string               `json:"kind"`
-	Name        string               `json:"name"`
-	Apps        []*NetNSAppSpec      `json:"apps"`
-	InitScripts []string             `json:"init-scripts,omitempty"`
-	Interfaces  []NetNSInterfaceSpec `json:"interfaces,omitempty"`
-}
 
 // NetNS represents a pod resource.
 type NetNS struct {
@@ -59,7 +38,7 @@ type iface struct {
 }
 
 // NewNetNS creates a NetNS from spec.
-func NewNetNS(spec *NetNSSpec) (*NetNS, error) {
+func NewNetNS(spec *types.NetNSSpec) (*NetNS, error) {
 	n := &NetNS{
 		name: spec.Name,
 	}
@@ -104,31 +83,10 @@ func NewNetNS(spec *NetNSSpec) (*NetNS, error) {
 		})
 	}
 
-	if err := n.validate(); err != nil {
-		return nil, err
-	}
-
 	return n, nil
 }
 
-func (n *NetNS) validate() error {
-	if len(n.name) == 0 {
-		return errors.New("network namespace is empty")
-	}
-
-	if len(n.apps) == 0 {
-		return fmt.Errorf("no app for Network Namespace %s", n.name)
-	}
-
-	for _, app := range n.apps {
-		if len(app.command) == 0 {
-			return fmt.Errorf("no command for app %s", app.name)
-		}
-	}
-	return nil
-}
-
-func (n *NetNS) Start(ctx context.Context, mtu int) error {
+func (n *NetNS) Setup(ctx context.Context, mtu int) error {
 	createdNS, err := n.createNetNS()
 	if err != nil {
 		return err
