@@ -1,5 +1,10 @@
 SUDO=sudo
 
+.PHONY: setup
+setup:
+	$(SUDO) apt-get update
+	$(SUDO) apt-get -y install --no-install-recommends qemu qemu-kvm cloud-utils
+
 .PHONY: code-check
 code-check: test-tools
 	test -z "$$(gofmt -s -l . | tee /dev/stderr)"
@@ -18,6 +23,12 @@ test-dcnet:
 	go test -c ./pkg/dcnet
 	$(SUDO) ./dcnet.test -test.v
 	rm -f dcnet.test
+
+.PHONY: test-vm
+test-vm:
+	go test -c ./pkg/vm
+	$(SUDO) ./vm.test -test.v
+	rm -f vm.test
 
 .PHONY: test-tools
 test-tools: custom-checker staticcheck nilerr

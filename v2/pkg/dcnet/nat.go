@@ -6,8 +6,9 @@ import (
 	"github.com/coreos/go-iptables/iptables"
 )
 
-func createNatRules() error {
-	ipt4, ipt6, err := newIptables()
+// CreateNatRules creates nat rules with iptables
+func CreateNatRules() error {
+	ipt4, ipt6, err := NewIptables()
 	if err != nil {
 		return err
 	}
@@ -35,9 +36,9 @@ func createNatRules() error {
 	return nil
 }
 
-// cleanupNetwork destroys a bridge and iptables rules by the name
-func cleanupNatRules() error {
-	ipt4, ipt6, err := newIptables()
+// CleanupNatRules destroys nat rules
+func CleanupNatRules() error {
+	ipt4, ipt6, err := NewIptables()
 	if err != nil {
 		return err
 	}
@@ -72,7 +73,9 @@ func cleanupNatRules() error {
 	}
 	return nil
 }
-func newIptables() (*iptables.IPTables, *iptables.IPTables, error) {
+
+// NewIptables creates IPTables
+func NewIptables() (*iptables.IPTables, *iptables.IPTables, error) {
 	ipt4, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create iptables for IPv4: %w", err)

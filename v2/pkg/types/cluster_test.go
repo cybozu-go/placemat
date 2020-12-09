@@ -44,6 +44,39 @@ interfaces:
 - addresses:
   - 10.0.2.0/31
   network: core-to-s1
+---
+kind: Node
+name: boot-0
+interfaces:
+- r0-node1
+- r0-node2
+memory: 2G
+cpu: 8
+smbios:
+  manufacturer: cybozu
+  product: mk2
+  serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
+ignition: my-node.ign
+volumes:
+- kind: image
+  name: root
+  image: custom-ubuntu-image
+  size: 10G
+  copy-on-write: true
+  cache: writeback
+- kind: localds
+  name: seed
+  network-config: network.yml
+  user-data: seed_boot-0.yml
+- kind: 9p
+  name: sabakan
+  folder: sabakan-data
+uefi: false
+tpm: true
+---
+kind: Image
+name: custom-ubuntu-image
+file: cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 `
 		cluster, err := Parse(strings.NewReader(clusterYaml))
 		Expect(err).NotTo(HaveOccurred())
@@ -97,6 +130,54 @@ interfaces:
 					"pkg/dcnet/netns_test.sh",
 				},
 			}},
+			Nodes: []*NodeSpec{
+				{
+					Kind: "Node",
+					Name: "boot-0",
+					Interfaces: []string{
+						"r0-node1",
+						"r0-node2",
+					},
+					Volumes: []NodeVolumeSpec{
+						{
+							Kind:        "image",
+							Name:        "root",
+							Image:       "custom-ubuntu-image",
+							Size:        "10G",
+							CopyOnWrite: true,
+							Cache:       "writeback",
+						},
+						{
+							Kind:          "localds",
+							Name:          "seed",
+							NetworkConfig: "network.yml",
+							UserData:      "seed_boot-0.yml",
+						},
+						{
+							Kind:   "9p",
+							Name:   "sabakan",
+							Folder: "sabakan-data",
+						},
+					},
+					IgnitionFile: "my-node.ign",
+					CPU:          8,
+					Memory:       "2G",
+					UEFI:         false,
+					TPM:          true,
+					SMBIOS: SMBIOSConfigSpec{
+						Manufacturer: "cybozu",
+						Product:      "mk2",
+						Serial:       "fb8f2417d0b4db30050719c31ce02a2e8141bbd8",
+					},
+				},
+			},
+			Images: []*ImageSpec{
+				{
+					Kind: "Image",
+					Name: "custom-ubuntu-image",
+					File: "cybozu-ubuntu-18.04-server-cloudimg-amd64.img",
+				},
+			},
 		}))
 	})
 

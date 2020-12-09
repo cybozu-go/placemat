@@ -15,11 +15,11 @@ import (
 
 var _ = Describe("NetworkNamespace resource", func() {
 	BeforeEach(func() {
-		Expect(createNatRules()).ToNot(HaveOccurred())
+		Expect(CreateNatRules()).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		Expect(cleanupNatRules()).ToNot(HaveOccurred())
+		Expect(CleanupNatRules()).ToNot(HaveOccurred())
 	})
 
 	It("should create a network namespace as specified with a yaml representation", func() {
@@ -81,7 +81,7 @@ interfaces:
 		defer nns.Cleanup()
 
 		// Check if a networks namespace is properly created
-		created, err := ns.GetNS(path.Join(getNsRunDir(), nns.name))
+		created, err := ns.GetNS(path.Join(GetNsRunDir(), nns.name))
 		Expect(err).NotTo(HaveOccurred())
 
 		// Check inside the network namespace
@@ -131,7 +131,7 @@ interfaces:
 			}
 
 			// Check if the init script is properly executed.
-			ipt4, _, err := newIptables()
+			ipt4, _, err := NewIptables()
 			if err != nil {
 				return fmt.Errorf("failed to create iptables: %w", err)
 			}

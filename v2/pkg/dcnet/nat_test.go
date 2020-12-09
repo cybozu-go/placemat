@@ -7,11 +7,11 @@ import (
 
 var _ = Describe("Nat Rule", func() {
 	It("should create nat rules", func() {
-		Expect(createNatRules()).NotTo(HaveOccurred())
-		defer cleanupNatRules()
+		Expect(CreateNatRules()).NotTo(HaveOccurred())
+		defer CleanupNatRules()
 
 		// Check if the nat rules are properly configured.
-		ipt4, ipt6, err := newIptables()
+		ipt4, ipt6, err := NewIptables()
 		Expect(err).NotTo(HaveOccurred())
 		exists, err := ipt4.Exists("nat", "POSTROUTING", "-j", "PLACEMAT")
 		Expect(err).NotTo(HaveOccurred())
@@ -28,11 +28,11 @@ var _ = Describe("Nat Rule", func() {
 	})
 
 	It("should clean up nat rules", func() {
-		Expect(createNatRules()).NotTo(HaveOccurred())
-		Expect(cleanupNatRules()).NotTo(HaveOccurred())
+		Expect(CreateNatRules()).NotTo(HaveOccurred())
+		Expect(CleanupNatRules()).NotTo(HaveOccurred())
 
 		// Check if the nat rules are wiped out.
-		ipt4, ipt6, err := newIptables()
+		ipt4, ipt6, err := NewIptables()
 		Expect(err).NotTo(HaveOccurred())
 		exists, _ := ipt4.Exists("nat", "POSTROUTING", "-j", "PLACEMAT")
 		Expect(exists).To(BeFalse())
