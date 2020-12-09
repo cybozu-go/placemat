@@ -1,7 +1,6 @@
 package dcnet
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/containernetworking/plugins/pkg/ip"
@@ -9,26 +8,6 @@ import (
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/vishvananda/netlink"
 )
-
-const (
-	maxNetworkNameLen = 15
-)
-
-// Network types.
-const (
-	NetworkInternal = "internal"
-	NetworkExternal = "external"
-	NetworkBMC      = "bmc"
-)
-
-// NetworkSpec represents a Network specification in YAML
-type NetworkSpec struct {
-	Kind    string `json:"kind"`
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	UseNAT  bool   `json:"use-nat"`
-	Address string `json:"address,omitempty"`
-}
 
 // Network represents a network configuration
 type Network struct {
@@ -53,42 +32,7 @@ func NewNetwork(spec *types.NetworkSpec) (*Network, error) {
 		n.addr = addr
 	}
 
-	if err := n.validate(); err != nil {
-		return nil, err
-	}
-
 	return n, nil
-}
-
-func (n *Network) validate() error {
-	if len(n.name) > maxNetworkNameLen {
-		return errors.New("too long name: " + n.name)
-	}
-
-	switch n.typ {
-	case NetworkInternal:
-		if n.useNAT {
-			return errors.New("useNAT must be false for internal network")
-		}
-		if n.addr != nil {
-			return errors.New("address cannot be specified for internal network")
-		}
-	case NetworkExternal:
-		if n.addr == nil {
-			return errors.New("address must be specified for external network")
-		}
-	case NetworkBMC:
-		if n.useNAT {
-			return errors.New("useNAT must be false for BMC network")
-		}
-		if n.addr == nil {
-			return errors.New("address must be specified for BMC network")
-		}
-	default:
-		return errors.New("unknown type: " + n.typ)
-	}
-
-	return nil
 }
 
 // Create creates a virtual L2 switch using Linux bridge.
@@ -117,7 +61,7 @@ func (n *Network) Create(mtu int) error {
 	}
 
 	if !n.useNAT {
-		if n.typ == NetworkInternal {
+		if n.typ == types.NetworkInternal {
 			err := appendAcceptRule([]*iptables.IPTables{ipt4, ipt6}, n.name)
 			if err != nil {
 				return err
