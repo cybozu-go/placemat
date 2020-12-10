@@ -6,9 +6,8 @@ Following resources are available.
 
 * Network
 * Image
-* DataFolder
 * Node
-* Pod
+* NetworkNamespace
 
 Network resource
 ----------------
@@ -52,42 +51,6 @@ url: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-
 - `file`: a local file path
 - `compression`: optional field to specify decompress method.  Currently, "gzip" and "bzip2" are supported.
 
-DataFolder resource
--------------------
-
-A DataFolder resource provides a virtual data folder to VMs and containers.
-The folder can simply be a host directory, or it can be a set of files from Internet or local host.
-
-DataFolder can be referenced from Node resources as a `vvfat` volume type.
-DataFolder can also be referenced from Pod resources as a `host` volume type.
-
-```yaml
-kind: DataFolder
-name: host-dir
-dir: /home/john/exported_dir
-```
-
-```yaml
-kind: DataFolder
-name: gathered-files
-files:
-  - name: ubuntu.img
-    url: https://example.com/docker_images/ubuntu_18.04
-  - name: copied_readme.txt
-    file: /home/john/README.txt
-```
-
-The properties are:
-
-- `dir`: Local directory name to be shown.
-- `files`: List of file specs.
-  - `name`: File name in the exported directory.
-  - `url`: URL of a remote file to be downloaded.
-  - `file`: Path to local file on host.
-
-You must specify only one of `dir` or `files` for a DataFolder resource.
-You must specify only one of `url` or `file` for each file in `files`.
-
 Node resource
 -------------
 
@@ -115,9 +78,10 @@ volumes:
     size: 10G
     vg: vg1
     cache: writeback
-  - kind: vvfat
+  - kind: 9p
     name: host-data
     folder: host-dir
+    writable: false
 ignition: my-node.ign
 cpu: 2
 memory: 4G
@@ -137,7 +101,7 @@ The properties are:
     - `localds`: [cloud-config](http://cloudinit.readthedocs.io/en/latest/topics/format.html#cloud-config-data) data.
     - `raw`: Raw (and empty) block device backed by a file.
     - `lv`: Raw (and empty) block device backed by a logical volume in LVM.
-    - `vvfat`: DataFolder resource for QEMU VVFAT volume.
+    - `9p`: Virtual file system device with QEMU 9pfs.
 - `ignition`: [Ignition file](https://coreos.com/ignition/docs/latest/configuration-v2_1.html).
 - `cpu`: The amount of virtual CPUs.
 - `memory`: The amount of memory.
@@ -189,19 +153,21 @@ This volume type has the following parameter:
 * `size`: Disk size.  Required.
 * `vg`: Volume group.  Required.
 
-### `vvfat` volume
+### `9p` volume
 
-Attaches a QEMU [VVFAT](https://en.wikibooks.org/wiki/QEMU/Devices/Storage) volume.
+Attaches a QEMU [9p](https://wiki.qemu.org/Documentation/9psetup) volume.
 This volume type has the following parameter:
 
-* `folder`: `DataFolder` resource name.  Required.
+* `folder`: Hose-side folder name.  Required.
+* `writable`: If `true`, then an attached volume is writable. If `false`, then it is readonly and that is the default.
 
-From the guest OS, this volume appears as a block device containing a VFAT partition.
-The partition need to be mounted read-only as follows:
+You can mount the shared folder using
 
 ```console
-$ sudo mount -o ro /dev/vdb1 /mnt
+$ sudo mount -t 9p -o trans=virtio [mount tag] [mount point] -oversion=9p2000.L
 ```
+
+`mount tag` is a volume name as specified.
 
 NetworkNamespace
 ----------------
