@@ -41,9 +41,11 @@ var _ = Describe("QEMU command builder", func() {
 		_, err = os.Create("temp/network.yml")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(os.Mkdir("temp/shared-dir", 0755)).NotTo(HaveOccurred())
+		sharedDir, err := filepath.Abs("temp/shared-dir")
+		Expect(err).NotTo(HaveOccurred())
 		defer os.RemoveAll(temp)
 
-		clusterYaml := `
+		clusterYaml := fmt.Sprintf(`
 kind: Node
 name: boot-0
 cpu: 8
@@ -63,7 +65,7 @@ volumes:
   user-data: temp/seed_boot-0.yml
 - kind: hostPath
   name: sabakan
-  path: temp/shared-dir
+  path: %s
 smbios:
   serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
 ---
@@ -80,7 +82,7 @@ kind: Network
 name: r0-node2
 type: internal
 use-nat: false
-`
+`, sharedDir)
 		cluster, err := types.Parse(strings.NewReader(clusterYaml))
 		Expect(err).NotTo(HaveOccurred())
 
@@ -148,7 +150,7 @@ qemu-system-x86_64
  -smbios type=1,serial=fb8f2417d0b4db30050719c31ce02a2e8141bbd8
  -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
  -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
- -virtfs local,path=%s/temp/shared-dir,mount_tag=sabakan,security_model=none,readonly
+ -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -netdev tap,id=r0-node1,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node1,mac=placemat
  -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on
@@ -161,7 +163,7 @@ qemu-system-x86_64
  -object rng-random,id=rng0,filename=/dev/urandom
  -device virtio-rng-pci,rng=rng0
  -cpu host
-`, r.runDir, r.dataDir, r.dataDir, cur, tapInfos[0].tap, tapInfos[1].tap, r.runDir, r.runDir), "\n", "")
+`, r.runDir, r.dataDir, r.dataDir, sharedDir, tapInfos[0].tap, tapInfos[1].tap, r.runDir, r.runDir), "\n", "")
 		actual := strings.Join(command, " ")
 		Expect(actual).To(Equal(expected))
 	})
@@ -185,9 +187,11 @@ qemu-system-x86_64
 		_, err = os.Create("temp/network.yml")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(os.Mkdir("temp/shared-dir", 0755)).NotTo(HaveOccurred())
+		sharedDir, err := filepath.Abs("temp/shared-dir")
+		Expect(err).NotTo(HaveOccurred())
 		defer os.RemoveAll(temp)
 
-		clusterYaml := `
+		clusterYaml := fmt.Sprintf(`
 kind: Node
 name: boot-0
 cpu: 8
@@ -207,7 +211,7 @@ volumes:
   user-data: temp/seed_boot-0.yml
 - kind: hostPath
   name: sabakan
-  path: temp/shared-dir
+  path: %s
 smbios:
   serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
 UEFI: true
@@ -226,7 +230,7 @@ kind: Network
 name: r0-node2
 type: internal
 use-nat: false
-`
+`, sharedDir)
 		cluster, err := types.Parse(strings.NewReader(clusterYaml))
 		Expect(err).NotTo(HaveOccurred())
 
@@ -296,7 +300,7 @@ qemu-system-x86_64
  -smbios type=1,serial=fb8f2417d0b4db30050719c31ce02a2e8141bbd8
  -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
  -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
- -virtfs local,path=%s/temp/shared-dir,mount_tag=sabakan,security_model=none,readonly
+ -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -netdev tap,id=r0-node1,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node1,mac=placemat,romfile=
  -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on
@@ -312,7 +316,7 @@ qemu-system-x86_64
  -object rng-random,id=rng0,filename=/dev/urandom
  -device virtio-rng-pci,rng=rng0
  -cpu host
-`, r.runDir, r.dataDir, r.dataDir, r.dataDir, cur, tapInfos[0].tap, tapInfos[1].tap, r.runDir, r.runDir, r.runDir), "\n", "")
+`, r.runDir, r.dataDir, r.dataDir, r.dataDir, sharedDir, tapInfos[0].tap, tapInfos[1].tap, r.runDir, r.runDir, r.runDir), "\n", "")
 		actual := strings.Join(command, " ")
 		Expect(actual).To(Equal(expected))
 	})

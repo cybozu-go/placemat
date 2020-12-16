@@ -70,7 +70,7 @@ volumes:
   user-data: seed_boot-0.yml
 - kind: hostPath
   name: sabakan
-  path: sabakan-data
+  path: /var/foo/sabakan-data
 uefi: false
 tpm: true
 ---
@@ -156,7 +156,7 @@ file: cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 						{
 							Kind: "hostPath",
 							Name: "sabakan",
-							Path: "sabakan-data",
+							Path: "/var/foo/sabakan-data",
 						},
 					},
 					IgnitionFile: "my-node.ign",
@@ -263,6 +263,32 @@ interfaces:
 - addresses:
   - 10.0.0.2/24
   network: internet
+`
+		cluster, err := Parse(strings.NewReader(clusterYaml))
+		Expect(err).To(HaveOccurred())
+		Expect(cluster).To(BeNil())
+	})
+
+	It("should NOT create a hostPath node volume whose path is not absolute", func() {
+		clusterYaml := `
+kind: Node
+name: boot-0
+interfaces:
+- r0-node1
+- r0-node2
+memory: 2G
+cpu: 8
+smbios:
+  manufacturer: cybozu
+  product: mk2
+  serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
+ignition: my-node.ign
+volumes:
+- kind: hostPath
+  name: sabakan
+  path: sabakan-data
+uefi: false
+tpm: true
 `
 		cluster, err := Parse(strings.NewReader(clusterYaml))
 		Expect(err).To(HaveOccurred())

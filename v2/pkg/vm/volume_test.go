@@ -113,11 +113,13 @@ smbios:
 		temp := filepath.Join(cur, "temp")
 		Expect(os.Mkdir(temp, 0755)).NotTo(HaveOccurred())
 
-		// Create dummy files and directories
+		// Create a shared directory
 		Expect(os.Mkdir("temp/shared-dir", 0755)).NotTo(HaveOccurred())
+		shareDir, err := filepath.Abs("temp/shared-dir")
+		Expect(err).NotTo(HaveOccurred())
 		defer os.RemoveAll(temp)
 
-		clusterYaml := `
+		clusterYaml := fmt.Sprintf(`
 kind: Node
 name: boot-0
 cpu: 8
@@ -125,10 +127,10 @@ memory: 2G
 volumes:
 - kind: hostPath
   name: sabakan
-  path: temp/shared-dir
+  path: %s
 smbios:
   serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
-`
+`, shareDir)
 		cluster, err := types.Parse(strings.NewReader(clusterYaml))
 		Expect(err).NotTo(HaveOccurred())
 

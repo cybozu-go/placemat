@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"sigs.k8s.io/yaml"
@@ -209,6 +210,10 @@ func (n *NodeVolumeSpec) validate() error {
 	case NodeVolumeKindHostPath:
 		if n.Path == "" {
 			return errors.New("hostPath volume must specify a path name")
+		}
+
+		if !filepath.IsAbs(n.Path) {
+			return errors.New("path should be absolute")
 		}
 	default:
 		return errors.New("unknown volume kind: " + string(n.Kind))
