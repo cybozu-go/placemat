@@ -18,5 +18,7 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ env.go-version }}
+      - run: make setup
       - run: make test
       - run: make test-dcnet
+      - run: make test-vm

@@ -86,6 +86,7 @@ func NewNetNS(spec *types.NetNSSpec) (*NetNS, error) {
 	return n, nil
 }
 
+// Setup creates a linux network namespace and runs applications as specified
 func (n *NetNS) Setup(ctx context.Context, mtu int) error {
 	createdNS, err := n.createNetNS()
 	if err != nil {
@@ -191,7 +192,7 @@ func (n *NetNS) createNetNS() (ns.NetNS, error) {
 		return nil, fmt.Errorf("failed to set the original NetNS: %w", err)
 	}
 
-	createdNS, err := ns.GetNS(path.Join(getNsRunDir(), n.name))
+	createdNS, err := ns.GetNS(path.Join(GetNsRunDir(), n.name))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get network namespace %s: %w", n.name, err)
 	}
@@ -200,7 +201,7 @@ func (n *NetNS) createNetNS() (ns.NetNS, error) {
 }
 
 // Reference https://github.com/containernetworking/plugins/blob/509d645ee9ccfee0ad90fe29de3133d0598b7305/pkg/testutils/netns_linux.go#L31-L47
-func getNsRunDir() string {
+func GetNsRunDir() string {
 	xdgRuntimeDir := os.Getenv("XDG_RUNTIME_DIR")
 
 	/// If XDG_RUNTIME_DIR is set, check if the current user owns /var/run.  If
@@ -234,6 +235,7 @@ func (n *NetNS) Cleanup() {
 				log.FnError: err,
 				"veth":      hostVeth,
 			})
+			return
 		}
 		if err := netlink.LinkDel(hostVeth); err != nil {
 			log.Warn("failed to delete the veth", map[string]interface{}{

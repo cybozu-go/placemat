@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"sigs.k8s.io/yaml"
@@ -14,6 +15,8 @@ import (
 type Cluster struct {
 	Networks []*NetworkSpec
 	NetNSs   []*NetNSSpec
+	Nodes    []*NodeSpec
+	Images   []*ImageSpec
 }
 
 const (
@@ -105,6 +108,147 @@ type NetNSAppSpec struct {
 	Command []string `json:"command"`
 }
 
+type NodeVolumeCache string
+type NodeVolumeKind string
+type NodeVolumeFormat string
+
+const (
+	NodeVolumeCacheWriteback    NodeVolumeCache = "writeback"
+	NodeVolumeCacheNone         NodeVolumeCache = "none"
+	NodeVolumeCacheWritethrough NodeVolumeCache = "writethrough"
+	NodeVolumeCacheDirectSync   NodeVolumeCache = "directsync"
+	NodeVolumeCacheUnsafe       NodeVolumeCache = "unsafe"
+
+	NodeVolumeKindImage    NodeVolumeKind = "image"
+	NodeVolumeKindLocalds  NodeVolumeKind = "localds"
+	NodeVolumeKindRaw      NodeVolumeKind = "raw"
+	NodeVolumeKindHostPath NodeVolumeKind = "hostPath"
+
+	NodeVolumeFormatQcow2 NodeVolumeFormat = "qcow2"
+	NodeVolumeFormatRaw   NodeVolumeFormat = "raw"
+)
+
+// NodeSpec represents a Node specification in YAML
+type NodeSpec struct {
+	Kind         string           `json:"kind"`
+	Name         string           `json:"name"`
+	Interfaces   []string         `json:"interfaces,omitempty"`
+	Volumes      []NodeVolumeSpec `json:"volumes,omitempty"`
+	IgnitionFile string           `json:"ignition,omitempty"`
+	CPU          int              `json:"cpu,omitempty"`
+	Memory       string           `json:"memory,omitempty"`
+	UEFI         bool             `json:"uefi,omitempty"`
+	TPM          bool             `json:"tpm,omitempty"`
+	SMBIOS       SMBIOSConfigSpec `json:"smbios,omitempty"`
+}
+
+func (n *NodeSpec) validate() error {
+	if n.Name == "" {
+		return errors.New("node name is empty")
+	}
+
+	for _, volume := range n.Volumes {
+		if err := volume.validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SMBIOSConfigSpec represents a Node's SMBIOS definition in YAML
+type SMBIOSConfigSpec struct {
+	Manufacturer string `json:"manufacturer,omitempty"`
+	Product      string `json:"product,omitempty"`
+	Serial       string `json:"serial,omitempty"`
+}
+
+// NodeVolumeSpec represents a Node's Volume specification in YAML
+type NodeVolumeSpec struct {
+	Kind          NodeVolumeKind   `json:"kind"`
+	Name          string           `json:"name"`
+	Image         string           `json:"image,omitempty"`
+	UserData      string           `json:"user-data,omitempty"`
+	NetworkConfig string           `json:"network-config,omitempty"`
+	Size          string           `json:"size,omitempty"`
+	Path          string           `json:"path,omitempty"`
+	CopyOnWrite   bool             `json:"copy-on-write,omitempty"`
+	Cache         NodeVolumeCache  `json:"cache,omitempty"`
+	Format        NodeVolumeFormat `json:"format,omitempty"`
+	VG            string           `json:"vg,omitempty"`
+	Writable      bool             `json:"writable,omitempty"`
+}
+
+func (n *NodeVolumeSpec) validate() error {
+	switch n.Cache {
+	case "":
+		n.Cache = NodeVolumeCacheNone
+	case NodeVolumeCacheWriteback, NodeVolumeCacheNone, NodeVolumeCacheWritethrough, NodeVolumeCacheDirectSync, NodeVolumeCacheUnsafe:
+	default:
+		return errors.New("invalid cache type for volume")
+	}
+
+	switch n.Kind {
+	case NodeVolumeKindImage:
+		if n.Image == "" {
+			return errors.New("image volume must specify an image name")
+		}
+	case NodeVolumeKindLocalds:
+		if n.UserData == "" {
+			return errors.New("localds volume must specify user-data")
+		}
+	case NodeVolumeKindRaw:
+		if n.Size == "" {
+			return errors.New("raw volume must specify size")
+		}
+		switch n.Format {
+		case "":
+			n.Format = NodeVolumeFormatQcow2
+		case NodeVolumeFormatQcow2, NodeVolumeFormatRaw:
+		default:
+			return errors.New("invalid format for raw volume")
+		}
+	case NodeVolumeKindHostPath:
+		if n.Path == "" {
+			return errors.New("hostPath volume must specify a path name")
+		}
+
+		if !filepath.IsAbs(n.Path) {
+			return errors.New("path should be absolute")
+		}
+	default:
+		return errors.New("unknown volume kind: " + string(n.Kind))
+	}
+
+	return nil
+}
+
+// ImageSpec represents an Image specification in YAML.
+type ImageSpec struct {
+	Kind              string `json:"kind"`
+	Name              string `json:"name"`
+	URL               string `json:"url,omitempty"`
+	File              string `json:"file,omitempty"`
+	CompressionMethod string `json:"compression,omitempty"`
+}
+
+func (i *ImageSpec) validate() error {
+	if len(i.Name) == 0 {
+		return errors.New("invalid image spec: " + i.Name)
+	}
+
+	if len(i.URL) == 0 && len(i.File) == 0 {
+		return errors.New("invalid image spec: " + i.Name)
+	}
+
+	if len(i.URL) > 0 {
+		if len(i.File) > 0 {
+			return errors.New("invalid image spec: " + i.Name)
+		}
+	}
+
+	return nil
+}
+
 type baseConfig struct {
 	Kind string `json:"kind"`
 }
@@ -126,7 +270,7 @@ func Parse(r io.Reader) (*Cluster, error) {
 		switch b.Kind {
 		case "Network":
 			n := &NetworkSpec{}
-			if err := yaml.Unmarshal([]byte(y), n); err != nil {
+			if err := yaml.Unmarshal(y, n); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal the Network yaml document %s: %w", y, err)
 			}
 			if err := n.validate(); err != nil {
@@ -135,13 +279,31 @@ func Parse(r io.Reader) (*Cluster, error) {
 			cluster.Networks = append(cluster.Networks, n)
 		case "NetworkNamespace":
 			n := &NetNSSpec{}
-			if err := yaml.Unmarshal([]byte(y), n); err != nil {
+			if err := yaml.Unmarshal(y, n); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal the NetworkNamespace yaml document %s: %w", y, err)
 			}
 			if err := n.validate(); err != nil {
 				return nil, fmt.Errorf("invalid NetworkNamespace resource: %w", err)
 			}
 			cluster.NetNSs = append(cluster.NetNSs, n)
+		case "Node":
+			n := &NodeSpec{}
+			if err := yaml.Unmarshal(y, n); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal the Node yaml document %s: %w", y, err)
+			}
+			if err := n.validate(); err != nil {
+				return nil, fmt.Errorf("invalid Node resource: %w", err)
+			}
+			cluster.Nodes = append(cluster.Nodes, n)
+		case "Image":
+			i := &ImageSpec{}
+			if err := yaml.Unmarshal(y, i); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal the Image yaml document %s: %w", y, err)
+			}
+			if err := i.validate(); err != nil {
+				return nil, fmt.Errorf("invalid Image resource: %w", err)
+			}
+			cluster.Images = append(cluster.Images, i)
 		default:
 			return nil, errors.New("unknown resource: " + b.Kind)
 		}

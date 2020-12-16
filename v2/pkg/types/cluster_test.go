@@ -8,7 +8,7 @@ import (
 )
 
 var _ = Describe("Cluster resource types", func() {
-	It("should create an external network", func() {
+	It("should create a cluster from a yaml", func() {
 		clusterYaml := `
 kind: Network
 name: internet
@@ -44,6 +44,39 @@ interfaces:
 - addresses:
   - 10.0.2.0/31
   network: core-to-s1
+---
+kind: Node
+name: boot-0
+interfaces:
+- r0-node1
+- r0-node2
+memory: 2G
+cpu: 8
+smbios:
+  manufacturer: cybozu
+  product: mk2
+  serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
+ignition: my-node.ign
+volumes:
+- kind: image
+  name: root
+  image: custom-ubuntu-image
+  size: 10G
+  copy-on-write: true
+  cache: writeback
+- kind: localds
+  name: seed
+  network-config: network.yml
+  user-data: seed_boot-0.yml
+- kind: hostPath
+  name: sabakan
+  path: /var/foo/sabakan-data
+uefi: false
+tpm: true
+---
+kind: Image
+name: custom-ubuntu-image
+file: cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 `
 		cluster, err := Parse(strings.NewReader(clusterYaml))
 		Expect(err).NotTo(HaveOccurred())
@@ -97,6 +130,54 @@ interfaces:
 					"pkg/dcnet/netns_test.sh",
 				},
 			}},
+			Nodes: []*NodeSpec{
+				{
+					Kind: "Node",
+					Name: "boot-0",
+					Interfaces: []string{
+						"r0-node1",
+						"r0-node2",
+					},
+					Volumes: []NodeVolumeSpec{
+						{
+							Kind:        "image",
+							Name:        "root",
+							Image:       "custom-ubuntu-image",
+							Size:        "10G",
+							CopyOnWrite: true,
+							Cache:       "writeback",
+						},
+						{
+							Kind:          "localds",
+							Name:          "seed",
+							NetworkConfig: "network.yml",
+							UserData:      "seed_boot-0.yml",
+						},
+						{
+							Kind: "hostPath",
+							Name: "sabakan",
+							Path: "/var/foo/sabakan-data",
+						},
+					},
+					IgnitionFile: "my-node.ign",
+					CPU:          8,
+					Memory:       "2G",
+					UEFI:         false,
+					TPM:          true,
+					SMBIOS: SMBIOSConfigSpec{
+						Manufacturer: "cybozu",
+						Product:      "mk2",
+						Serial:       "fb8f2417d0b4db30050719c31ce02a2e8141bbd8",
+					},
+				},
+			},
+			Images: []*ImageSpec{
+				{
+					Kind: "Image",
+					Name: "custom-ubuntu-image",
+					File: "cybozu-ubuntu-18.04-server-cloudimg-amd64.img",
+				},
+			},
 		}))
 	})
 
@@ -182,6 +263,32 @@ interfaces:
 - addresses:
   - 10.0.0.2/24
   network: internet
+`
+		cluster, err := Parse(strings.NewReader(clusterYaml))
+		Expect(err).To(HaveOccurred())
+		Expect(cluster).To(BeNil())
+	})
+
+	It("should NOT create a hostPath node volume whose path is not absolute", func() {
+		clusterYaml := `
+kind: Node
+name: boot-0
+interfaces:
+- r0-node1
+- r0-node2
+memory: 2G
+cpu: 8
+smbios:
+  manufacturer: cybozu
+  product: mk2
+  serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
+ignition: my-node.ign
+volumes:
+- kind: hostPath
+  name: sabakan
+  path: sabakan-data
+uefi: false
+tpm: true
 `
 		cluster, err := Parse(strings.NewReader(clusterYaml))
 		Expect(err).To(HaveOccurred())
