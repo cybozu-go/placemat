@@ -14,7 +14,7 @@ import (
 
 var vhostNetSupported bool
 
-func init() {
+func LoadModules() {
 	err := exec.Command("modprobe", "vhost-net").Run()
 	if err != nil {
 		log.Error("failed to modprobe vhost-net", map[string]interface{}{

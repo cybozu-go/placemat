@@ -107,20 +107,24 @@ type NetNSAppSpec struct {
 	Command []string `json:"command"`
 }
 
+type NodeVolumeCache string
+type NodeVolumeKind string
+type NodeVolumeFormat string
+
 const (
-	NodeVolumeCacheWriteback    = "writeback"
-	NodeVolumeCacheNone         = "none"
-	NodeVolumeCacheWritethrough = "writethrough"
-	NodeVolumeCacheDirectSync   = "directsync"
-	NodeVolumeCacheUnsafe       = "unsafe"
+	NodeVolumeCacheWriteback    NodeVolumeCache = "writeback"
+	NodeVolumeCacheNone         NodeVolumeCache = "none"
+	NodeVolumeCacheWritethrough NodeVolumeCache = "writethrough"
+	NodeVolumeCacheDirectSync   NodeVolumeCache = "directsync"
+	NodeVolumeCacheUnsafe       NodeVolumeCache = "unsafe"
 
-	NodeVolumeKindImage   = "image"
-	NodeVolumeKindLocalds = "localds"
-	NodeVolumeKindRaw     = "raw"
-	NodeVolumeKind9p      = "9p"
+	NodeVolumeKindImage    NodeVolumeKind = "image"
+	NodeVolumeKindLocalds  NodeVolumeKind = "localds"
+	NodeVolumeKindRaw      NodeVolumeKind = "raw"
+	NodeVolumeKindHostPath NodeVolumeKind = "hostPath"
 
-	NodeVolumeFormatQcow2 = "qcow2"
-	NodeVolumeFormatRaw   = "raw"
+	NodeVolumeFormatQcow2 NodeVolumeFormat = "qcow2"
+	NodeVolumeFormatRaw   NodeVolumeFormat = "raw"
 )
 
 // NodeSpec represents a Node specification in YAML
@@ -141,6 +145,12 @@ func (n *NodeSpec) validate() error {
 	if n.Name == "" {
 		return errors.New("node name is empty")
 	}
+
+	for _, volume := range n.Volumes {
+		if err := volume.validate(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -153,18 +163,18 @@ type SMBIOSConfigSpec struct {
 
 // NodeVolumeSpec represents a Node's Volume specification in YAML
 type NodeVolumeSpec struct {
-	Kind          string `json:"kind"`
-	Name          string `json:"name"`
-	Image         string `json:"image,omitempty"`
-	UserData      string `json:"user-data,omitempty"`
-	NetworkConfig string `json:"network-config,omitempty"`
-	Size          string `json:"size,omitempty"`
-	Folder        string `json:"folder,omitempty"`
-	CopyOnWrite   bool   `json:"copy-on-write,omitempty"`
-	Cache         string `json:"cache,omitempty"`
-	Format        string `json:"format,omitempty"`
-	VG            string `json:"vg,omitempty"`
-	Writable      bool   `json:"writable,omitempty"`
+	Kind          NodeVolumeKind   `json:"kind"`
+	Name          string           `json:"name"`
+	Image         string           `json:"image,omitempty"`
+	UserData      string           `json:"user-data,omitempty"`
+	NetworkConfig string           `json:"network-config,omitempty"`
+	Size          string           `json:"size,omitempty"`
+	Path          string           `json:"path,omitempty"`
+	CopyOnWrite   bool             `json:"copy-on-write,omitempty"`
+	Cache         NodeVolumeCache  `json:"cache,omitempty"`
+	Format        NodeVolumeFormat `json:"format,omitempty"`
+	VG            string           `json:"vg,omitempty"`
+	Writable      bool             `json:"writable,omitempty"`
 }
 
 func (n *NodeVolumeSpec) validate() error {
@@ -196,12 +206,12 @@ func (n *NodeVolumeSpec) validate() error {
 		default:
 			return errors.New("invalid format for raw volume")
 		}
-	case NodeVolumeKind9p:
-		if n.Folder == "" {
-			return errors.New("9p volume must specify a folder name")
+	case NodeVolumeKindHostPath:
+		if n.Path == "" {
+			return errors.New("hostPath volume must specify a path name")
 		}
 	default:
-		return errors.New("unknown volume kind: " + n.Kind)
+		return errors.New("unknown volume kind: " + string(n.Kind))
 	}
 
 	return nil
@@ -278,11 +288,6 @@ func Parse(r io.Reader) (*Cluster, error) {
 			}
 			if err := n.validate(); err != nil {
 				return nil, fmt.Errorf("invalid Node resource: %w", err)
-			}
-			for _, v := range n.Volumes {
-				if err := v.validate(); err != nil {
-					return nil, fmt.Errorf("invalid NodeVolume resource: %w", err)
-				}
 			}
 			cluster.Nodes = append(cluster.Nodes, n)
 		case "Image":

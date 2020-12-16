@@ -31,6 +31,7 @@ var _ = Describe("Node", func() {
 
 	It("should setup a node as a QEMU process", func() {
 		// Set up runtime
+		vm.LoadModules()
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		temp := filepath.Join(cur, "temp")
@@ -115,9 +116,9 @@ volumes:
   name: seed
   network-config: temp/network.yml
   user-data: temp/user-data.yml
-- kind: 9p
+- kind: hostPath
   name: sabakan
-  folder: temp/shared-dir
+  path: temp/shared-dir
 smbios:
  serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
 ---

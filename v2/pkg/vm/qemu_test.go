@@ -24,6 +24,7 @@ var _ = Describe("QEMU command builder", func() {
 
 	It("should build a QEMU command which runs a virtual machine as specified", func() {
 		// Set up runtime
+		LoadModules()
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		temp := filepath.Join(cur, "temp")
@@ -60,9 +61,9 @@ volumes:
   name: seed
   network-config: temp/network.yml
   user-data: temp/seed_boot-0.yml
-- kind: 9p 
+- kind: hostPath
   name: sabakan
-  folder: temp/shared-dir
+  path: temp/shared-dir
 smbios:
   serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
 ---
@@ -167,6 +168,7 @@ qemu-system-x86_64
 
 	It("should build a QEMU command with uefi and tpm enabled", func() {
 		// Set up runtime
+		LoadModules()
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		temp := filepath.Join(cur, "temp")
@@ -203,9 +205,9 @@ volumes:
   name: seed
   network-config: temp/network.yml
   user-data: temp/seed_boot-0.yml
-- kind: 9p 
+- kind: hostPath
   name: sabakan
-  folder: temp/shared-dir
+  path: temp/shared-dir
 smbios:
   serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
 UEFI: true

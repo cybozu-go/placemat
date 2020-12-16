@@ -46,4 +46,32 @@ use-nat: false
 		Expect(link.Type()).To(Equal("tuntap"))
 		Expect(link.Attrs().MTU).To(Equal(1460))
 	})
+
+	It("should create a tap with default MTU 1500", func() {
+		clusterYaml := `
+kind: Network
+name: r0-node1
+type: internal
+use-nat: false
+`
+		cluster, err := types.Parse(strings.NewReader(clusterYaml))
+		Expect(err).NotTo(HaveOccurred())
+
+		networkSpec := cluster.Networks[0]
+		network, err := dcnet.NewNetwork(networkSpec)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(network.Create(0)).NotTo(HaveOccurred())
+		defer network.Cleanup()
+
+		tap, err := NewTap("r0-node1")
+		Expect(err).NotTo(HaveOccurred())
+		tapInfo, err := tap.Create(0)
+		Expect(err).NotTo(HaveOccurred())
+		defer tap.Cleanup()
+
+		link, err := netlink.LinkByName(tapInfo.tap)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(link.Type()).To(Equal("tuntap"))
+		Expect(link.Attrs().MTU).To(Equal(1500))
+	})
 })

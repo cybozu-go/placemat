@@ -8,7 +8,7 @@ import (
 )
 
 var _ = Describe("Cluster resource types", func() {
-	It("should create an external network", func() {
+	It("should create a cluster from a yaml", func() {
 		clusterYaml := `
 kind: Network
 name: internet
@@ -68,9 +68,9 @@ volumes:
   name: seed
   network-config: network.yml
   user-data: seed_boot-0.yml
-- kind: 9p
+- kind: hostPath
   name: sabakan
-  folder: sabakan-data
+  path: sabakan-data
 uefi: false
 tpm: true
 ---
@@ -154,9 +154,9 @@ file: cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 							UserData:      "seed_boot-0.yml",
 						},
 						{
-							Kind:   "9p",
-							Name:   "sabakan",
-							Folder: "sabakan-data",
+							Kind: "hostPath",
+							Name: "sabakan",
+							Path: "sabakan-data",
 						},
 					},
 					IgnitionFile: "my-node.ign",

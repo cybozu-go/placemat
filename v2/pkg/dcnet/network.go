@@ -43,8 +43,10 @@ func (n *Network) Create(mtu int) error {
 	if err := netlink.LinkAdd(bridge); err != nil {
 		return fmt.Errorf("failed to add the bridge %s: %w", n.name, err)
 	}
-	if err := netlink.LinkSetMTU(bridge, mtu); err != nil {
-		return fmt.Errorf("failed to set mtu to the bridge %s: %w", n.name, err)
+	if mtu > 0 {
+		if err := netlink.LinkSetMTU(bridge, mtu); err != nil {
+			return fmt.Errorf("failed to set mtu to the bridge %s: %w", n.name, err)
+		}
 	}
 	if err := netlink.LinkSetUp(bridge); err != nil {
 		return fmt.Errorf("failed to set up to the bridge %s: %w", n.name, err)

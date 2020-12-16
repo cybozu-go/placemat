@@ -20,7 +20,7 @@ type NodeVolume interface {
 
 // NewNodeVolume creates NodeVolume from specs
 func NewNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (NodeVolume, error) {
-	var cache string
+	var cache types.NodeVolumeCache
 	switch spec.Cache {
 	case "":
 		cache = types.NodeVolumeCacheNone
@@ -44,8 +44,8 @@ func NewNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (No
 		return nil, fmt.Errorf("failed to find the image %s", spec.Image)
 	case types.NodeVolumeKindLocalds:
 		return newLocalDSVolume(spec.Name, cache, spec.UserData, spec.NetworkConfig), nil
-	case types.NodeVolumeFormatRaw:
-		var format string
+	case types.NodeVolumeKindRaw:
+		var format types.NodeVolumeFormat
 		switch spec.Format {
 		case "":
 			format = types.NodeVolumeFormatQcow2
@@ -55,10 +55,10 @@ func NewNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (No
 			return nil, errors.New("invalid format for raw volume")
 		}
 		return newRawVolume(spec.Name, cache, spec.Size, format), nil
-	case types.NodeVolumeKind9p:
-		return new9pVolume(spec.Name, spec.Folder, spec.Writable), nil
+	case types.NodeVolumeKindHostPath:
+		return newHosPathVolume(spec.Name, spec.Path, spec.Writable), nil
 	default:
-		return nil, errors.New("unknown volume kind: " + spec.Kind)
+		return nil, errors.New("unknown volume kind: " + string(spec.Kind))
 	}
 }
 
@@ -68,13 +68,13 @@ func volumePath(dataDir, name string) string {
 
 type imageVolume struct {
 	name        string
-	cache       string
+	cache       types.NodeVolumeCache
 	image       *Image
 	copyOnWrite bool
 }
 
 // NewImageVolume creates a volume for type "image".
-func NewImageVolume(name string, cache string, image *Image, cow bool) NodeVolume {
+func NewImageVolume(name string, cache types.NodeVolumeCache, image *Image, cow bool) NodeVolume {
 	return &imageVolume{
 		name:        name,
 		cache:       cache,
@@ -161,13 +161,13 @@ func createCoWImageFromBase(ctx context.Context, base, dest string) error {
 
 type localDSVolume struct {
 	name          string
-	cache         string
+	cache         types.NodeVolumeCache
 	userData      string
 	networkConfig string
 }
 
 // NewLocalDSVolume creates a volume for type "localds".
-func newLocalDSVolume(name, cache string, u, n string) NodeVolume {
+func newLocalDSVolume(name string, cache types.NodeVolumeCache, u, n string) NodeVolume {
 	return &localDSVolume{
 		name:          name,
 		cache:         cache,
@@ -206,13 +206,13 @@ func (v *localDSVolume) Create(ctx context.Context, dataDir string) (VolumeArgs,
 
 type rawVolume struct {
 	name   string
-	cache  string
+	cache  types.NodeVolumeCache
 	size   string
-	format string
+	format types.NodeVolumeFormat
 }
 
 // NewRawVolume creates a volume for type "raw".
-func newRawVolume(name string, cache string, size, format string) NodeVolume {
+func newRawVolume(name string, cache types.NodeVolumeCache, size string, format types.NodeVolumeFormat) NodeVolume {
 	return &rawVolume{
 		name:   name,
 		cache:  cache,
@@ -226,7 +226,7 @@ func (v *rawVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, err
 	_, err := os.Stat(vPath)
 	switch {
 	case os.IsNotExist(err):
-		err = well.CommandContext(ctx, "qemu-img", "create", "-f", v.format, vPath, v.size).Run()
+		err = well.CommandContext(ctx, "qemu-img", "create", "-f", string(v.format), vPath, v.size).Run()
 		if err != nil {
 			return nil, err
 		}
@@ -242,33 +242,33 @@ func (v *rawVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, err
 	}, nil
 }
 
-type qemu9pVolume struct {
+type hostPathVolume struct {
 	name     string
-	folder   string
+	path     string
 	writable bool
 }
 
-func new9pVolume(name string, folderName string, writable bool) NodeVolume {
-	return &qemu9pVolume{
+func newHosPathVolume(name string, path string, writable bool) NodeVolume {
+	return &hostPathVolume{
 		name:     name,
-		folder:   folderName,
+		path:     path,
 		writable: writable,
 	}
 }
 
-func (v *qemu9pVolume) Create(ctx context.Context, _ string) (VolumeArgs, error) {
-	st, err := os.Stat(v.folder)
+func (v *hostPathVolume) Create(ctx context.Context, _ string) (VolumeArgs, error) {
+	st, err := os.Stat(v.path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to stat the folder %s", v.folder)
+		return nil, fmt.Errorf("failed to stat the path %s: %w", v.path, err)
 	}
 	if !st.IsDir() {
-		return nil, errors.New(v.folder + " is not a directory")
+		return nil, errors.New(v.path + " is not a directory")
 	}
-	p, err := filepath.Abs(v.folder)
+	p, err := filepath.Abs(v.path)
 	if err != nil {
 		return nil, err
 	}
-	return &Qemu9pVolumeArgs{
+	return &hostPathVolumeArgs{
 		volumePath: p,
 		cache:      "",
 		writable:   v.writable,

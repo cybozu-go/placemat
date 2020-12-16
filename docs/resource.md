@@ -73,9 +73,9 @@ volumes:
   - kind: raw
     name: data
     size: 10G
-  - kind: 9p
+  - kind: hostPath
     name: host-data
-    folder: host-dir
+    path: /var/lib/foo
     writable: false
 ignition: my-node.ign
 cpu: 2
@@ -95,7 +95,7 @@ The properties are:
     - `image`: Image resource for QEMU disk image.
     - `localds`: [cloud-config](http://cloudinit.readthedocs.io/en/latest/topics/format.html#cloud-config-data) data.
     - `raw`: Raw (and empty) block device backed by a file.
-    - `9p`: Virtual file system device with QEMU 9pfs.
+    - `hostPath`: Shared directory of the host using QEMU 9pfs.
 - `ignition`: [Ignition file](https://coreos.com/ignition/docs/latest/configuration-v2_1.html).
 - `cpu`: The amount of virtual CPUs.
 - `memory`: The amount of memory.
@@ -139,18 +139,18 @@ This volume type has the following parameters:
 * `size`: Disk size.  Required.
 * `format`: QEMU disk image format.  `qcow2` (default) or `raw`.
 
-### `9p` volume
+### `hostPath` volume
 
 Attaches a QEMU [9p](https://wiki.qemu.org/Documentation/9psetup) volume.
 This volume type has the following parameter:
 
-* `folder`: Hose-side folder name.  Required.
+* `path`: An absolute path of the host-side directory.  Required.
 * `writable`: If `true`, then an attached volume is writable. If `false`, then it is readonly and that is the default.
 
 You can mount the shared folder using
 
 ```console
-$ sudo mount -t 9p -o trans=virtio [mount tag] [mount point] -oversion=9p2000.L
+$ sudo mount -t 9p -o trans=virtio MOUNT_TAG MOUNT_NAME -oversion=9p2000.L
 ```
 
 `mount tag` is a volume name as specified.

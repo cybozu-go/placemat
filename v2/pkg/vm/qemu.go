@@ -163,7 +163,7 @@ type VolumeArgs interface {
 
 type ImageVolumeArgs struct {
 	volumePath string
-	cache      string
+	cache      types.NodeVolumeCache
 }
 
 func (v *ImageVolumeArgs) Args() []string {
@@ -173,7 +173,7 @@ func (v *ImageVolumeArgs) Args() []string {
 	}
 }
 
-func selectAIOforCache(cache string) string {
+func selectAIOforCache(cache types.NodeVolumeCache) string {
 	if cache == types.NodeVolumeCacheNone {
 		return "native"
 	}
@@ -182,7 +182,7 @@ func selectAIOforCache(cache string) string {
 
 type LocalDSVolumeArgs struct {
 	volumePath string
-	cache      string
+	cache      types.NodeVolumeCache
 }
 
 func (v *LocalDSVolumeArgs) Args() []string {
@@ -194,8 +194,8 @@ func (v *LocalDSVolumeArgs) Args() []string {
 
 type RawVolumeArgs struct {
 	volumePath string
-	cache      string
-	format     string
+	cache      types.NodeVolumeCache
+	format     types.NodeVolumeFormat
 }
 
 func (v *RawVolumeArgs) Args() []string {
@@ -205,14 +205,26 @@ func (v *RawVolumeArgs) Args() []string {
 	}
 }
 
-type Qemu9pVolumeArgs struct {
+type LVVolumeArgs struct {
 	volumePath string
-	cache      string
+	cache      types.NodeVolumeCache
+}
+
+func (v *LVVolumeArgs) Args() []string {
+	return []string{
+		"-drive",
+		fmt.Sprintf("if=virtio,cache=%s,aio=%s,format=raw,file=%s", v.cache, selectAIOforCache(v.cache), v.volumePath),
+	}
+}
+
+type hostPathVolumeArgs struct {
+	volumePath string
+	cache      types.NodeVolumeCache
 	writable   bool
 	mountTag   string
 }
 
-func (v *Qemu9pVolumeArgs) Args() []string {
+func (v *hostPathVolumeArgs) Args() []string {
 	readonly := ""
 	if !v.writable {
 		readonly = ",readonly"

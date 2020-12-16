@@ -106,7 +106,7 @@ smbios:
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should create a 9p volume as specified", func() {
+	It("should create a hostPath volume as specified", func() {
 		// Set up runtime
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
@@ -123,9 +123,9 @@ name: boot-0
 cpu: 8
 memory: 2G
 volumes:
-- kind: 9p 
+- kind: hostPath
   name: sabakan
-  folder: temp/shared-dir
+  path: temp/shared-dir
 smbios:
   serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
 `

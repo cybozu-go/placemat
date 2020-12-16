@@ -46,8 +46,10 @@ func (t *Tap) Create(mtu int) (*TapInfo, error) {
 	if err := netlink.LinkAdd(tap); err != nil {
 		return nil, fmt.Errorf("failed to add the tap %s: %w", name, err)
 	}
-	if err := netlink.LinkSetMTU(tap, mtu); err != nil {
-		return nil, err
+	if mtu > 0 {
+		if err := netlink.LinkSetMTU(tap, mtu); err != nil {
+			return nil, err
+		}
 	}
 	if err := netlink.LinkSetUp(tap); err != nil {
 		return nil, err
@@ -57,10 +59,14 @@ func (t *Tap) Create(mtu int) (*TapInfo, error) {
 	}
 	t.tapName = tap.Name
 
+	createdTap, err := netlink.LinkByName(tap.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find the created tap: %w", err)
+	}
 	return &TapInfo{
 		tap:    tap.Name,
 		bridge: t.bridge.Attrs().Name,
-		mtu:    mtu,
+		mtu:    createdTap.Attrs().MTU,
 	}, nil
 }
 
