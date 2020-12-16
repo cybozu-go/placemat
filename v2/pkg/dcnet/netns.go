@@ -235,6 +235,7 @@ func (n *NetNS) Cleanup() {
 				log.FnError: err,
 				"veth":      hostVeth,
 			})
+			return
 		}
 		if err := netlink.LinkDel(hostVeth); err != nil {
 			log.Warn("failed to delete the veth", map[string]interface{}{
