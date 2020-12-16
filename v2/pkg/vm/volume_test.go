@@ -2,15 +2,12 @@ package vm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat/v2/pkg/types"
-	"github.com/cybozu-go/well"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -183,88 +180,4 @@ smbios:
 			fmt.Sprintf("if=virtio,cache=none,aio=native,format=qcow2,file=%s/data.img", temp),
 		}))
 	})
-
-	It("should create a lv volume as specified", func() {
-		// Set up runtime
-		cur, err := os.Getwd()
-		Expect(err).NotTo(HaveOccurred())
-		boot0 := filepath.Join(cur, "temp", "boot-0")
-		Expect(os.MkdirAll(boot0, 0755)).NotTo(HaveOccurred())
-		defer os.RemoveAll(filepath.Join(cur, "temp"))
-
-		loopback, err := setupVg()
-		Expect(err).NotTo(HaveOccurred())
-		defer cleanupVg(loopback)
-
-		clusterYaml := `
-kind: Node
-name: boot-0
-cpu: 8
-memory: 2G
-volumes:
-- kind: lv
-  name: data
-  size: 100M
-  vg: vg1
-  cache: writeback
-smbios:
-  serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
-`
-		cluster, err := types.Parse(strings.NewReader(clusterYaml))
-		Expect(err).NotTo(HaveOccurred())
-
-		nodeSpec := cluster.Nodes[0]
-		volumeSpec := nodeSpec.Volumes[0]
-
-		volume, err := NewNodeVolume(volumeSpec, cluster.Images)
-		Expect(err).NotTo(HaveOccurred())
-		args, err := volume.Create(context.Background(), boot0)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(args.Args()).To(Equal([]string{
-			"-drive",
-			"if=virtio,cache=writeback,aio=threads,format=raw,file=/dev/vg1/boot-0.data",
-		}))
-	})
 })
-
-func setupVg() (string, error) {
-	ctx := context.Background()
-	output, err := well.CommandContext(ctx, "losetup", "-f").Output()
-	if err != nil {
-		return "", err
-	}
-	if len(output) == 0 {
-		return "", errors.New("no lookback device")
-	}
-
-	loopback := strings.Split(string(output), "\n")[0]
-	err = well.CommandContext(ctx, "truncate", "--size=1G", "./temp/hoge").Run()
-	if err != nil {
-		return "", err
-	}
-
-	if err := well.CommandContext(ctx, "losetup", loopback, "./temp/hoge").Run(); err != nil {
-		return "", err
-	}
-
-	if err := well.CommandContext(ctx, "vgcreate", "vg1", loopback).Run(); err != nil {
-		return "", err
-	}
-
-	return loopback, nil
-}
-
-func cleanupVg(loopback string) {
-	ctx := context.Background()
-	if err := well.CommandContext(ctx, "vgremove", "-y", "vg1").Run(); err != nil {
-		log.Warn("failed to remove vg1", map[string]interface{}{
-			log.FnError: err,
-		})
-	}
-	if err := well.CommandContext(ctx, "losetup", "-d", loopback).Run(); err != nil {
-		log.Warn("failed to detach loopback", map[string]interface{}{
-			log.FnError: err,
-			"loopback":  loopback,
-		})
-	}
-}

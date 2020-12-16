@@ -117,7 +117,6 @@ const (
 	NodeVolumeKindImage   = "image"
 	NodeVolumeKindLocalds = "localds"
 	NodeVolumeKindRaw     = "raw"
-	NodeVolumeKindLv      = "lv"
 	NodeVolumeKind9p      = "9p"
 
 	NodeVolumeFormatQcow2 = "qcow2"
@@ -196,13 +195,6 @@ func (n *NodeVolumeSpec) validate() error {
 		case NodeVolumeFormatQcow2, NodeVolumeFormatRaw:
 		default:
 			return errors.New("invalid format for raw volume")
-		}
-	case NodeVolumeKindLv:
-		if n.Size == "" {
-			return errors.New("lv volume must specify size")
-		}
-		if n.VG == "" {
-			return errors.New("lv volume must specify vg")
 		}
 	case NodeVolumeKind9p:
 		if n.Folder == "" {

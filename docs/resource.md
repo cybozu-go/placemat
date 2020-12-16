@@ -73,11 +73,6 @@ volumes:
   - kind: raw
     name: data
     size: 10G
-  - kind: lv
-    name: data2
-    size: 10G
-    vg: vg1
-    cache: writeback
   - kind: 9p
     name: host-data
     folder: host-dir
@@ -100,7 +95,6 @@ The properties are:
     - `image`: Image resource for QEMU disk image.
     - `localds`: [cloud-config](http://cloudinit.readthedocs.io/en/latest/topics/format.html#cloud-config-data) data.
     - `raw`: Raw (and empty) block device backed by a file.
-    - `lv`: Raw (and empty) block device backed by a logical volume in LVM.
     - `9p`: Virtual file system device with QEMU 9pfs.
 - `ignition`: [Ignition file](https://coreos.com/ignition/docs/latest/configuration-v2_1.html).
 - `cpu`: The amount of virtual CPUs.
@@ -144,14 +138,6 @@ This volume type has the following parameters:
 
 * `size`: Disk size.  Required.
 * `format`: QEMU disk image format.  `qcow2` (default) or `raw`.
-
-### `lv` volume
-
-Attaches a RAW, empty block device backed by a logical volume in LVM.
-This volume type has the following parameter:
-
-* `size`: Disk size.  Required.
-* `vg`: Volume group.  Required.
 
 ### `9p` volume
 

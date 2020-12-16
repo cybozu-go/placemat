@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/placemat/v2/pkg/util"
@@ -56,8 +55,6 @@ func NewNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (No
 			return nil, errors.New("invalid format for raw volume")
 		}
 		return newRawVolume(spec.Name, cache, spec.Size, format), nil
-	case types.NodeVolumeKindLv:
-		return newLVVolume(spec.Name, cache, spec.Size, spec.VG), nil
 	case types.NodeVolumeKind9p:
 		return new9pVolume(spec.Name, spec.Folder, spec.Writable), nil
 	default:
@@ -242,57 +239,6 @@ func (v *rawVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, err
 		volumePath: vPath,
 		cache:      v.cache,
 		format:     v.format,
-	}, nil
-}
-
-type lvVolume struct {
-	name  string
-	cache string
-	size  string
-	vg    string
-}
-
-// NewLVVolume creates a volume for type "lv".
-func newLVVolume(name string, cache string, size, vg string) NodeVolume {
-	return &lvVolume{
-		name:  name,
-		cache: cache,
-		size:  size,
-		vg:    vg,
-	}
-}
-
-func (v *lvVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, error) {
-	nodeName := filepath.Base(dataDir)
-	lvName := nodeName + "." + v.name
-
-	output, err := well.CommandContext(ctx, "lvs", "--noheadings", "--unbuffered", "-o", "lv_name", v.vg).Output()
-	if err != nil {
-		return nil, err
-	}
-
-	found := false
-	for _, line := range strings.Split(string(output), "\n") {
-		if strings.TrimSpace(line) == lvName {
-			found = true
-		}
-	}
-	if !found {
-		err := well.CommandContext(ctx, "lvcreate", "-n", lvName, "-L", v.size, v.vg).Run()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	output, err = well.CommandContext(ctx, "lvs", "--noheadings", "--unbuffered", "-o", "lv_path", v.vg+"/"+lvName).Output()
-	if err != nil {
-		return nil, err
-	}
-	vPath := strings.TrimSpace(string(output))
-
-	return &LVVolumeArgs{
-		volumePath: vPath,
-		cache:      v.cache,
 	}, nil
 }
 

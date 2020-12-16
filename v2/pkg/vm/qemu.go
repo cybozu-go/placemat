@@ -205,18 +205,6 @@ func (v *RawVolumeArgs) Args() []string {
 	}
 }
 
-type LVVolumeArgs struct {
-	volumePath string
-	cache      string
-}
-
-func (v *LVVolumeArgs) Args() []string {
-	return []string{
-		"-drive",
-		fmt.Sprintf("if=virtio,cache=%s,aio=%s,format=raw,file=%s", v.cache, selectAIOforCache(v.cache), v.volumePath),
-	}
-}
-
 type Qemu9pVolumeArgs struct {
 	volumePath string
 	cache      string
