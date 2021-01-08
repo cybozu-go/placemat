@@ -22,3 +22,4 @@ jobs:
       - run: make test
       - run: make test-dcnet
       - run: make test-vm
+      - run: make test-virtualbmc

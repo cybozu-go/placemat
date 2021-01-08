@@ -3,7 +3,7 @@ SUDO=sudo
 .PHONY: setup
 setup:
 	$(SUDO) apt-get update
-	$(SUDO) apt-get -y install --no-install-recommends qemu qemu-kvm cloud-utils
+	$(SUDO) apt-get -y install --no-install-recommends qemu qemu-kvm cloud-utils freeipmi-tools
 
 .PHONY: code-check
 code-check: test-tools
@@ -29,6 +29,12 @@ test-vm:
 	go test -c ./pkg/vm
 	$(SUDO) ./vm.test -test.v
 	rm -f vm.test
+
+.PHONY: test-virtualbmc
+test-virtualbmc:
+	go test -c ./pkg/virtualbmc
+	$(SUDO) ./virtualbmc.test -test.v
+	rm -f virtualbmc.test
 
 .PHONY: test-tools
 test-tools: custom-checker staticcheck nilerr
