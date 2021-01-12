@@ -31,10 +31,10 @@ const (
 	CompletionCodeInvalidUsername = 0x81
 )
 
-// IPMI represents IPMIMessage and a target VM
+// IPMI represents IPMIMessage and a target Machine
 type IPMI struct {
 	message *IPMIMessage
-	vm      VM
+	machine Machine
 	session *RMCPPlusSessionHolder
 }
 
@@ -55,7 +55,7 @@ type IPMIMessage struct {
 }
 
 // NewIPMI creates an IPMI
-func NewIPMI(buf io.Reader, ipmiMessageLen int, vm VM, session *RMCPPlusSessionHolder) (*IPMI, error) {
+func NewIPMI(buf io.Reader, ipmiMessageLen int, machine Machine, session *RMCPPlusSessionHolder) (*IPMI, error) {
 	message, err := deserializeIPMIMessage(buf, ipmiMessageLen)
 	if err != nil {
 		return nil, fmt.Errorf("failed to desetialize IPMI message : %w", err)
@@ -63,7 +63,7 @@ func NewIPMI(buf io.Reader, ipmiMessageLen int, vm VM, session *RMCPPlusSessionH
 
 	return &IPMI{
 		message: message,
-		vm:      vm,
+		machine: machine,
 		session: session,
 	}, nil
 }

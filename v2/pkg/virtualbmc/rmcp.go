@@ -25,12 +25,12 @@ const (
 	RmcpClassOem  = 0x08
 )
 
-func HandleRMCPRequest(buf io.Reader, vm VM, session *RMCPPlusSessionHolder, bmcUser *BMCUserHolder) ([]byte, error) {
+func HandleRMCPRequest(buf io.Reader, machine Machine, session *RMCPPlusSessionHolder, bmcUser *BMCUserHolder) ([]byte, error) {
 	rmcp, err := newRMCP(buf)
 	if err != nil {
 		return nil, err
 	}
-	res, err := rmcp.handle(buf, vm, session, bmcUser)
+	res, err := rmcp.handle(buf, machine, session, bmcUser)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func newRMCP(buf io.Reader) (*RemoteManagementControlProtocolHeader, error) {
 	return header, nil
 }
 
-func (r *RemoteManagementControlProtocolHeader) handle(buf io.Reader, vm VM, session *RMCPPlusSessionHolder, bmcUser *BMCUserHolder) ([]byte, error) {
+func (r *RemoteManagementControlProtocolHeader) handle(buf io.Reader, machine Machine, session *RMCPPlusSessionHolder, bmcUser *BMCUserHolder) ([]byte, error) {
 	var class string
 	switch r.Class {
 	case RmcpClassIpmi:
@@ -55,7 +55,7 @@ func (r *RemoteManagementControlProtocolHeader) handle(buf io.Reader, vm VM, ses
 		if err != nil {
 			return nil, err
 		}
-		res, err := ipmiSession.Handle(buf, vm, session, bmcUser)
+		res, err := ipmiSession.Handle(buf, machine, session, bmcUser)
 		if err != nil {
 			return nil, err
 		}

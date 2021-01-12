@@ -45,7 +45,7 @@ func NewIPMISession(buf io.Reader) (*IPMISession, error) {
 }
 
 // Handle handles both IPMI v1.5 and v2.0 packet formats and dispatches layers below
-func (r *IPMISession) Handle(buf io.Reader, vm VM, session *RMCPPlusSessionHolder, bmcUser *BMCUserHolder) ([]byte, error) {
+func (r *IPMISession) Handle(buf io.Reader, machine Machine, session *RMCPPlusSessionHolder, bmcUser *BMCUserHolder) ([]byte, error) {
 	rmcpPlus, err := isRMCPPlusFormat(r.authType)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (r *IPMISession) Handle(buf io.Reader, vm VM, session *RMCPPlusSessionHolde
 		if err != nil {
 			return nil, err
 		}
-		return rmcpPlus.Handle(buf, vm)
+		return rmcpPlus.Handle(buf, machine)
 	}
 
 	wrapper, err := deserializeIPMISessionWrapper(buf, r.authType)
@@ -64,7 +64,7 @@ func (r *IPMISession) Handle(buf io.Reader, vm VM, session *RMCPPlusSessionHolde
 		return nil, err
 	}
 
-	ipmi, err := NewIPMI(buf, int(wrapper.MessageLen), vm, session)
+	ipmi, err := NewIPMI(buf, int(wrapper.MessageLen), machine, session)
 	if err != nil {
 		return nil, err
 	}

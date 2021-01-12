@@ -80,7 +80,7 @@ func (i *IPMI) handleIPMIChassis(message *IPMIMessage) ([]byte, error) {
 
 func (i *IPMI) handleIPMIGetChassisStatus() ([]byte, error) {
 	response := IPMIGetChassisStatusResponse{}
-	if i.vm.IsRunning() {
+	if i.machine.IsRunning() {
 		response.CurrentPowerState |= ChassisPowerStateBitmaskPowerOn
 	}
 	response.LastPowerEvent = 0
@@ -104,19 +104,19 @@ func (i *IPMI) handleIPMIChassisControl(message *IPMIMessage) error {
 
 	switch request.ChassisControl {
 	case ChassisControlPowerDown:
-		return i.vm.PowerOff()
+		return i.machine.PowerOff()
 	case ChassisControlPowerUp:
-		return i.vm.PowerOn()
+		return i.machine.PowerOn()
 	case ChassisControlPowerCycle:
-		if err := i.vm.PowerOff(); err != nil {
+		if err := i.machine.PowerOff(); err != nil {
 			return err
 		}
-		return i.vm.PowerOn()
+		return i.machine.PowerOn()
 	case ChassisControlHardReset:
-		if err := i.vm.PowerOff(); err != nil {
+		if err := i.machine.PowerOff(); err != nil {
 			return err
 		}
-		return i.vm.PowerOn()
+		return i.machine.PowerOn()
 	case ChassisControlPulse:
 		// do nothing
 	case ChassisControlPowerSoft:

@@ -185,13 +185,13 @@ func NewRMCPPlus(buf io.Reader, authType AuthenticationType, session *RMCPPlusSe
 }
 
 // Handle handles RMCP+ format request
-func (r *RMCPPlus) Handle(buf io.Reader, vm VM) ([]byte, error) {
+func (r *RMCPPlus) Handle(buf io.Reader, machine Machine) ([]byte, error) {
 	payloadType := r.header.PayloadType & 0x3f
 	authenticated := (r.header.PayloadType & 0x40) >> 6
 	encrypted := (r.header.PayloadType & 0x80) >> 7
 
 	if authenticated == 1 && encrypted == 1 {
-		return r.handleEncryptedRequest(buf, vm)
+		return r.handleEncryptedRequest(buf, machine)
 	}
 
 	switch payloadType {
@@ -563,7 +563,7 @@ func generateSessionIntegrityCheckValue(session *RMCPPlusSession, sessionIntegri
 	return mac.Sum(nil)[:12], nil
 }
 
-func (r *RMCPPlus) handleEncryptedRequest(buf io.Reader, vm VM) ([]byte, error) {
+func (r *RMCPPlus) handleEncryptedRequest(buf io.Reader, machine Machine) ([]byte, error) {
 	session, ok := r.session.GetRMCPPlusSession(r.header.SessionId)
 	if !ok {
 		return nil, errors.New("session hasn't been activated")
@@ -584,7 +584,7 @@ func (r *RMCPPlus) handleEncryptedRequest(buf io.Reader, vm VM) ([]byte, error) 
 		return nil, err
 	}
 
-	ipmi, err := NewIPMI(bytes.NewBuffer(plain), len(plain), vm, r.session)
+	ipmi, err := NewIPMI(bytes.NewBuffer(plain), len(plain), machine, r.session)
 	if err != nil {
 		return nil, err
 	}
@@ -691,20 +691,20 @@ func padPKCS7(data []byte) []byte {
 	return append(data, pad...)
 }
 
-const RandomNumberSize = 16
+const randomNumberSize = 16
 
-func generateRandomNumber() ([RandomNumberSize]byte, error) {
-	b := make([]byte, RandomNumberSize)
+func generateRandomNumber() ([randomNumberSize]byte, error) {
+	b := make([]byte, randomNumberSize)
 	_, err := rand.Read(b)
 	if err != nil {
-		return [RandomNumberSize]byte{}, err
+		return [randomNumberSize]byte{}, err
 	}
 
-	encoded := make([]byte, hex.EncodedLen(RandomNumberSize))
+	encoded := make([]byte, hex.EncodedLen(randomNumberSize))
 	hex.Encode(
 		encoded, b)
 
-	fixedBytes := [RandomNumberSize]byte{}
+	fixedBytes := [randomNumberSize]byte{}
 	copy(fixedBytes[:],
 		encoded)
 	return fixedBytes, nil

@@ -32,11 +32,7 @@ func (b *BMCUserHolder) AddBMCUser(name string, password string) {
 
 // RemoveBMCUser removes the user specified from the holder
 func (b *BMCUserHolder) RemoveBMCUser(name string) {
-	_, ok := b.users[name]
-
-	if ok {
-		delete(b.users, name)
-	}
+	delete(b.users, name)
 }
 
 // GetBMCUser get the user specified from the holder

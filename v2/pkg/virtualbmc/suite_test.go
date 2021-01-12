@@ -1,7 +1,6 @@
 package virtualbmc_test
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -10,9 +9,6 @@ import (
 )
 
 func TestVirtualBMC(t *testing.T) {
-	if os.Getuid() != 0 {
-		t.Skip("run as root")
-	}
 	RegisterFailHandler(Fail)
 	SetDefaultEventuallyTimeout(10 * time.Second)
 	SetDefaultEventuallyPollingInterval(1 * time.Second)
