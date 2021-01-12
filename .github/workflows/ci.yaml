@@ -8,11 +8,11 @@ defaults:
   run:
     working-directory: v2
 env:
-  go-version: 1.13
+  go-version: 1.15
 jobs:
   test:
     name: Small test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -22,4 +22,3 @@ jobs:
       - run: make test
       - run: make test-dcnet
       - run: make test-vm
-      - run: make test-virtualbmc
