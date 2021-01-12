@@ -3,7 +3,7 @@ SUDO=sudo
 .PHONY: setup
 setup:
 	$(SUDO) apt-get update
-	$(SUDO) apt-get -y install --no-install-recommends qemu qemu-kvm cloud-utils
+	$(SUDO) apt-get -y install --no-install-recommends qemu qemu-kvm cloud-utils freeipmi-tools
 
 .PHONY: code-check
 code-check: test-tools
