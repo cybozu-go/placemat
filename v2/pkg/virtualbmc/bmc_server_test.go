@@ -3,6 +3,7 @@ package virtualbmc
 import (
 	"context"
 	"fmt"
+	"net"
 
 	"github.com/cybozu-go/well"
 	. "github.com/onsi/ginkgo"
@@ -11,10 +12,12 @@ import (
 
 var _ = Describe("Virtual BMC", func() {
 	It("should turn on and off Machine power via IPMI v2.0", func() {
-		ipmi, err := NewBMCServer()
+		serverAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", "127.0.0.1", 9623))
+		Expect(err).NotTo(HaveOccurred())
+		conn, err := net.ListenUDP("udp", serverAddr)
 		Expect(err).NotTo(HaveOccurred())
 		well.Go(func(ctx context.Context) error {
-			return ipmi.listen(ctx, "127.0.0.1", 9623, &VMMock{running: false})
+			return StartIPMIServer(ctx, conn, &MachineMock{running: false})
 		})
 
 		Eventually(func() error {
@@ -95,20 +98,20 @@ var _ = Describe("Virtual BMC", func() {
 	})
 })
 
-type VMMock struct {
+type MachineMock struct {
 	running bool
 }
 
-func (v *VMMock) IsRunning() bool {
+func (v *MachineMock) IsRunning() bool {
 	return v.running
 }
 
-func (v *VMMock) PowerOn() error {
+func (v *MachineMock) PowerOn() error {
 	v.running = true
 	return nil
 }
 
-func (v *VMMock) PowerOff() error {
+func (v *MachineMock) PowerOff() error {
 	v.running = false
 	return nil
 }

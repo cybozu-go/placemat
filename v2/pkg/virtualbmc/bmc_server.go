@@ -3,15 +3,10 @@ package virtualbmc
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net"
 
 	"github.com/cybozu-go/log"
 )
-
-// BMCServer represents IPMI Server
-type BMCServer struct {
-}
 
 // Machine defines the interface to manipulate Machine
 type Machine interface {
@@ -20,24 +15,11 @@ type Machine interface {
 	PowerOff() error
 }
 
-// NewBMCServer creates an BMCServer
-func NewBMCServer() (*BMCServer, error) {
-	return &BMCServer{}, nil
-}
-
-func (s *BMCServer) listen(ctx context.Context, addr string, port int, machine Machine) error {
-	serverAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", addr, port))
-	if err != nil {
-		return err
-	}
-
-	server, err := net.ListenUDP("udp", serverAddr)
-	if err != nil {
-		return err
-	}
+// StartIPMIServer starts an IPMI server that handles RMCP requests
+func StartIPMIServer(ctx context.Context, conn net.PacketConn, machine Machine) error {
 	go func() {
 		<-ctx.Done()
-		server.Close()
+		conn.Close()
 	}()
 
 	session := NewRMCPPlusSessionHolder()
@@ -46,7 +28,7 @@ func (s *BMCServer) listen(ctx context.Context, addr string, port int, machine M
 
 	buf := make([]byte, 1024)
 	for {
-		_, addr, err := server.ReadFromUDP(buf)
+		_, addr, err := conn.ReadFrom(buf)
 		if err != nil {
 			return err
 		}
@@ -59,7 +41,7 @@ func (s *BMCServer) listen(ctx context.Context, addr string, port int, machine M
 			})
 			continue
 		}
-		_, err = server.WriteToUDP(res, addr)
+		_, err = conn.WriteTo(res, addr)
 		if err != nil {
 			log.Warn("failed to write to UDP", map[string]interface{}{
 				log.FnError: err,
