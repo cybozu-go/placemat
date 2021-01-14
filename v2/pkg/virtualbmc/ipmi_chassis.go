@@ -80,7 +80,8 @@ func (i *IPMI) handleIPMIChassis(message *IPMIMessage) ([]byte, error) {
 
 func (i *IPMI) handleIPMIGetChassisStatus() ([]byte, error) {
 	response := IPMIGetChassisStatusResponse{}
-	if i.machine.IsRunning() {
+	powerStatus := i.machine.PowerStatus()
+	if powerStatus == PowerStatusOn || powerStatus == PowerStatusPoweringOn {
 		response.CurrentPowerState |= ChassisPowerStateBitmaskPowerOn
 	}
 	response.LastPowerEvent = 0
