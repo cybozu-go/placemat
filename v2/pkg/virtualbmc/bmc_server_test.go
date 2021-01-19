@@ -26,6 +26,7 @@ var _ = Describe("Virtual BMC", func() {
 		})
 
 		Eventually(func() error {
+			// Power State
 			ipmipower := well.CommandContext(context.Background(),
 				"ipmipower", "--stat", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
 			output, err := ipmipower.Output()
@@ -36,6 +37,7 @@ var _ = Describe("Virtual BMC", func() {
 				return fmt.Errorf("ipmipowert stat reponse is not 127.0.0.1: off, actual is: %s", string(output))
 			}
 
+			// Power On
 			ipmipower = well.CommandContext(context.Background(),
 				"ipmipower", "--on", "--wait-until-on", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
 			output, err = ipmipower.Output()
@@ -46,6 +48,7 @@ var _ = Describe("Virtual BMC", func() {
 				return fmt.Errorf("ipmipowert on reponse is not 127.0.0.1: ok, actual is: %s", string(output))
 			}
 
+			// Power State
 			ipmipower = well.CommandContext(context.Background(),
 				"ipmipower", "--stat", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
 			output, err = ipmipower.Output()
@@ -56,26 +59,7 @@ var _ = Describe("Virtual BMC", func() {
 				return fmt.Errorf("ipmipowert stat reponse is not 127.0.0.1: on, actual is: %s", string(output))
 			}
 
-			ipmipower = well.CommandContext(context.Background(),
-				"ipmipower", "--off", "--wait-until-off", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
-			output, err = ipmipower.Output()
-			if err != nil {
-				return err
-			}
-			if string(output) != "127.0.0.1: ok\n" {
-				return fmt.Errorf("ipmipowert off reponse is not 127.0.0.1: ok, actual is: %s", string(output))
-			}
-
-			ipmipower = well.CommandContext(context.Background(),
-				"ipmipower", "--stat", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
-			output, err = ipmipower.Output()
-			if err != nil {
-				return err
-			}
-			if string(output) != "127.0.0.1: off\n" {
-				return fmt.Errorf("ipmipowert stat reponse is not 127.0.0.1: off, actual is: %s", string(output))
-			}
-
+			// Power Reset
 			ipmipower = well.CommandContext(context.Background(),
 				"ipmipower", "--reset", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
 			output, err = ipmipower.Output()
@@ -86,6 +70,7 @@ var _ = Describe("Virtual BMC", func() {
 				return fmt.Errorf("ipmipowert reset reponse is not 127.0.0.1: ok, actual is: %s", string(output))
 			}
 
+			// Power State
 			ipmipower = well.CommandContext(context.Background(),
 				"ipmipower", "--stat", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
 			output, err = ipmipower.Output()
@@ -94,6 +79,28 @@ var _ = Describe("Virtual BMC", func() {
 			}
 			if string(output) != "127.0.0.1: on\n" {
 				return fmt.Errorf("ipmipowert stat reponse is not 127.0.0.1: on, actual is: %s", string(output))
+			}
+
+			// Power Off
+			ipmipower = well.CommandContext(context.Background(),
+				"ipmipower", "--off", "--wait-until-off", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
+			output, err = ipmipower.Output()
+			if err != nil {
+				return err
+			}
+			if string(output) != "127.0.0.1: ok\n" {
+				return fmt.Errorf("ipmipowert off reponse is not 127.0.0.1: ok, actual is: %s", string(output))
+			}
+
+			// Power State
+			ipmipower = well.CommandContext(context.Background(),
+				"ipmipower", "--stat", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
+			output, err = ipmipower.Output()
+			if err != nil {
+				return err
+			}
+			if string(output) != "127.0.0.1: off\n" {
+				return fmt.Errorf("ipmipowert stat reponse is not 127.0.0.1: off, actual is: %s", string(output))
 			}
 
 			return nil

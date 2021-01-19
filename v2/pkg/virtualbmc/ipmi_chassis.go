@@ -3,6 +3,7 @@ package virtualbmc
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 
 	"github.com/cybozu-go/log"
@@ -105,15 +106,31 @@ func (i *IPMI) handleIPMIChassisControl(message *IPMIMessage) error {
 
 	switch request.ChassisControl {
 	case ChassisControlPowerDown:
+		powerState := i.machine.PowerStatus()
+		if powerState == PowerStatusOff || powerState == PowerStatusPoweringOff {
+			return errors.New("server is already powered off")
+		}
 		return i.machine.PowerOff()
 	case ChassisControlPowerUp:
+		powerState := i.machine.PowerStatus()
+		if powerState == PowerStatusOn || powerState == PowerStatusPoweringOn {
+			return errors.New("server is already powered on")
+		}
 		return i.machine.PowerOn()
 	case ChassisControlPowerCycle:
+		powerState := i.machine.PowerStatus()
+		if powerState == PowerStatusOff || powerState == PowerStatusPoweringOff {
+			return errors.New("server is already powered off")
+		}
 		if err := i.machine.PowerOff(); err != nil {
 			return err
 		}
 		return i.machine.PowerOn()
 	case ChassisControlHardReset:
+		powerState := i.machine.PowerStatus()
+		if powerState == PowerStatusOff || powerState == PowerStatusPoweringOff {
+			return errors.New("server is already powered off")
+		}
 		if err := i.machine.PowerOff(); err != nil {
 			return err
 		}
