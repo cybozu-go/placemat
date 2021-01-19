@@ -46,12 +46,31 @@ Redfish API
 
 ### Supported Resources
 
+- [ComputerSystemCollection](https://www.dell.com/support/manuals/ja-jp/idrac9-lifecycle-controller-v3.3-series/idrac9_3.36_redfishapiguide/computersystemcollection?guid=guid-15a3af13-37e0-48e1-aa99-31ccdb07c8f3&lang=en-us)
+  - [Supported Action - Reset](https://www.dell.com/support/manuals/ja-jp/idrac9-lifecycle-controller-v3.3-series/idrac9_3.36_redfishapiguide/supported-action-%E2%80%94-reset?guid=guid-3444cf02-da8d-422a-9400-6ce5ba71d9bd&lang=en-us)
 - [ChassisCollection](https://www.dell.com/support/manuals/ja-jp/idrac9-lifecycle-controller-v3.3-series/idrac9_3.36_redfishapiguide/chassiscollection?guid=guid-c4ac8700-44d2-46e9-b90f-67eed0774fce&lang=en-us)
-- [Chassis](https://www.dell.com/support/manuals/ja-jp/idrac9-lifecycle-controller-v3.3-series/idrac9_3.36_redfishapiguide/chassiscollection?guid=guid-c4ac8700-44d2-46e9-b90f-67eed0774fce&lang=en-us)
   - [Supported Action - Reset](https://www.dell.com/support/manuals/ja-jp/idrac9-lifecycle-controller-v3.3-series/idrac9_3.36_redfishapiguide/supported-action-%E2%80%94-reset?guid=guid-eae5f0af-bfdf-4915-b097-2f6f771e5c08&lang=en-us)
 
-Placemat v2 returns the following fixed ChassisCollection.
+Placemat v2 returns the following fixed ComputerSystemCollection and ChassisCollection.
 
+ComputerSystemCollection
+```json
+{
+  "@odata.context": "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection",
+  "@odata.id": "/redfish/v1/Systems",
+  "@odata.type": "#ComputerSystemCollection.ComputerSystemCollection",
+  "Description": "Collection of Computer Systems",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1"
+    }
+  ],
+  "Members@odata.count": 1,
+  "Name": "Computer System Collection"
+}
+```
+
+ChassisCollection
 ```json
 {
   "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
@@ -70,8 +89,30 @@ Placemat v2 returns the following fixed ChassisCollection.
 
 ### Supported Action
 
-Placemat V2 supports Reset Action for Chassis resource. You can confirm the supported actions in the Actions field of the Chassis Resource.
+Placemat V2 supports Reset Action for ComputerSystem and Chassis resource. You can confirm the supported actions in the Actions field of them.
 
+ComputerSystem
+```json
+{
+  "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1",
+  "@odata.type": "#ComputerSystem.v1_5_0.ComputerSystem",
+  "Actions": {
+    "#ComputerSystem.Reset": {
+      "ResetType@Redfish.AllowableValues": [
+        "On",
+        "ForceOff",
+        "ForceRestart",
+        "GracefulShutdown",
+        "PushPowerButton",
+        "Nmi"
+      ],
+      "target": "/redfish/v1/Systems/System.Embedded.1/Actions/ComputerSystem.Reset"
+    }
+  },
+```
+
+Chassis
 ```json
 {
   "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
