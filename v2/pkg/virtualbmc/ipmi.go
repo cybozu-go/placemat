@@ -26,9 +26,11 @@ const (
 	IPMINetFNResponse = 0x01
 )
 
+type CompletionCode uint8
+
 const (
-	CompletionCodeOK              = 0x00
-	CompletionCodeInvalidUsername = 0x81
+	CompletionCodeOK                     = CompletionCode(0x00)
+	CompletionCodeCouldNotExecuteCommand = CompletionCode(0xd5)
 )
 
 // IPMI represents IPMIMessage and a target Machine
@@ -49,7 +51,7 @@ type IPMIMessage struct {
 	SourceAddress  uint8
 	SourceLun      uint8 // SequenceNumber (6) + Lun (2)
 	Command        uint8
-	CompletionCode uint8
+	CompletionCode CompletionCode
 	Data           []uint8
 	DataChecksum   uint8
 }
@@ -110,18 +112,20 @@ func (i *IPMI) Handle() ([]byte, error) {
 	switch netFunction {
 	case IPMINetFNApp:
 		log.Info("    IPMI: NetFunction = APP", map[string]interface{}{})
+		code := CompletionCodeOK
 		res, err := i.handleIPMIApp(i.message)
 		if err != nil {
-			return nil, err
+			code = CompletionCodeCouldNotExecuteCommand
 		}
-		return appendIPMIMessageHeader(i.message, res, IPMINetFNApp|IPMINetFNResponse)
+		return appendIPMIMessageHeader(i.message, res, IPMINetFNApp|IPMINetFNResponse, code)
 	case IPMINetFNChassis:
 		log.Info("    IPMI: NetFunction = CHASSIS", map[string]interface{}{})
+		code := CompletionCodeOK
 		res, err := i.handleIPMIChassis(i.message)
 		if err != nil {
-			return nil, err
+			code = CompletionCodeCouldNotExecuteCommand
 		}
-		return appendIPMIMessageHeader(i.message, res, IPMINetFNChassis|IPMINetFNResponse)
+		return appendIPMIMessageHeader(i.message, res, IPMINetFNChassis|IPMINetFNResponse, code)
 	case IPMINetFNBridge:
 		log.Info("    IPMI: NetFunction = BRIDGE", map[string]interface{}{})
 	case IPMINetFNSensorEvent:
@@ -143,8 +147,8 @@ func (i *IPMI) Handle() ([]byte, error) {
 	return nil, fmt.Errorf("unsupported NetFunction: %x", netFunction)
 }
 
-func appendIPMIMessageHeader(request *IPMIMessage, response []byte, netfn uint8) ([]byte, error) {
-	responseMessage := buildResponseMessageTemplate(request, netfn)
+func appendIPMIMessageHeader(request *IPMIMessage, response []byte, netfn uint8, code CompletionCode) ([]byte, error) {
+	responseMessage := buildResponseMessageTemplate(request, netfn, code)
 	responseMessage.Data = response
 
 	obuf := bytes.Buffer{}
@@ -155,7 +159,7 @@ func appendIPMIMessageHeader(request *IPMIMessage, response []byte, netfn uint8)
 	return obuf.Bytes(), nil
 }
 
-func buildResponseMessageTemplate(requestMessage *IPMIMessage, netfn uint8) IPMIMessage {
+func buildResponseMessageTemplate(requestMessage *IPMIMessage, netfn uint8, code CompletionCode) IPMIMessage {
 	responseMessage := IPMIMessage{}
 	responseMessage.TargetAddress = requestMessage.SourceAddress
 	remoteLun := requestMessage.SourceLun & 0x03
@@ -164,7 +168,7 @@ func buildResponseMessageTemplate(requestMessage *IPMIMessage, netfn uint8) IPMI
 	responseMessage.SourceAddress = requestMessage.TargetAddress
 	responseMessage.SourceLun = (requestMessage.SourceLun & 0xfc) | localLun
 	responseMessage.Command = requestMessage.Command
-	responseMessage.CompletionCode = CompletionCodeOK
+	responseMessage.CompletionCode = code
 
 	return responseMessage
 }
@@ -175,6 +179,7 @@ func serializeIPMI(buf *bytes.Buffer, message IPMIMessage) error {
 	sum += uint32(message.SourceAddress)
 	sum += uint32(message.SourceLun)
 	sum += uint32(message.Command)
+	sum += uint32(message.CompletionCode)
 	for i := 0; i < len(message.Data); i += 1 {
 		sum += uint32(message.Data[i])
 	}
