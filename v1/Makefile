@@ -12,7 +12,8 @@ EXAMPLEDIR := $(WORKDIR)/usr/share/doc/placemat/examples
 BASH_COMPLETION_DIR := $(WORKDIR)/etc/bash_completion.d
 BINDIR := $(WORKDIR)/usr/bin
 VERSION = v0.1
-DEB = placemat_$(VERSION)_amd64.deb
+DEB_VERSION = $(patsubst v%,%,$(VERSION))
+DEB = placemat_$(DEB_VERSION)_amd64.deb
 DEST = .
 SBIN_PKGS = ./pkg/placemat ./pkg/pmctl
 
@@ -37,7 +38,7 @@ deb: $(DEB)
 $(DEB):
 	rm -rf $(WORKDIR)
 	cp -r debian $(WORKDIR)
-	sed 's/@VERSION@/$(patsubst v%,%,$(VERSION))/' debian/DEBIAN/control > $(CONTROL)
+	sed 's/@VERSION@/$(DEB_VERSION)/' debian/DEBIAN/control > $(CONTROL)
 	mkdir -p $(BINDIR)
 	GOBIN=$(BINDIR) go install $(SBIN_PKGS)
 	mkdir -p $(DOCDIR)
