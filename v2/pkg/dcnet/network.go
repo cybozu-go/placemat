@@ -2,9 +2,12 @@ package dcnet
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/coreos/go-iptables/iptables"
+	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/vishvananda/netlink"
 )
@@ -12,7 +15,7 @@ import (
 // Network represents a network configuration
 type Network struct {
 	name   string
-	typ    string
+	typ    types.NetworkType
 	useNAT bool
 	addr   *netlink.Addr
 }
@@ -115,14 +118,48 @@ func appendMasqueradeRule(ipt *iptables.IPTables, ipNet string) error {
 }
 
 // Cleanup deletes all the created bridges and restores all the modified configs.
-func (n *Network) Cleanup() error {
+func (n *Network) Cleanup() {
 	link, err := netlink.LinkByName(n.name)
 	if err != nil {
-		return err
+		log.Warn("failed to find link by name", map[string]interface{}{
+			log.FnError: err,
+			"name":      n.name,
+		})
 	}
 	err = netlink.LinkDel(link)
 	if err != nil {
-		return err
+		log.Warn("failed to delete link", map[string]interface{}{
+			log.FnError: err,
+			"name":      n.name,
+		})
 	}
+}
+
+// IsType checks whether this Network's type is specified type or not
+func (n *Network) IsType(typ types.NetworkType) bool {
+	return n.typ == typ
+}
+
+// IPNet checks whether this Network's address includes specified ip
+func (n *Network) Contains(ip net.IP) bool {
+	return n.addr.Contains(ip)
+}
+
+// AddAddr adds IP address to this Network
+func (n *Network) AddAddr(addr string) error {
+	prefixLen, _ := n.addr.Mask.Size()
+	addrWithMask, err := netlink.ParseAddr(addr + "/" + strconv.Itoa(prefixLen))
+	if err != nil {
+		return fmt.Errorf("failed to parse the address: %w", err)
+	}
+
+	link, err := netlink.LinkByName(n.name)
+	if err != nil {
+		return fmt.Errorf("failed to find the link %s: %w", n.name, err)
+	}
+	if err := netlink.AddrAdd(link, addrWithMask); err != nil {
+		return fmt.Errorf("failed to add the address %s: %w", addrWithMask.String(), err)
+	}
+
 	return nil
 }

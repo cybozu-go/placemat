@@ -29,7 +29,7 @@ var _ = Describe("Nat Rule", func() {
 
 	It("should clean up nat rules", func() {
 		Expect(CreateNatRules()).NotTo(HaveOccurred())
-		Expect(CleanupNatRules()).NotTo(HaveOccurred())
+		CleanupNatRules()
 
 		// Check if the nat rules are wiped out.
 		ipt4, ipt6, err := NewIptables()

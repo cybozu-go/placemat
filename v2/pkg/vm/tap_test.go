@@ -16,7 +16,7 @@ var _ = Describe("Tap", func() {
 	})
 
 	AfterEach(func() {
-		Expect(dcnet.CleanupNatRules()).ToNot(HaveOccurred())
+		dcnet.CleanupNatRules()
 	})
 
 	It("should create a tap as specified", func() {

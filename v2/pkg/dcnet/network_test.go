@@ -17,7 +17,7 @@ var _ = Describe("Bridge Network", func() {
 	})
 
 	AfterEach(func() {
-		Expect(CleanupNatRules()).ToNot(HaveOccurred())
+		CleanupNatRules()
 	})
 
 	It("should create an external network", func() {

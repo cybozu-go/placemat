@@ -19,7 +19,7 @@ var _ = Describe("QEMU command builder", func() {
 	})
 
 	AfterEach(func() {
-		Expect(dcnet.CleanupNatRules()).ToNot(HaveOccurred())
+		dcnet.CleanupNatRules()
 	})
 
 	It("should build a QEMU command which runs a virtual machine as specified", func() {
@@ -108,7 +108,7 @@ use-nat: false
 			volume, err := NewNodeVolume(volumeSpec, cluster.Images)
 			Expect(err).NotTo(HaveOccurred())
 
-			args, err := volume.Create(context.Background(), r.dataDir)
+			args, err := volume.Create(context.Background(), r.DataDir)
 			Expect(err).NotTo(HaveOccurred())
 			volumeArgs = append(volumeArgs, args)
 		}
@@ -132,7 +132,7 @@ use-nat: false
 		}()
 
 		qemu := NewQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
-			nodeSpec.UEFI, nodeSpec.TPM, SMBIOSConfig{
+			nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
 				manufacturer: nodeSpec.SMBIOS.Manufacturer,
 				product:      nodeSpec.SMBIOS.Product,
 				serial:       nodeSpec.SMBIOS.Serial,
@@ -163,7 +163,7 @@ qemu-system-x86_64
  -object rng-random,id=rng0,filename=/dev/urandom
  -device virtio-rng-pci,rng=rng0
  -cpu host
-`, r.runDir, r.dataDir, r.dataDir, sharedDir, tapInfos[0].tap, tapInfos[1].tap, r.runDir, r.runDir), "\n", "")
+`, r.RunDir, r.DataDir, r.DataDir, sharedDir, tapInfos[0].tap, tapInfos[1].tap, r.RunDir, r.RunDir), "\n", "")
 		actual := strings.Join(command, " ")
 		Expect(actual).To(Equal(expected))
 	})
@@ -256,7 +256,7 @@ use-nat: false
 			volume, err := NewNodeVolume(volumeSpec, cluster.Images)
 			Expect(err).NotTo(HaveOccurred())
 
-			args, err := volume.Create(context.Background(), r.dataDir)
+			args, err := volume.Create(context.Background(), r.DataDir)
 			Expect(err).NotTo(HaveOccurred())
 			volumeArgs = append(volumeArgs, args)
 		}
@@ -280,7 +280,7 @@ use-nat: false
 		}()
 
 		qemu := NewQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
-			nodeSpec.UEFI, nodeSpec.TPM, SMBIOSConfig{
+			nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
 				manufacturer: nodeSpec.SMBIOS.Manufacturer,
 				product:      nodeSpec.SMBIOS.Product,
 				serial:       nodeSpec.SMBIOS.Serial,
@@ -316,7 +316,7 @@ qemu-system-x86_64
  -object rng-random,id=rng0,filename=/dev/urandom
  -device virtio-rng-pci,rng=rng0
  -cpu host
-`, r.runDir, r.dataDir, r.dataDir, r.dataDir, sharedDir, tapInfos[0].tap, tapInfos[1].tap, r.runDir, r.runDir, r.runDir), "\n", "")
+`, r.RunDir, r.DataDir, r.DataDir, r.DataDir, sharedDir, tapInfos[0].tap, tapInfos[1].tap, r.RunDir, r.RunDir, r.RunDir), "\n", "")
 		actual := strings.Join(command, " ")
 		Expect(actual).To(Equal(expected))
 	})

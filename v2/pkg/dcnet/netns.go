@@ -105,7 +105,11 @@ func (n *NetNS) Setup(ctx context.Context, mtu int) error {
 
 		// Create Veth
 		for i, iface := range n.interfaces {
-			hostVeth, containerVeth, err := ip.SetupVeth(fmt.Sprintf("eth%d", i), mtu, hostNS)
+			hostVethName, err := RandomLinkName(LinkTypeVeth)
+			if err != nil {
+				return err
+			}
+			hostVeth, containerVeth, err := ip.SetupVethWithName(fmt.Sprintf("eth%d", i), hostVethName, mtu, hostNS)
 			if err != nil {
 				return fmt.Errorf("failed to set up veth: %w", err)
 			}

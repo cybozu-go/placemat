@@ -8,11 +8,13 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/placemat/v2/pkg/util"
+	"github.com/cybozu-go/placemat/v2/pkg/virtualbmc"
 	"github.com/cybozu-go/well"
 )
 
@@ -26,10 +28,10 @@ type Node struct {
 	memory       string
 	uefi         bool
 	tpm          bool
-	smbios       SMBIOSConfig
+	smbios       smBIOSConfig
 }
 
-type SMBIOSConfig struct {
+type smBIOSConfig struct {
 	manufacturer string
 	product      string
 	serial       string
@@ -44,7 +46,7 @@ func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec) (*Node, error)
 		memory:       spec.Memory,
 		uefi:         spec.UEFI,
 		tpm:          spec.TPM,
-		smbios: SMBIOSConfig{
+		smbios: smBIOSConfig{
 			manufacturer: spec.SMBIOS.Manufacturer,
 			product:      spec.SMBIOS.Product,
 			serial:       spec.SMBIOS.Serial,
@@ -70,16 +72,33 @@ func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec) (*Node, error)
 	return n, nil
 }
 
+// Prepare initializes node volumes
+func (n *Node) Prepare(ctx context.Context, c *util.Cache) error {
+	for _, v := range n.volumes {
+		if err := v.Prepare(ctx, c); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Setup creates volumes and taps, and then run a virtual machine as a QEMU process
-func (n *Node) Setup(ctx context.Context, r *Runtime, mtu int) (*VM, error) {
-	vArgs, err := n.createVolumes(ctx, r.dataDir)
+func (n *Node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMCInfo) (VM, string, error) {
+	if n.tpm {
+		err := n.startSWTPM(ctx, r)
+		if err != nil {
+			return nil, "", err
+		}
+	}
+	vArgs, err := n.createVolumes(ctx, r.DataDir)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	tapInfos, err := n.createTaps(mtu)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if n.uefi {
@@ -89,7 +108,7 @@ func (n *Node) Setup(ctx context.Context, r *Runtime, mtu int) (*VM, error) {
 			log.Error("Failed to create nvram", map[string]interface{}{
 				"error": err,
 			})
-			return nil, err
+			return nil, "", err
 		}
 	}
 
@@ -100,7 +119,7 @@ func (n *Node) Setup(ctx context.Context, r *Runtime, mtu int) (*VM, error) {
 	qemuCommand.Stderr = util.NewColoredLogWriter("qemu", n.name, os.Stderr)
 
 	if err := qemuCommand.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start qemuCommand: %w", err)
+		return nil, "", fmt.Errorf("failed to start qemuCommand: %w", err)
 	}
 
 	guest := r.guestSocketPath(n.name)
@@ -108,12 +127,12 @@ func (n *Node) Setup(ctx context.Context, r *Runtime, mtu int) (*VM, error) {
 	for {
 		_, err := os.Stat(monitor)
 		if err != nil && !os.IsNotExist(err) {
-			return nil, err
+			return nil, "", err
 		}
 
 		_, err2 := os.Stat(guest)
 		if err2 != nil && !os.IsNotExist(err2) {
-			return nil, err2
+			return nil, "", err2
 		}
 
 		if err == nil && err2 == nil {
@@ -123,20 +142,32 @@ func (n *Node) Setup(ctx context.Context, r *Runtime, mtu int) (*VM, error) {
 		select {
 		case <-time.After(100 * time.Millisecond):
 		case <-ctx.Done():
-			return nil, nil
+			return nil, "", nil
 		}
 	}
 
-	vm := &VM{
-		cmd:     qemuCommand,
-		running: true,
-		monitor: monitor,
-		guest:   guest,
-		socket:  r.socketPath(n.name),
-		swtpm:   r.swtpmSocketPath(n.name),
+	connGuest, err := net.Dial("unix", guest)
+	if err != nil {
+		return nil, "", err
+	}
+	gc := &guestConnection{
+		serial: n.smbios.serial,
+		guest:  connGuest,
+		ch:     nodeCh,
+	}
+	go gc.handle()
+
+	vm := &vm{
+		cmd:         qemuCommand,
+		powerStatus: virtualbmc.PowerStatusOn,
+		monitor:     monitor,
+		connGuest:   connGuest,
+		guest:       guest,
+		socket:      r.socketPath(n.name),
+		swtpm:       r.swtpmSocketPath(n.name),
 	}
 
-	return vm, nil
+	return vm, n.smbios.serial, nil
 }
 
 func (n *Node) createVolumes(ctx context.Context, dataDir string) ([]VolumeArgs, error) {
@@ -146,7 +177,7 @@ func (n *Node) createVolumes(ctx context.Context, dataDir string) ([]VolumeArgs,
 	}
 	var argsList []VolumeArgs
 	for _, v := range n.volumes {
-		args, err := v.Create(ctx, dataDir)
+		args, err := v.Create(ctx, volumePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create the volume: %w", err)
 		}
@@ -178,33 +209,121 @@ func createNVRAM(ctx context.Context, p string) error {
 	return well.CommandContext(ctx, "cp", defaultOVMFVarsPath, p).Run()
 }
 
-// Cleanup
+func (n *Node) startSWTPM(ctx context.Context, r *Runtime) error {
+	err := os.Mkdir(r.swtpmSocketDirPath(n.name), 0755)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Starting swtpm for node", map[string]interface{}{
+		"name":   n.name,
+		"socket": r.swtpmSocketPath(n.name),
+	})
+	c := well.CommandContext(ctx, "swtpm", "socket",
+		"--tpmstate", "dir="+r.swtpmSocketDirPath(n.name),
+		"--tpm2",
+		"--ctrl",
+		"type=unixio,path="+r.swtpmSocketPath(n.name),
+	)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	err = c.Start()
+	if err != nil {
+		return err
+	}
+
+	for {
+		_, err := os.Stat(r.swtpmSocketPath(n.name))
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		if err == nil {
+			break
+		}
+
+		select {
+		case <-time.After(100 * time.Millisecond):
+		case <-ctx.Done():
+			return nil
+		}
+	}
+
+	return nil
+}
+
 func (n *Node) Cleanup() {
 	for _, tap := range n.taps {
 		tap.Cleanup()
 	}
 }
 
-// VM holds resources to manage and monitor a QEMU process.
-type VM struct {
-	cmd     *well.LogCmd
-	running bool
-	monitor string
-	guest   string
-	socket  string
-	swtpm   string
+func (n *Node) CleanupGarbage(r *Runtime) {
+	files := []string{
+		r.guestSocketPath(n.name),
+		r.monitorSocketPath(n.name),
+		r.socketPath(n.name),
+	}
+	for _, f := range files {
+		_, err := os.Stat(f)
+		if err == nil {
+			err = os.Remove(f)
+			if err != nil {
+				log.Warn("failed to clean", map[string]interface{}{
+					"filename":  f,
+					log.FnError: err,
+				})
+			}
+		}
+	}
+	dir := r.swtpmSocketDirPath(n.name)
+	_, err := os.Stat(dir)
+	if err == nil {
+		err = os.RemoveAll(dir)
+		if err != nil {
+			log.Warn("failed to clean", map[string]interface{}{
+				"directory": dir,
+				log.FnError: err,
+			})
+		}
+	}
 }
 
-// IsRunning returns true if the VM is running.
-func (n *VM) IsRunning() bool {
-	return n.running
+type VM interface {
+	virtualbmc.Machine
+	// Wait waits until VM process exits
+	Wait() error
+	// Cleanup remove all socket files created by the VM
+	Cleanup()
 }
 
-// PowerOn turns on the power of the VM.
-func (n *VM) PowerOn() error {
-	if n.running {
+type vm struct {
+	cmd         *well.LogCmd
+	powerStatus virtualbmc.PowerStatus
+	monitor     string
+	connGuest   net.Conn
+	guest       string
+	socket      string
+	swtpm       string
+	mu          sync.Mutex
+}
+
+func (n *vm) PowerStatus() virtualbmc.PowerStatus {
+	return n.powerStatus
+}
+
+func (n *vm) PowerOn() error {
+	n.mu.Lock()
+	err := n.powerOn()
+	n.mu.Unlock()
+	return err
+}
+
+func (n *vm) powerOn() error {
+	if n.powerStatus == virtualbmc.PowerStatusOn || n.powerStatus == virtualbmc.PowerStatusPoweringOn {
 		return nil
 	}
+
+	n.powerStatus = virtualbmc.PowerStatusPoweringOn
 
 	conn, err := net.Dial("unix", n.monitor)
 	if err != nil {
@@ -220,15 +339,23 @@ func (n *VM) PowerOn() error {
 		return err
 	}
 
-	n.running = true
+	n.powerStatus = virtualbmc.PowerStatusOn
 	return nil
 }
 
-// PowerOff turns off the power of the VM.
-func (n *VM) PowerOff() error {
-	if !n.running {
+func (n *vm) PowerOff() error {
+	n.mu.Lock()
+	err := n.powerOff()
+	n.mu.Unlock()
+	return err
+}
+
+func (n *vm) powerOff() error {
+	if n.powerStatus == virtualbmc.PowerStatusOff || n.powerStatus == virtualbmc.PowerStatusPoweringOff {
 		return nil
 	}
+
+	n.powerStatus = virtualbmc.PowerStatusPoweringOff
 
 	conn, err := net.Dial("unix", n.monitor)
 	if err != nil {
@@ -244,14 +371,38 @@ func (n *VM) PowerOff() error {
 		return err
 	}
 
-	n.running = false
+	n.powerStatus = virtualbmc.PowerStatusOff
 	return nil
 }
 
-// Cleanup remove all socket files created by the VM
-func (n *VM) Cleanup() {
-	os.Remove(n.guest)
-	os.Remove(n.monitor)
-	os.Remove(n.socket)
-	os.RemoveAll(n.swtpm)
+func (n *vm) Wait() error {
+	return n.cmd.Wait()
+}
+
+func (n *vm) Cleanup() {
+	if err := n.connGuest.Close(); err != nil {
+		log.Warn("failed to close guest connection", map[string]interface{}{
+			log.FnError: err,
+		})
+	}
+	if err := os.Remove(n.guest); err != nil {
+		log.Warn("failed to remove guest socket", map[string]interface{}{
+			log.FnError: err,
+		})
+	}
+	if err := os.Remove(n.monitor); err != nil {
+		log.Warn("failed to remove monitor socket", map[string]interface{}{
+			log.FnError: err,
+		})
+	}
+	if err := os.Remove(n.socket); err != nil {
+		log.Warn("failed to remove socket", map[string]interface{}{
+			log.FnError: err,
+		})
+	}
+	if err := os.RemoveAll(n.swtpm); err != nil {
+		log.Warn("failed to remove swtpm socket", map[string]interface{}{
+			log.FnError: err,
+		})
+	}
 }

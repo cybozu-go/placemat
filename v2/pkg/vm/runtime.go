@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/placemat/v2/pkg/util"
 )
 
 var vhostNetSupported bool
@@ -41,22 +42,23 @@ func LoadModules() {
 
 // Runtime contains the runtime information to run Cluster.
 type Runtime struct {
-	force      bool
-	graphic    bool
-	runDir     string
-	dataDir    string
-	tempDir    string
-	listenAddr string
+	Force      bool
+	Graphic    bool
+	RunDir     string
+	DataDir    string
+	TempDir    string
+	ListenAddr string
+	ImageCache *util.Cache
 }
 
 // NewRuntime initializes a new Runtime.
 func NewRuntime(force, graphic bool, runDir, dataDir, cacheDir, listenAddr string) (*Runtime, error) {
 	r := &Runtime{
-		force:      force,
-		graphic:    graphic,
-		runDir:     runDir,
-		dataDir:    dataDir,
-		listenAddr: listenAddr,
+		Force:      force,
+		Graphic:    graphic,
+		RunDir:     runDir,
+		DataDir:    dataDir,
+		ListenAddr: listenAddr,
 	}
 
 	fi, err := os.Stat(cacheDir)
@@ -73,6 +75,14 @@ func NewRuntime(force, graphic bool, runDir, dataDir, cacheDir, listenAddr strin
 	default:
 		return nil, err
 	}
+
+	imageCacheDir := filepath.Join(cacheDir, "image_cache")
+	err = os.MkdirAll(imageCacheDir, 0755)
+	if err != nil {
+		return nil, err
+	}
+
+	r.ImageCache = util.NewCache(imageCacheDir)
 
 	fi, err = os.Stat(dataDir)
 	switch {
@@ -110,27 +120,31 @@ func NewRuntime(force, graphic bool, runDir, dataDir, cacheDir, listenAddr strin
 	if err != nil {
 		return nil, err
 	}
-	r.tempDir = myTempDir
+	r.TempDir = myTempDir
 
 	return r, nil
 }
 
 func (r *Runtime) socketPath(host string) string {
-	return filepath.Join(r.runDir, host+".socket")
+	return filepath.Join(r.RunDir, host+".socket")
 }
 
 func (r *Runtime) monitorSocketPath(host string) string {
-	return filepath.Join(r.runDir, host+".monitor")
+	return filepath.Join(r.RunDir, host+".monitor")
 }
 
 func (r *Runtime) guestSocketPath(host string) string {
-	return filepath.Join(r.runDir, host+".guest")
+	return filepath.Join(r.RunDir, host+".guest")
 }
 
 func (r *Runtime) nvramPath(host string) string {
-	return filepath.Join(r.dataDir, "nvram", host+".fd")
+	return filepath.Join(r.DataDir, "nvram", host+".fd")
+}
+
+func (r *Runtime) swtpmSocketDirPath(host string) string {
+	return filepath.Join(r.RunDir, host)
 }
 
 func (r *Runtime) swtpmSocketPath(host string) string {
-	return filepath.Join(r.runDir, host, "swtpm.socket")
+	return filepath.Join(r.RunDir, host, "swtpm.socket")
 }

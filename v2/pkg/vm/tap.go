@@ -1,10 +1,10 @@
 package vm
 
 import (
-	"crypto/rand"
 	"fmt"
 
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/placemat/v2/pkg/dcnet"
 	"github.com/vishvananda/netlink"
 )
 
@@ -34,7 +34,7 @@ func NewTap(bridgeName string) (*Tap, error) {
 // Create adds a tap and set master of it
 func (t *Tap) Create(mtu int) (*TapInfo, error) {
 	la := netlink.NewLinkAttrs()
-	name, err := randomTapName()
+	name, err := dcnet.RandomLinkName(dcnet.LinkTypeTap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate random tap name: %w", err)
 	}
@@ -70,16 +70,6 @@ func (t *Tap) Create(mtu int) (*TapInfo, error) {
 	}, nil
 }
 
-func randomTapName() (string, error) {
-	entropy := make([]byte, 4)
-	_, err := rand.Reader.Read(entropy)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate random veth name: %v", err)
-	}
-
-	return fmt.Sprintf("tap%x", entropy), nil
-}
-
 func (t *Tap) TapInfo() TapInfo {
 	return TapInfo{
 		tap:    t.tapName,
@@ -94,6 +84,7 @@ func (t *Tap) Cleanup() {
 			log.FnError: err,
 			"tap":       t.tapName,
 		})
+		return
 	}
 
 	if err := netlink.LinkDel(link); err != nil {

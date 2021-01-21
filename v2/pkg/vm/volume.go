@@ -16,6 +16,7 @@ import (
 // NodeVolume defines the interface for Node volumes.
 type NodeVolume interface {
 	Create(context.Context, string) (VolumeArgs, error)
+	Prepare(ctx context.Context, c *util.Cache) error
 }
 
 // NewNodeVolume creates NodeVolume from specs
@@ -159,6 +160,10 @@ func createCoWImageFromBase(ctx context.Context, base, dest string) error {
 	return c.Run()
 }
 
+func (v *imageVolume) Prepare(ctx context.Context, c *util.Cache) error {
+	return v.image.Prepare(ctx, c)
+}
+
 type localDSVolume struct {
 	name          string
 	cache         types.NodeVolumeCache
@@ -204,6 +209,10 @@ func (v *localDSVolume) Create(ctx context.Context, dataDir string) (VolumeArgs,
 	}, nil
 }
 
+func (v *localDSVolume) Prepare(ctx context.Context, c *util.Cache) error {
+	return nil
+}
+
 type rawVolume struct {
 	name   string
 	cache  types.NodeVolumeCache
@@ -242,6 +251,10 @@ func (v *rawVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, err
 	}, nil
 }
 
+func (v *rawVolume) Prepare(ctx context.Context, c *util.Cache) error {
+	return nil
+}
+
 type hostPathVolume struct {
 	name     string
 	path     string
@@ -274,4 +287,8 @@ func (v *hostPathVolume) Create(ctx context.Context, _ string) (VolumeArgs, erro
 		writable:   v.writable,
 		mountTag:   v.name,
 	}, nil
+}
+
+func (v *hostPathVolume) Prepare(ctx context.Context, c *util.Cache) error {
+	return nil
 }

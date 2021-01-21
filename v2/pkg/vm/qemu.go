@@ -26,12 +26,12 @@ type Qemu struct {
 	memory       string
 	uefi         bool
 	tpm          bool
-	smbios       SMBIOSConfig
+	smbios       smBIOSConfig
 	MACGenerator
 }
 
 func NewQemu(nodeName string, taps []*TapInfo, volumes []VolumeArgs, ignitionFile string, cpu int,
-	memory string, uefi bool, tpm bool, smbios SMBIOSConfig) *Qemu {
+	memory string, uefi bool, tpm bool, smbios smBIOSConfig) *Qemu {
 	return &Qemu{
 		name:         nodeName,
 		taps:         taps,
@@ -114,7 +114,7 @@ func (c *Qemu) qemuParams(r *Runtime) []string {
 	if c.memory != "" {
 		params = append(params, "-m", c.memory)
 	}
-	if !r.graphic {
+	if !r.Graphic {
 		p := r.socketPath(c.name)
 		params = append(params, "-nographic")
 		params = append(params, "-serial", fmt.Sprintf("unix:%s,server,nowait", p))

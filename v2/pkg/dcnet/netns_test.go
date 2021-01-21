@@ -19,7 +19,7 @@ var _ = Describe("NetworkNamespace resource", func() {
 	})
 
 	AfterEach(func() {
-		Expect(CleanupNatRules()).ToNot(HaveOccurred())
+		CleanupNatRules()
 	})
 
 	It("should create a network namespace as specified with a yaml representation", func() {
