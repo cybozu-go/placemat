@@ -34,7 +34,7 @@ Bump version
 ------------
 
 1. Determine a new version number.  Let it write `$VERSION` as `VERSION=x.y.z`.
-2. Checkout `master` branch.
+2. Checkout `main` branch.
 3. Make a branch to release, for example by `git neco dev "$VERSION"`
 4. Edit `CHANGELOG.md` for the new version ([example][]).
 5. Commit the change and push it.
@@ -45,7 +45,7 @@ Bump version
     ```
 
 6. Merge this branch.
-7. Checkout `master` branch.
+7. Checkout `main` branch.
 8. Add a git tag, then push it.
 
     ```console
