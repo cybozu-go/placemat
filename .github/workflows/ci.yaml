@@ -22,3 +22,19 @@ jobs:
       - run: make test
       - run: make test-dcnet
       - run: make test-vm
+  e2e:
+    name: End-to-end Test
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: google-github-actions/setup-gcloud@v0.2.0
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+      - name: Run e2e test on GCP instance
+        run: ../bin/run-mtest.sh
+      - name: Set the instance lifetime
+        run: |
+          . ../bin/env
+          $GCLOUD compute instances add-metadata ${INSTANCE_NAME} --zone ${ZONE} \
+            --metadata shutdown-at=$(date -Iseconds -d+30minutes)
+        if: failure()

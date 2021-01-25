@@ -173,9 +173,6 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 
 	env.Stop()
 	if err := env.Wait(); err != nil {
-		log.Error("failed to set up cluster", map[string]interface{}{
-			log.FnError: err,
-		})
 		return err
 	}
 

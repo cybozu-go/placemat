@@ -182,12 +182,12 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 		env.Go(func(ctx2 context.Context) error {
 			err := createdNS.Do(func(hostNS ns.NetNS) error {
 				if err := well.CommandContext(ctx, app.command[0], app.command[1:]...).Run(); err != nil {
-					return fmt.Errorf("failed to execute the command %v: %w", app.command, err)
+					return err
 				}
 				return nil
 			})
 			if err != nil {
-				return fmt.Errorf("failed to run command inside namespace %s: %w", n.name, err)
+				return err
 			}
 			return nil
 		})

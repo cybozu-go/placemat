@@ -1,0 +1,90 @@
+# placemat config file
+kind: Network
+name: ext-net
+type: external
+use-nat: true
+address: @BRIDGE_ADDRESS@/24
+---
+kind: Network
+name: bmc-net
+type: bmc
+use-nat: false
+address: @BMC_ADDRESS@/24
+---
+kind: Image
+name: ubuntu
+file: ../@UBUNTU_IMAGE@
+---
+kind: Node
+name: node1
+interfaces:
+- ext-net
+cpu: 1
+memory: 1G
+smbios:
+  serial: 4ae0771764376e0184274e24e0b18abd8fa5f285
+volumes:
+- kind: image
+  name: root
+  image: ubuntu
+  copy-on-write: true
+- kind: localds
+  name: seed
+  user-data: user-data_node1.yml
+  network-config: network1.yml
+- kind: raw
+  name: raw-qcow2
+  size: 5G
+- kind: raw
+  name: raw-raw
+  size: 5G
+  format: raw
+- kind: raw
+  name: raw-writeback
+  size: 5G
+  cache: writeback
+- kind: hostPath
+  name: data
+  path: /mnt/placemat/node1
+  writable: true
+tpm: true
+---
+kind: Node
+name: node2
+interfaces:
+- ext-net
+cpu: 1
+memory: 1G
+smbios:
+  serial: 1145129a085ecf521ab524028302a6b4a4e49a00
+volumes:
+- kind: image
+  name: root
+  image: ubuntu
+  copy-on-write: true
+- kind: localds
+  name: seed
+  user-data: user-data_node2.yml
+  network-config: network2.yml
+tpm: true
+---
+kind: NetworkNamespace
+name: netns1
+interfaces:
+  - network: ext-net
+    addresses:
+      - @NETNS1@/24
+---
+kind: NetworkNamespace
+name: netns2
+interfaces:
+  - network: ext-net
+    addresses:
+      - @NETNS2@/24
+apps:
+  - name: http
+    command:
+      - /usr/bin/python3
+      - -m
+      - http.server
+      - 8000

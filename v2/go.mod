@@ -13,13 +13,13 @@ require (
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/onsi/ginkgo v1.14.2
-	github.com/onsi/gomega v1.10.3
+	github.com/onsi/gomega v1.10.5
 	github.com/spf13/cobra v1.1.1
 	github.com/stmcginnis/gofish v0.7.0
 	github.com/ugorji/go v1.2.3 // indirect
 	github.com/vishvananda/netlink v1.1.0
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae
-	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
+	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
