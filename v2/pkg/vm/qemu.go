@@ -49,10 +49,6 @@ func newQemu(nodeName string, taps []*tapInfo, volumes []volumeArgs, ignitionFil
 func (c *qemu) command(r *Runtime) []string {
 	params := c.qemuParams(r)
 
-	for _, v := range c.volumes {
-		params = append(params, v.args()...)
-	}
-
 	for _, t := range c.taps {
 		netdev := fmt.Sprintf("tap,id=%s,ifname=%s,script=no,downscript=no", t.bridge, t.tap)
 		if vhostNetSupported {
@@ -72,6 +68,11 @@ func (c *qemu) command(r *Runtime) []string {
 			devParams = append(devParams, "romfile=")
 		}
 		params = append(params, "-device", strings.Join(devParams, ","))
+	}
+
+	// With virtfs option, cloud-init doesn't work when volume options are placed before network options
+	for _, v := range c.volumes {
+		params = append(params, v.args()...)
 	}
 
 	if c.tpm {

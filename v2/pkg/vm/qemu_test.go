@@ -148,13 +148,13 @@ qemu-system-x86_64
  -nographic
  -serial unix:%s/boot-0.socket,server,nowait
  -smbios type=1,serial=fb8f2417d0b4db30050719c31ce02a2e8141bbd8
- -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
- -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
- -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -netdev tap,id=r0-node1,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node1,mac=placemat
  -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node2,mac=placemat
+ -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
+ -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
+ -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -boot reboot-timeout=30000
  -chardev socket,id=char0,path=%s/boot-0.guest,server,nowait
  -device virtio-serial
@@ -163,7 +163,7 @@ qemu-system-x86_64
  -object rng-random,id=rng0,filename=/dev/urandom
  -device virtio-rng-pci,rng=rng0
  -cpu host
-`, r.RunDir, r.DataDir, r.DataDir, sharedDir, tapInfos[0].tap, tapInfos[1].tap, r.RunDir, r.RunDir), "\n", "")
+`, r.RunDir, tapInfos[0].tap, tapInfos[1].tap, r.DataDir, r.DataDir, sharedDir, r.RunDir, r.RunDir), "\n", "")
 		actual := strings.Join(command, " ")
 		Expect(actual).To(Equal(expected))
 	})
@@ -298,13 +298,13 @@ qemu-system-x86_64
  -drive if=pflash,file=/usr/share/OVMF/OVMF_CODE.fd,format=raw,readonly
  -drive if=pflash,file=%s/nvram/boot-0.fd,format=raw
  -smbios type=1,serial=fb8f2417d0b4db30050719c31ce02a2e8141bbd8
- -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
- -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
- -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -netdev tap,id=r0-node1,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node1,mac=placemat,romfile=
  -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node2,mac=placemat,romfile=
+ -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
+ -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
+ -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -chardev socket,id=chrtpm,path=%s/boot-0/swtpm.socket
  -tpmdev emulator,id=tpm0,chardev=chrtpm
  -device tpm-tis,tpmdev=tpm0
@@ -316,7 +316,7 @@ qemu-system-x86_64
  -object rng-random,id=rng0,filename=/dev/urandom
  -device virtio-rng-pci,rng=rng0
  -cpu host
-`, r.RunDir, r.DataDir, r.DataDir, r.DataDir, sharedDir, tapInfos[0].tap, tapInfos[1].tap, r.RunDir, r.RunDir, r.RunDir), "\n", "")
+`, r.RunDir, r.DataDir, tapInfos[0].tap, tapInfos[1].tap, r.DataDir, r.DataDir, sharedDir, r.RunDir, r.RunDir, r.RunDir), "\n", "")
 		actual := strings.Join(command, " ")
 		Expect(actual).To(Equal(expected))
 	})
