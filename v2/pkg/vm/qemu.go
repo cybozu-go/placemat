@@ -17,22 +17,22 @@ const (
 	defaultRebootTimeout = 30 * time.Second
 )
 
-type Qemu struct {
+type qemu struct {
 	name         string
-	taps         []*TapInfo
-	volumes      []VolumeArgs
+	taps         []*tapInfo
+	volumes      []volumeArgs
 	ignitionFile string
 	cpu          int
 	memory       string
 	uefi         bool
 	tpm          bool
 	smbios       smBIOSConfig
-	MACGenerator
+	macGenerator
 }
 
-func NewQemu(nodeName string, taps []*TapInfo, volumes []VolumeArgs, ignitionFile string, cpu int,
-	memory string, uefi bool, tpm bool, smbios smBIOSConfig) *Qemu {
-	return &Qemu{
+func newQemu(nodeName string, taps []*tapInfo, volumes []volumeArgs, ignitionFile string, cpu int,
+	memory string, uefi bool, tpm bool, smbios smBIOSConfig) *qemu {
+	return &qemu{
 		name:         nodeName,
 		taps:         taps,
 		volumes:      volumes,
@@ -42,15 +42,15 @@ func NewQemu(nodeName string, taps []*TapInfo, volumes []VolumeArgs, ignitionFil
 		uefi:         uefi,
 		tpm:          tpm,
 		smbios:       smbios,
-		MACGenerator: &MACGeneratorForKVM{},
+		macGenerator: &macGeneratorForKVM{},
 	}
 }
 
-func (c *Qemu) Command(r *Runtime) []string {
+func (c *qemu) command(r *Runtime) []string {
 	params := c.qemuParams(r)
 
 	for _, v := range c.volumes {
-		params = append(params, v.Args()...)
+		params = append(params, v.args()...)
 	}
 
 	for _, t := range c.taps {
@@ -65,7 +65,7 @@ func (c *Qemu) Command(r *Runtime) []string {
 			"virtio-net-pci",
 			fmt.Sprintf("host_mtu=%d", t.mtu),
 			fmt.Sprintf("netdev=%s", t.bridge),
-			fmt.Sprintf("mac=%s", c.Generate()),
+			fmt.Sprintf("mac=%s", c.generate()),
 		}
 		if c.uefi {
 			// disable iPXE boot
@@ -100,7 +100,7 @@ func (c *Qemu) Command(r *Runtime) []string {
 	return append([]string{"qemu-system-x86_64"}, params...)
 }
 
-func (c *Qemu) qemuParams(r *Runtime) []string {
+func (c *qemu) qemuParams(r *Runtime) []string {
 	params := []string{"-enable-kvm"}
 
 	if c.ignitionFile != "" {
@@ -140,14 +140,14 @@ func (c *Qemu) qemuParams(r *Runtime) []string {
 	return params
 }
 
-type MACGenerator interface {
-	Generate() string
+type macGenerator interface {
+	generate() string
 }
 
-type MACGeneratorForKVM struct {
+type macGeneratorForKVM struct {
 }
 
-func (m *MACGeneratorForKVM) Generate() string {
+func (m *macGeneratorForKVM) generate() string {
 	vendorPrefix := "52:54:00" // QEMU's vendor prefix
 	buf := make([]byte, 3)
 	_, err := rand.Read(buf)
@@ -157,16 +157,16 @@ func (m *MACGeneratorForKVM) Generate() string {
 	return fmt.Sprintf("%s:%02x:%02x:%02x", vendorPrefix, buf[0], buf[1], buf[2])
 }
 
-type VolumeArgs interface {
-	Args() []string
+type volumeArgs interface {
+	args() []string
 }
 
-type ImageVolumeArgs struct {
+type imageVolumeArgs struct {
 	volumePath string
 	cache      types.NodeVolumeCache
 }
 
-func (v *ImageVolumeArgs) Args() []string {
+func (v *imageVolumeArgs) args() []string {
 	return []string{
 		"-drive",
 		fmt.Sprintf("if=virtio,cache=%s,aio=%s,file=%s", v.cache, selectAIOforCache(v.cache), v.volumePath),
@@ -180,40 +180,28 @@ func selectAIOforCache(cache types.NodeVolumeCache) string {
 	return "threads"
 }
 
-type LocalDSVolumeArgs struct {
+type localDSVolumeArgs struct {
 	volumePath string
 	cache      types.NodeVolumeCache
 }
 
-func (v *LocalDSVolumeArgs) Args() []string {
+func (v *localDSVolumeArgs) args() []string {
 	return []string{
 		"-drive",
 		fmt.Sprintf("if=virtio,cache=%s,aio=%s,format=raw,file=%s", v.cache, selectAIOforCache(v.cache), v.volumePath),
 	}
 }
 
-type RawVolumeArgs struct {
+type rawVolumeArgs struct {
 	volumePath string
 	cache      types.NodeVolumeCache
 	format     types.NodeVolumeFormat
 }
 
-func (v *RawVolumeArgs) Args() []string {
+func (v *rawVolumeArgs) args() []string {
 	return []string{
 		"-drive",
 		fmt.Sprintf("if=virtio,cache=%s,aio=%s,format=%s,file=%s", v.cache, selectAIOforCache(v.cache), v.format, v.volumePath),
-	}
-}
-
-type LVVolumeArgs struct {
-	volumePath string
-	cache      types.NodeVolumeCache
-}
-
-func (v *LVVolumeArgs) Args() []string {
-	return []string{
-		"-drive",
-		fmt.Sprintf("if=virtio,cache=%s,aio=%s,format=raw,file=%s", v.cache, selectAIOforCache(v.cache), v.volumePath),
 	}
 }
 
@@ -224,7 +212,7 @@ type hostPathVolumeArgs struct {
 	mountTag   string
 }
 
-func (v *hostPathVolumeArgs) Args() []string {
+func (v *hostPathVolumeArgs) args() []string {
 	readonly := ""
 	if !v.writable {
 		readonly = ",readonly"

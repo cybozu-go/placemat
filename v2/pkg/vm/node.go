@@ -19,10 +19,21 @@ import (
 )
 
 // Node represents a virtual machine.
-type Node struct {
+type Node interface {
+	// Prepare initializes node volumes
+	Prepare(context.Context, *util.Cache) error
+	// Setup creates volumes and taps, and then run a virtual machine as a QEMU process
+	Setup(context.Context, *Runtime, int, chan<- BMCInfo) (VM, string, error)
+	// Cleanup removes taps placemat added
+	Cleanup()
+	// CleanupGarbage cleanups all garbage
+	CleanupGarbage(*Runtime)
+}
+
+type node struct {
 	name         string
-	taps         []*Tap
-	volumes      []NodeVolume
+	taps         []*tap
+	volumes      []nodeVolume
 	ignitionFile string
 	cpu          int
 	memory       string
@@ -38,8 +49,8 @@ type smBIOSConfig struct {
 }
 
 // NewNode creates a Node from spec.
-func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec) (*Node, error) {
-	n := &Node{
+func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec) (Node, error) {
+	n := &node{
 		name:         spec.Name,
 		ignitionFile: spec.IgnitionFile,
 		cpu:          spec.CPU,
@@ -54,7 +65,7 @@ func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec) (*Node, error)
 	}
 
 	for _, v := range spec.Volumes {
-		vol, err := NewNodeVolume(v, imageSpecs)
+		vol, err := newNodeVolume(v, imageSpecs)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create the node volume %s: %w", v.Name, err)
 		}
@@ -62,7 +73,7 @@ func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec) (*Node, error)
 	}
 
 	for _, i := range spec.Interfaces {
-		tap, err := NewTap(i)
+		tap, err := newTap(i)
 		if err != nil {
 			return nil, fmt.Errorf("failed to new type tap: bridge is %s: %w", i, err)
 		}
@@ -72,10 +83,9 @@ func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec) (*Node, error)
 	return n, nil
 }
 
-// Prepare initializes node volumes
-func (n *Node) Prepare(ctx context.Context, c *util.Cache) error {
+func (n *node) Prepare(ctx context.Context, c *util.Cache) error {
 	for _, v := range n.volumes {
-		if err := v.Prepare(ctx, c); err != nil {
+		if err := v.prepare(ctx, c); err != nil {
 			return err
 		}
 	}
@@ -83,8 +93,7 @@ func (n *Node) Prepare(ctx context.Context, c *util.Cache) error {
 	return nil
 }
 
-// Setup creates volumes and taps, and then run a virtual machine as a QEMU process
-func (n *Node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMCInfo) (VM, string, error) {
+func (n *node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMCInfo) (VM, string, error) {
 	if n.tpm {
 		err := n.startSWTPM(ctx, r)
 		if err != nil {
@@ -112,8 +121,8 @@ func (n *Node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMC
 		}
 	}
 
-	qemu := NewQemu(n.name, tapInfos, vArgs, n.ignitionFile, n.cpu, n.memory, n.uefi, n.tpm, n.smbios)
-	c := qemu.Command(r)
+	qemu := newQemu(n.name, tapInfos, vArgs, n.ignitionFile, n.cpu, n.memory, n.uefi, n.tpm, n.smbios)
+	c := qemu.command(r)
 	qemuCommand := well.CommandContext(ctx, c[0], c[1:]...)
 	qemuCommand.Stdout = util.NewColoredLogWriter("qemu", n.name, os.Stdout)
 	qemuCommand.Stderr = util.NewColoredLogWriter("qemu", n.name, os.Stderr)
@@ -170,14 +179,14 @@ func (n *Node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMC
 	return vm, n.smbios.serial, nil
 }
 
-func (n *Node) createVolumes(ctx context.Context, dataDir string) ([]VolumeArgs, error) {
+func (n *node) createVolumes(ctx context.Context, dataDir string) ([]volumeArgs, error) {
 	volumePath := filepath.Join(dataDir, "volumes", n.name)
 	if err := os.MkdirAll(volumePath, 0755); err != nil {
 		return nil, fmt.Errorf("failed to make the directory %s: %w", volumePath, err)
 	}
-	var argsList []VolumeArgs
+	var argsList []volumeArgs
 	for _, v := range n.volumes {
-		args, err := v.Create(ctx, volumePath)
+		args, err := v.create(ctx, volumePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create the volume: %w", err)
 		}
@@ -187,10 +196,10 @@ func (n *Node) createVolumes(ctx context.Context, dataDir string) ([]VolumeArgs,
 	return argsList, nil
 }
 
-func (n *Node) createTaps(mtu int) ([]*TapInfo, error) {
-	var tapInfos []*TapInfo
+func (n *node) createTaps(mtu int) ([]*tapInfo, error) {
+	var tapInfos []*tapInfo
 	for _, tap := range n.taps {
-		tapInfo, err := tap.Create(mtu)
+		tapInfo, err := tap.create(mtu)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create the tap: %w", err)
 		}
@@ -209,7 +218,7 @@ func createNVRAM(ctx context.Context, p string) error {
 	return well.CommandContext(ctx, "cp", defaultOVMFVarsPath, p).Run()
 }
 
-func (n *Node) startSWTPM(ctx context.Context, r *Runtime) error {
+func (n *node) startSWTPM(ctx context.Context, r *Runtime) error {
 	err := os.Mkdir(r.swtpmSocketDirPath(n.name), 0755)
 	if err != nil {
 		return err
@@ -251,13 +260,13 @@ func (n *Node) startSWTPM(ctx context.Context, r *Runtime) error {
 	return nil
 }
 
-func (n *Node) Cleanup() {
+func (n *node) Cleanup() {
 	for _, tap := range n.taps {
 		tap.Cleanup()
 	}
 }
 
-func (n *Node) CleanupGarbage(r *Runtime) {
+func (n *node) CleanupGarbage(r *Runtime) {
 	files := []string{
 		r.guestSocketPath(n.name),
 		r.monitorSocketPath(n.name),

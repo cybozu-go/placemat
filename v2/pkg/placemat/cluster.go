@@ -24,9 +24,9 @@ type cluster struct {
 	netNSSpecs   []*types.NetNSSpec
 	nodeSpecs    []*types.NodeSpec
 	imageSpecs   []*types.ImageSpec
-	networks     []*dcnet.Network
-	netNss       []*dcnet.NetNS
-	nodes        []*vm.Node
+	networks     []dcnet.Network
+	netNss       []dcnet.NetNS
+	nodes        []vm.Node
 	vms          map[string]vm.VM
 }
 
@@ -70,7 +70,7 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 		}
 		c.networks = append(c.networks, network)
 
-		if err := network.Create(mtu); err != nil {
+		if err := network.Setup(mtu); err != nil {
 			return fmt.Errorf("failed to create Network: %w", err)
 		}
 	}

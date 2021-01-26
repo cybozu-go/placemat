@@ -2,13 +2,11 @@ package virtualbmc
 
 import "math/rand"
 
-// RMCPPlusSessionHolder holds RMCP+ sessions
-type RMCPPlusSessionHolder struct {
-	sessions map[uint32]*RMCPPlusSession
+type rmcpPlusSessionHolder struct {
+	sessions map[uint32]*rmcpPlusSession
 }
 
-// RMCPPlusSession represents RMCP+ session
-type RMCPPlusSession struct {
+type rmcpPlusSession struct {
 	RemoteConsoleSessionId    uint32
 	ManagedSystemSessionId    uint32
 	RemoteConsoleRandomNumber [16]byte
@@ -22,13 +20,11 @@ type RMCPPlusSession struct {
 	ConfidentialityKey        []byte
 }
 
-// NewRMCPPlusSessionHolder creates a RMCPPlusSessionHolder
-func NewRMCPPlusSessionHolder() *RMCPPlusSessionHolder {
-	return &RMCPPlusSessionHolder{sessions: make(map[uint32]*RMCPPlusSession)}
+func newRMCPPlusSessionHolder() *rmcpPlusSessionHolder {
+	return &rmcpPlusSessionHolder{sessions: make(map[uint32]*rmcpPlusSession)}
 }
 
-// GetNewRMCPPlusSession creates a RMCP+ session and saves it to the holder with specified session ID
-func (r *RMCPPlusSessionHolder) GetNewRMCPPlusSession(remoteConsoleSessionId uint32) *RMCPPlusSession {
+func (r *rmcpPlusSessionHolder) getNewRMCPPlusSession(remoteConsoleSessionId uint32) *rmcpPlusSession {
 	sessionId := rand.Uint32()
 	for {
 		if _, ok := r.sessions[sessionId]; ok {
@@ -38,7 +34,7 @@ func (r *RMCPPlusSessionHolder) GetNewRMCPPlusSession(remoteConsoleSessionId uin
 		}
 	}
 
-	session := &RMCPPlusSession{}
+	session := &rmcpPlusSession{}
 	session.ManagedSystemSessionId = sessionId
 	session.RemoteConsoleSessionId = remoteConsoleSessionId
 	r.sessions[sessionId] = session
@@ -46,14 +42,12 @@ func (r *RMCPPlusSessionHolder) GetNewRMCPPlusSession(remoteConsoleSessionId uin
 	return session
 }
 
-// GetRMCPPlusSession gets the RMCPPlus session specified from the holder
-func (r *RMCPPlusSessionHolder) GetRMCPPlusSession(id uint32) (*RMCPPlusSession, bool) {
+func (r *rmcpPlusSessionHolder) getRMCPPlusSession(id uint32) (*rmcpPlusSession, bool) {
 	session, ok := r.sessions[id]
 	return session, ok
 }
 
-// RemoveRMCPPlusSession removes the RMCP+ session specified
-func (r *RMCPPlusSessionHolder) RemoveRMCPPlusSession(id uint32) {
+func (r *rmcpPlusSessionHolder) removeRMCPPlusSession(id uint32) {
 	_, ok := r.sessions[id]
 	if ok {
 		delete(r.sessions, id)

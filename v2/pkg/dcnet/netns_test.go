@@ -65,13 +65,13 @@ interfaces:
 		internetSpec := cluster.Networks[0]
 		internet, err := NewNetwork(internetSpec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(internet.Create(1460)).NotTo(HaveOccurred())
+		Expect(internet.Setup(1460)).NotTo(HaveOccurred())
 		defer internet.Cleanup()
 
 		coreToS1Spec := cluster.Networks[1]
 		coreToS1, err := NewNetwork(coreToS1Spec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(coreToS1.Create(1460)).NotTo(HaveOccurred())
+		Expect(coreToS1.Setup(1460)).NotTo(HaveOccurred())
 		defer coreToS1.Cleanup()
 
 		nnsSpec := cluster.NetNSs[0]
@@ -81,7 +81,7 @@ interfaces:
 		defer nns.Cleanup()
 
 		// Check if a networks namespace is properly created
-		created, err := ns.GetNS(path.Join(GetNsRunDir(), nns.name))
+		created, err := ns.GetNS(path.Join(getNsRunDir(), nnsSpec.Name))
 		Expect(err).NotTo(HaveOccurred())
 
 		// Check inside the network namespace
@@ -131,7 +131,7 @@ interfaces:
 			}
 
 			// Check if the init script is properly executed.
-			ipt4, _, err := NewIptables()
+			ipt4, _, err := newIptables()
 			if err != nil {
 				return fmt.Errorf("failed to create iptables: %w", err)
 			}
@@ -155,13 +155,14 @@ interfaces:
 		// Check if host veths' masters are properly configured
 		bridge, err := netlink.LinkByName("internet")
 		Expect(err).NotTo(HaveOccurred())
-		veth0, err := netlink.LinkByName(nns.hostVethNames[0])
+		hostVethNames := nns.HostVethNames()
+		veth0, err := netlink.LinkByName(hostVethNames[0])
 		Expect(err).NotTo(HaveOccurred())
 		Expect(veth0.Attrs().MasterIndex).To(Equal(bridge.Attrs().Index))
 
 		bridge, err = netlink.LinkByName("core-to-s1")
 		Expect(err).NotTo(HaveOccurred())
-		veth1, err := netlink.LinkByName(nns.hostVethNames[1])
+		veth1, err := netlink.LinkByName(hostVethNames[1])
 		Expect(err).NotTo(HaveOccurred())
 		Expect(veth1.Attrs().MasterIndex).To(Equal(bridge.Attrs().Index))
 	})

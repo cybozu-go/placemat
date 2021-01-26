@@ -123,19 +123,19 @@ type NodeVolumeKind string
 type NodeVolumeFormat string
 
 const (
-	NodeVolumeCacheWriteback    NodeVolumeCache = "writeback"
-	NodeVolumeCacheNone         NodeVolumeCache = "none"
-	NodeVolumeCacheWritethrough NodeVolumeCache = "writethrough"
-	NodeVolumeCacheDirectSync   NodeVolumeCache = "directsync"
-	NodeVolumeCacheUnsafe       NodeVolumeCache = "unsafe"
+	NodeVolumeCacheWriteback    = NodeVolumeCache("writeback")
+	NodeVolumeCacheNone         = NodeVolumeCache("none")
+	NodeVolumeCacheWritethrough = NodeVolumeCache("writethrough")
+	NodeVolumeCacheDirectSync   = NodeVolumeCache("directsync")
+	NodeVolumeCacheUnsafe       = NodeVolumeCache("unsafe")
 
-	NodeVolumeKindImage    NodeVolumeKind = "image"
-	NodeVolumeKindLocalds  NodeVolumeKind = "localds"
-	NodeVolumeKindRaw      NodeVolumeKind = "raw"
-	NodeVolumeKindHostPath NodeVolumeKind = "hostPath"
+	NodeVolumeKindImage    = NodeVolumeKind("image")
+	NodeVolumeKindLocalds  = NodeVolumeKind("localds")
+	NodeVolumeKindRaw      = NodeVolumeKind("raw")
+	NodeVolumeKindHostPath = NodeVolumeKind("hostPath")
 
-	NodeVolumeFormatQcow2 NodeVolumeFormat = "qcow2"
-	NodeVolumeFormatRaw   NodeVolumeFormat = "raw"
+	NodeVolumeFormatQcow2 = NodeVolumeFormat("qcow2")
+	NodeVolumeFormatRaw   = NodeVolumeFormat("raw")
 )
 
 // NodeSpec represents a Node specification in YAML

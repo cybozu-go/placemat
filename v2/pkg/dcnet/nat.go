@@ -9,7 +9,7 @@ import (
 
 // CreateNatRules creates nat rules with iptables
 func CreateNatRules() error {
-	ipt4, ipt6, err := NewIptables()
+	ipt4, ipt6, err := newIptables()
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func CreateNatRules() error {
 
 // CleanupNatRules destroys nat rules
 func CleanupNatRules() {
-	ipt4, ipt6, err := NewIptables()
+	ipt4, ipt6, err := newIptables()
 	if err != nil {
 		log.Warn("failed to new IpTables", map[string]interface{}{
 			log.FnError: err,
@@ -88,8 +88,7 @@ func CleanupNatRules() {
 	}
 }
 
-// NewIptables creates IPTables
-func NewIptables() (*iptables.IPTables, *iptables.IPTables, error) {
+func newIptables() (*iptables.IPTables, *iptables.IPTables, error) {
 	ipt4, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create iptables for IPv4: %w", err)

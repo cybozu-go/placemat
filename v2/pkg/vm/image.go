@@ -8,8 +8,7 @@ import (
 	"github.com/cybozu-go/placemat/v2/pkg/util"
 )
 
-// Image represents an image configuration
-type Image struct {
+type image struct {
 	name   string
 	url    *url.URL
 	file   string
@@ -17,9 +16,8 @@ type Image struct {
 	p      string
 }
 
-// NewImage creates *Image from spec.
-func NewImage(spec *types.ImageSpec) (*Image, error) {
-	i := &Image{
+func newImage(spec *types.ImageSpec) (*image, error) {
+	i := &image{
 		name: spec.Name,
 		file: spec.File,
 	}
@@ -41,8 +39,7 @@ func NewImage(spec *types.ImageSpec) (*Image, error) {
 	return i, nil
 }
 
-// Prepare downloads the image if it is not in the cache.
-func (i *Image) Prepare(ctx context.Context, c *util.Cache) error {
+func (i *image) prepare(ctx context.Context, c *util.Cache) error {
 	if i.url == nil {
 		return nil
 	}
@@ -55,7 +52,6 @@ func (i *Image) Prepare(ctx context.Context, c *util.Cache) error {
 	return nil
 }
 
-// Path returns the filesystem path to the image file.
-func (i *Image) Path() string {
+func (i *image) path() string {
 	return i.p
 }

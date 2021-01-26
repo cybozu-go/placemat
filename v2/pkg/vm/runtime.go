@@ -15,6 +15,7 @@ import (
 
 var vhostNetSupported bool
 
+// LoadModules loads vhost-net kernel module
 func LoadModules() {
 	err := exec.Command("modprobe", "vhost-net").Run()
 	if err != nil {

@@ -13,7 +13,20 @@ import (
 )
 
 // Network represents a network configuration
-type Network struct {
+type Network interface {
+	// Setup creates a virtual L2 switch using Linux bridge.
+	Setup(int) error
+	// Cleanup deletes all the created bridges and restores all the modified configs.
+	Cleanup()
+	// IsType checks whether this Network's type is specified type or not
+	IsType(types.NetworkType) bool
+	// IPNet checks whether this Network's address includes specified ip
+	Contains(net.IP) bool
+	// AddAddr adds IP address to this Network
+	AddAddr(string) error
+}
+
+type network struct {
 	name   string
 	typ    types.NetworkType
 	useNAT bool
@@ -21,8 +34,8 @@ type Network struct {
 }
 
 // NewNetwork creates *Network from spec.
-func NewNetwork(spec *types.NetworkSpec) (*Network, error) {
-	n := &Network{
+func NewNetwork(spec *types.NetworkSpec) (Network, error) {
+	n := &network{
 		name:   spec.Name,
 		typ:    spec.Type,
 		useNAT: spec.UseNAT,
@@ -38,8 +51,7 @@ func NewNetwork(spec *types.NetworkSpec) (*Network, error) {
 	return n, nil
 }
 
-// Create creates a virtual L2 switch using Linux bridge.
-func (n *Network) Create(mtu int) error {
+func (n *network) Setup(mtu int) error {
 	la := netlink.NewLinkAttrs()
 	la.Name = n.name
 	bridge := &netlink.Bridge{LinkAttrs: la}
@@ -60,7 +72,7 @@ func (n *Network) Create(mtu int) error {
 		}
 	}
 
-	ipt4, ipt6, err := NewIptables()
+	ipt4, ipt6, err := newIptables()
 	if err != nil {
 		return err
 	}
@@ -117,8 +129,7 @@ func appendMasqueradeRule(ipt *iptables.IPTables, ipNet string) error {
 	return nil
 }
 
-// Cleanup deletes all the created bridges and restores all the modified configs.
-func (n *Network) Cleanup() {
+func (n *network) Cleanup() {
 	link, err := netlink.LinkByName(n.name)
 	if err != nil {
 		log.Warn("failed to find link by name", map[string]interface{}{
@@ -135,18 +146,15 @@ func (n *Network) Cleanup() {
 	}
 }
 
-// IsType checks whether this Network's type is specified type or not
-func (n *Network) IsType(typ types.NetworkType) bool {
+func (n *network) IsType(typ types.NetworkType) bool {
 	return n.typ == typ
 }
 
-// IPNet checks whether this Network's address includes specified ip
-func (n *Network) Contains(ip net.IP) bool {
+func (n *network) Contains(ip net.IP) bool {
 	return n.addr.Contains(ip)
 }
 
-// AddAddr adds IP address to this Network
-func (n *Network) AddAddr(addr string) error {
+func (n *network) AddAddr(addr string) error {
 	prefixLen, _ := n.addr.Mask.Size()
 	addrWithMask, err := netlink.ParseAddr(addr + "/" + strconv.Itoa(prefixLen))
 	if err != nil {

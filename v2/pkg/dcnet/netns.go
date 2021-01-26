@@ -18,8 +18,17 @@ import (
 	"github.com/vishvananda/netns"
 )
 
-// NetNS represents a pod resource.
-type NetNS struct {
+// NetNS represents a NetworkNamespace resource.
+type NetNS interface {
+	// Setup creates a linux network namespace and runs applications as specified
+	Setup(context.Context, int) error
+	// Cleanup removes network namespaces and veths placemat added
+	Cleanup()
+	// HostVethNames returns host veth names placemat added
+	HostVethNames() []string
+}
+
+type netNS struct {
 	name          string
 	initScripts   []string
 	interfaces    []iface
@@ -38,8 +47,8 @@ type iface struct {
 }
 
 // NewNetNS creates a NetNS from spec.
-func NewNetNS(spec *types.NetNSSpec) (*NetNS, error) {
-	n := &NetNS{
+func NewNetNS(spec *types.NetNSSpec) (NetNS, error) {
+	n := &netNS{
 		name: spec.Name,
 	}
 
@@ -86,8 +95,7 @@ func NewNetNS(spec *types.NetNSSpec) (*NetNS, error) {
 	return n, nil
 }
 
-// Setup creates a linux network namespace and runs applications as specified
-func (n *NetNS) Setup(ctx context.Context, mtu int) error {
+func (n *netNS) Setup(ctx context.Context, mtu int) error {
 	createdNS, err := n.createNetNS()
 	if err != nil {
 		return err
@@ -177,7 +185,7 @@ func (n *NetNS) Setup(ctx context.Context, mtu int) error {
 	return env.Wait()
 }
 
-func (n *NetNS) createNetNS() (ns.NetNS, error) {
+func (n *netNS) createNetNS() (ns.NetNS, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
@@ -196,7 +204,7 @@ func (n *NetNS) createNetNS() (ns.NetNS, error) {
 		return nil, fmt.Errorf("failed to set the original NetNS: %w", err)
 	}
 
-	createdNS, err := ns.GetNS(path.Join(GetNsRunDir(), n.name))
+	createdNS, err := ns.GetNS(path.Join(getNsRunDir(), n.name))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get network namespace %s: %w", n.name, err)
 	}
@@ -205,7 +213,7 @@ func (n *NetNS) createNetNS() (ns.NetNS, error) {
 }
 
 // Reference https://github.com/containernetworking/plugins/blob/509d645ee9ccfee0ad90fe29de3133d0598b7305/pkg/testutils/netns_linux.go#L31-L47
-func GetNsRunDir() string {
+func getNsRunDir() string {
 	xdgRuntimeDir := os.Getenv("XDG_RUNTIME_DIR")
 
 	/// If XDG_RUNTIME_DIR is set, check if the current user owns /var/run.  If
@@ -223,8 +231,7 @@ func GetNsRunDir() string {
 	return "/var/run/netns"
 }
 
-// Cleanup
-func (n *NetNS) Cleanup() {
+func (n *netNS) Cleanup() {
 	if err := netns.DeleteNamed(n.name); err != nil {
 		log.Warn("failed to delete the network namespace", map[string]interface{}{
 			log.FnError: err,
@@ -248,4 +255,8 @@ func (n *NetNS) Cleanup() {
 			})
 		}
 	}
+}
+
+func (n *netNS) HostVethNames() []string {
+	return n.hostVethNames
 }

@@ -87,12 +87,12 @@ use-nat: false
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create bridges
-		var networks []*dcnet.Network
+		var networks []dcnet.Network
 		for _, n := range cluster.Networks {
 			network, err := dcnet.NewNetwork(n)
 			Expect(err).NotTo(HaveOccurred())
 			networks = append(networks, network)
-			Expect(network.Create(1460)).NotTo(HaveOccurred())
+			Expect(network.Setup(1460)).NotTo(HaveOccurred())
 		}
 		defer func() {
 			for _, n := range networks {
@@ -103,25 +103,25 @@ use-nat: false
 		nodeSpec := cluster.Nodes[0]
 
 		// Create volumes
-		var volumeArgs []VolumeArgs
+		var volumeArgs []volumeArgs
 		for _, volumeSpec := range nodeSpec.Volumes {
-			volume, err := NewNodeVolume(volumeSpec, cluster.Images)
+			volume, err := newNodeVolume(volumeSpec, cluster.Images)
 			Expect(err).NotTo(HaveOccurred())
 
-			args, err := volume.Create(context.Background(), r.DataDir)
+			args, err := volume.create(context.Background(), r.DataDir)
 			Expect(err).NotTo(HaveOccurred())
 			volumeArgs = append(volumeArgs, args)
 		}
 
 		// Create taps
-		var taps []*Tap
-		var tapInfos []*TapInfo
+		var taps []*tap
+		var tapInfos []*tapInfo
 		for _, i := range nodeSpec.Interfaces {
-			tap, err := NewTap(i)
+			tap, err := newTap(i)
 			Expect(err).NotTo(HaveOccurred())
 			taps = append(taps, tap)
 
-			tapInfo, err := tap.Create(1460)
+			tapInfo, err := tap.create(1460)
 			Expect(err).NotTo(HaveOccurred())
 			tapInfos = append(tapInfos, tapInfo)
 		}
@@ -131,14 +131,14 @@ use-nat: false
 			}
 		}()
 
-		qemu := NewQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
+		qemu := newQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
 			nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
 				manufacturer: nodeSpec.SMBIOS.Manufacturer,
 				product:      nodeSpec.SMBIOS.Product,
 				serial:       nodeSpec.SMBIOS.Serial,
 			})
-		qemu.MACGenerator = &MACGeneratorMock{}
-		command := qemu.Command(r)
+		qemu.macGenerator = &macGeneratorMock{}
+		command := qemu.command(r)
 
 		expected := strings.ReplaceAll(fmt.Sprintf(`
 qemu-system-x86_64
@@ -235,12 +235,12 @@ use-nat: false
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create bridges
-		var networks []*dcnet.Network
+		var networks []dcnet.Network
 		for _, n := range cluster.Networks {
 			network, err := dcnet.NewNetwork(n)
 			Expect(err).NotTo(HaveOccurred())
 			networks = append(networks, network)
-			Expect(network.Create(1460)).NotTo(HaveOccurred())
+			Expect(network.Setup(1460)).NotTo(HaveOccurred())
 		}
 		defer func() {
 			for _, n := range networks {
@@ -251,25 +251,25 @@ use-nat: false
 		nodeSpec := cluster.Nodes[0]
 
 		// Create volumes
-		var volumeArgs []VolumeArgs
+		var volumeArgs []volumeArgs
 		for _, volumeSpec := range nodeSpec.Volumes {
-			volume, err := NewNodeVolume(volumeSpec, cluster.Images)
+			volume, err := newNodeVolume(volumeSpec, cluster.Images)
 			Expect(err).NotTo(HaveOccurred())
 
-			args, err := volume.Create(context.Background(), r.DataDir)
+			args, err := volume.create(context.Background(), r.DataDir)
 			Expect(err).NotTo(HaveOccurred())
 			volumeArgs = append(volumeArgs, args)
 		}
 
 		// Create taps
-		var taps []*Tap
-		var tapInfos []*TapInfo
+		var taps []*tap
+		var tapInfos []*tapInfo
 		for _, i := range nodeSpec.Interfaces {
-			tap, err := NewTap(i)
+			tap, err := newTap(i)
 			Expect(err).NotTo(HaveOccurred())
 			taps = append(taps, tap)
 
-			tapInfo, err := tap.Create(1460)
+			tapInfo, err := tap.create(1460)
 			Expect(err).NotTo(HaveOccurred())
 			tapInfos = append(tapInfos, tapInfo)
 		}
@@ -279,14 +279,14 @@ use-nat: false
 			}
 		}()
 
-		qemu := NewQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
+		qemu := newQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
 			nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
 				manufacturer: nodeSpec.SMBIOS.Manufacturer,
 				product:      nodeSpec.SMBIOS.Product,
 				serial:       nodeSpec.SMBIOS.Serial,
 			})
-		qemu.MACGenerator = &MACGeneratorMock{}
-		command := qemu.Command(r)
+		qemu.macGenerator = &macGeneratorMock{}
+		command := qemu.command(r)
 
 		expected := strings.ReplaceAll(fmt.Sprintf(`
 qemu-system-x86_64
@@ -322,9 +322,9 @@ qemu-system-x86_64
 	})
 })
 
-type MACGeneratorMock struct {
+type macGeneratorMock struct {
 }
 
-func (m *MACGeneratorMock) Generate() string {
+func (m *macGeneratorMock) generate() string {
 	return "placemat"
 }

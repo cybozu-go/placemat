@@ -11,79 +11,77 @@ import (
 
 // Chassis Network Function
 const (
-	IPMICmdGetChassisCapabilities = 0x00
-	IPMICmdGetChassisStatus       = 0x01
-	IPMICmdChassisControl         = 0x02
-	IPMICmdChassisReset           = 0x03
-	IPMICmdChassisIdentify        = 0x04
-	IPMICmdSetChassisCapabilities = 0x05
-	IPMICmdSetPowerRestorePolicy  = 0x06
-	IPMICmdGetSystemRestartCause  = 0x07
-	IPMICmdSetSystemBootOptions   = 0x08
-	IPMICmdGetSystemBootOptions   = 0x09
-	IPMICmdGetPOHCounter          = 0x0f
+	ipmiCmdGetChassisCapabilities = 0x00
+	ipmiCmdGetChassisStatus       = 0x01
+	ipmiCmdChassisControl         = 0x02
+	ipmiCmdChassisReset           = 0x03
+	ipmiCmdChassisIdentify        = 0x04
+	ipmiCmdSetChassisCapabilities = 0x05
+	ipmiCmdSetPowerRestorePolicy  = 0x06
+	ipmiCmdGetSystemRestartCause  = 0x07
+	ipmiCmdSetSystemBootOptions   = 0x08
+	ipmiCmdGetSystemBootOptions   = 0x09
+	ipmiCmdGetPOHCounter          = 0x0f
 )
 
 const (
-	ChassisControlPowerDown  = 0x00
-	ChassisControlPowerUp    = 0x01
-	ChassisControlPowerCycle = 0x02
-	ChassisControlHardReset  = 0x03
-	ChassisControlPulse      = 0x04
-	ChassisControlPowerSoft  = 0x05
+	chassisControlPowerDown  = 0x00
+	chassisControlPowerUp    = 0x01
+	chassisControlPowerCycle = 0x02
+	chassisControlHardReset  = 0x03
+	chassisControlPulse      = 0x04
+	chassisControlPowerSoft  = 0x05
 )
 
-const ChassisPowerStateBitmaskPowerOn = 0x01
+const chassisPowerStateBitmaskPowerOn = 0x01
 
-// IPMIChassisControlRequest represents Chassis Control request
-type IPMIChassisControlRequest struct {
+type ipmiChassisControlRequest struct {
 	ChassisControl uint8
 }
 
-// IPMIGetChassisStatusResponse represents Chassis Status response
-type IPMIGetChassisStatusResponse struct {
+type ipmiGetChassisStatusResponse struct {
 	CurrentPowerState            uint8
 	LastPowerEvent               uint8
 	MiscChassisState             uint8
 	FrontPanelButtonCapabilities uint8
 }
 
-func (i *IPMI) handleIPMIChassis(message *IPMIMessage) ([]byte, error) {
+func (i *ipmi) handleIPMIChassis(message *ipmiMessage) ([]byte, error) {
 	switch message.Command {
-	case IPMICmdGetChassisStatus:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_GET_CHASSIS_STATUS", map[string]interface{}{})
+	case ipmiCmdGetChassisStatus:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_CHASSIS_STATUS", map[string]interface{}{})
 		return i.handleIPMIGetChassisStatus()
-	case IPMICmdChassisControl:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_CHASSIS_CONTROL", map[string]interface{}{})
+	case ipmiCmdChassisControl:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_CHASSIS_CONTROL", map[string]interface{}{})
 		return nil, i.handleIPMIChassisControl(message)
-	case IPMICmdGetChassisCapabilities:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_GET_CHASSIS_CAPABILITIES", map[string]interface{}{})
-	case IPMICmdChassisReset:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_CHASSIS_RESET", map[string]interface{}{})
-	case IPMICmdChassisIdentify:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_CHASSIS_IDENTIFY", map[string]interface{}{})
-	case IPMICmdSetChassisCapabilities:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_SET_CHASSIS_CAPABILITIES", map[string]interface{}{})
-	case IPMICmdSetPowerRestorePolicy:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_SET_POWER_RESTORE_POLICY", map[string]interface{}{})
-	case IPMICmdGetSystemRestartCause:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_GET_SYSTEM_RESTART_CAUSE", map[string]interface{}{})
-	case IPMICmdSetSystemBootOptions:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS", map[string]interface{}{})
-	case IPMICmdGetSystemBootOptions:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_GET_SYSTEM_BOOT_OPTIONS", map[string]interface{}{})
-	case IPMICmdGetPOHCounter:
-		log.Info("      IPMI CHASSIS: Command = IPMI_CMD_GET_POH_COUNTER", map[string]interface{}{})
+	case ipmiCmdGetChassisCapabilities:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_CHASSIS_CAPABILITIES", map[string]interface{}{})
+	case ipmiCmdChassisReset:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_CHASSIS_RESET", map[string]interface{}{})
+	case ipmiCmdChassisIdentify:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_CHASSIS_IDENTIFY", map[string]interface{}{})
+	case ipmiCmdSetChassisCapabilities:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_SET_CHASSIS_CAPABILITIES", map[string]interface{}{})
+	case ipmiCmdSetPowerRestorePolicy:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_SET_POWER_RESTORE_POLICY", map[string]interface{}{})
+	case ipmiCmdGetSystemRestartCause:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_SYSTEM_RESTART_CAUSE", map[string]interface{}{})
+	case ipmiCmdSetSystemBootOptions:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS", map[string]interface{}{})
+	case ipmiCmdGetSystemBootOptions:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_SYSTEM_BOOT_OPTIONS", map[string]interface{}{})
+	case ipmiCmdGetPOHCounter:
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_POH_COUNTER", map[string]interface{}{})
 	}
 
 	return nil, fmt.Errorf("unsupported Chassis command: %x", message.Command)
 }
 
-func (i *IPMI) handleIPMIGetChassisStatus() ([]byte, error) {
-	response := IPMIGetChassisStatusResponse{}
+func (i *ipmi) handleIPMIGetChassisStatus() ([]byte, error) {
+	response := ipmiGetChassisStatusResponse{}
 	powerStatus := i.machine.PowerStatus()
 	if powerStatus == PowerStatusOn || powerStatus == PowerStatusPoweringOn {
-		response.CurrentPowerState |= ChassisPowerStateBitmaskPowerOn
+		response.CurrentPowerState |= chassisPowerStateBitmaskPowerOn
 	}
 	response.LastPowerEvent = 0
 	response.MiscChassisState = 0
@@ -97,27 +95,27 @@ func (i *IPMI) handleIPMIGetChassisStatus() ([]byte, error) {
 	return dataBuf.Bytes(), nil
 }
 
-func (i *IPMI) handleIPMIChassisControl(message *IPMIMessage) error {
+func (i *ipmi) handleIPMIChassisControl(message *ipmiMessage) error {
 	buf := bytes.NewBuffer(message.Data)
-	request := IPMIChassisControlRequest{}
+	request := ipmiChassisControlRequest{}
 	if err := binary.Read(buf, binary.LittleEndian, &request); err != nil {
 		return err
 	}
 
 	switch request.ChassisControl {
-	case ChassisControlPowerDown:
+	case chassisControlPowerDown:
 		powerState := i.machine.PowerStatus()
 		if powerState == PowerStatusOff || powerState == PowerStatusPoweringOff {
 			return errors.New("server is already powered off")
 		}
 		return i.machine.PowerOff()
-	case ChassisControlPowerUp:
+	case chassisControlPowerUp:
 		powerState := i.machine.PowerStatus()
 		if powerState == PowerStatusOn || powerState == PowerStatusPoweringOn {
 			return errors.New("server is already powered on")
 		}
 		return i.machine.PowerOn()
-	case ChassisControlPowerCycle:
+	case chassisControlPowerCycle:
 		powerState := i.machine.PowerStatus()
 		if powerState == PowerStatusOff || powerState == PowerStatusPoweringOff {
 			return errors.New("server is already powered off")
@@ -126,7 +124,7 @@ func (i *IPMI) handleIPMIChassisControl(message *IPMIMessage) error {
 			return err
 		}
 		return i.machine.PowerOn()
-	case ChassisControlHardReset:
+	case chassisControlHardReset:
 		powerState := i.machine.PowerStatus()
 		if powerState == PowerStatusOff || powerState == PowerStatusPoweringOff {
 			return errors.New("server is already powered off")
@@ -135,9 +133,9 @@ func (i *IPMI) handleIPMIChassisControl(message *IPMIMessage) error {
 			return err
 		}
 		return i.machine.PowerOn()
-	case ChassisControlPulse:
+	case chassisControlPulse:
 		// do nothing
-	case ChassisControlPowerSoft:
+	case chassisControlPowerSoft:
 		// do nothing
 	}
 

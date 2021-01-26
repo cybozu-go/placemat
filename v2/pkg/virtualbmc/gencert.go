@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func GenerateCertificate(host, outDir string, validFor time.Duration) (string, string, error) {
+func generateCertificate(host, outDir string, validFor time.Duration) (string, string, error) {
 	priv, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate key: %w", err)

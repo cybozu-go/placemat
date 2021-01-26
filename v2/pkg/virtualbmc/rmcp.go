@@ -7,8 +7,7 @@ import (
 	"io"
 )
 
-// RemoteManagementControlProtocolHeader represents RMCP header
-type RemoteManagementControlProtocolHeader struct {
+type remoteManagementControlProtocolHeader struct {
 	Version  uint8
 	Reserved uint8
 	Sequence uint8
@@ -25,7 +24,7 @@ const (
 	RmcpClassOem  = 0x08
 )
 
-func HandleRMCPRequest(buf io.Reader, machine Machine, session *RMCPPlusSessionHolder, bmcUser *BMCUserHolder) ([]byte, error) {
+func handleRMCPRequest(buf io.Reader, machine Machine, session *rmcpPlusSessionHolder, bmcUser *bmcUserHolder) ([]byte, error) {
 	rmcp, err := newRMCP(buf)
 	if err != nil {
 		return nil, err
@@ -38,7 +37,7 @@ func HandleRMCPRequest(buf io.Reader, machine Machine, session *RMCPPlusSessionH
 	return res, nil
 }
 
-func newRMCP(buf io.Reader) (*RemoteManagementControlProtocolHeader, error) {
+func newRMCP(buf io.Reader) (*remoteManagementControlProtocolHeader, error) {
 	header, err := deserializeRMCPHeader(buf)
 	if err != nil {
 		return nil, err
@@ -47,15 +46,15 @@ func newRMCP(buf io.Reader) (*RemoteManagementControlProtocolHeader, error) {
 	return header, nil
 }
 
-func (r *RemoteManagementControlProtocolHeader) handle(buf io.Reader, machine Machine, session *RMCPPlusSessionHolder, bmcUser *BMCUserHolder) ([]byte, error) {
+func (r *remoteManagementControlProtocolHeader) handle(buf io.Reader, machine Machine, session *rmcpPlusSessionHolder, bmcUser *bmcUserHolder) ([]byte, error) {
 	var class string
 	switch r.Class {
 	case RmcpClassIpmi:
-		ipmiSession, err := NewIPMISession(buf)
+		ipmiSession, err := newIPMISession(buf)
 		if err != nil {
 			return nil, err
 		}
-		res, err := ipmiSession.Handle(buf, machine, session, bmcUser)
+		res, err := ipmiSession.handle(buf, machine, session, bmcUser)
 		if err != nil {
 			return nil, err
 		}
@@ -83,8 +82,8 @@ func appendRMCPHeader(response []byte) ([]byte, error) {
 	return obuf.Bytes(), nil
 }
 
-func deserializeRMCPHeader(buf io.Reader) (*RemoteManagementControlProtocolHeader, error) {
-	header := &RemoteManagementControlProtocolHeader{}
+func deserializeRMCPHeader(buf io.Reader) (*remoteManagementControlProtocolHeader, error) {
+	header := &remoteManagementControlProtocolHeader{}
 	if err := binary.Read(buf, binary.LittleEndian, header); err != nil {
 		return nil, err
 	}
@@ -92,7 +91,7 @@ func deserializeRMCPHeader(buf io.Reader) (*RemoteManagementControlProtocolHeade
 	return header, nil
 }
 
-func serializeRMCP(buf *bytes.Buffer, header RemoteManagementControlProtocolHeader) error {
+func serializeRMCP(buf *bytes.Buffer, header remoteManagementControlProtocolHeader) error {
 	if err := binary.Write(buf, binary.LittleEndian, header); err != nil {
 		return err
 	}
@@ -100,7 +99,7 @@ func serializeRMCP(buf *bytes.Buffer, header RemoteManagementControlProtocolHead
 	return nil
 }
 
-func buildUpRMCPForIPMI() (rmcp RemoteManagementControlProtocolHeader) {
+func buildUpRMCPForIPMI() (rmcp remoteManagementControlProtocolHeader) {
 	rmcp.Version = RmcpVersion1
 	rmcp.Reserved = 0x00
 	rmcp.Sequence = 0xff

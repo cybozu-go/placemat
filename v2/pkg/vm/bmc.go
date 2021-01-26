@@ -14,16 +14,21 @@ import (
 	"github.com/cybozu-go/well"
 )
 
-type BMCServer struct {
+type BMCServer interface {
+	// Start runs BMC Server that servers
+	Start(ctx context.Context) error
+}
+
+type bmcServer struct {
 	nodeCh   <-chan BMCInfo
-	networks []*dcnet.Network
+	networks []dcnet.Network
 	vms      map[string]VM // key: serial
 	tempDir  string
 }
 
 // NewBMCServer creates a BMCServer instance
-func NewBMCServer(vms map[string]VM, networks []*dcnet.Network, ch <-chan BMCInfo, tempDir string) *BMCServer {
-	s := &BMCServer{
+func NewBMCServer(vms map[string]VM, networks []dcnet.Network, ch <-chan BMCInfo, tempDir string) BMCServer {
+	s := &bmcServer{
 		nodeCh:  ch,
 		vms:     vms,
 		tempDir: tempDir,
@@ -37,7 +42,7 @@ func NewBMCServer(vms map[string]VM, networks []*dcnet.Network, ch <-chan BMCInf
 	return s
 }
 
-func (s *BMCServer) Start(ctx context.Context) error {
+func (s *bmcServer) Start(ctx context.Context) error {
 	env := well.NewEnvironment(ctx)
 
 OUTER:
@@ -101,7 +106,7 @@ OUTER:
 	return env.Wait()
 }
 
-func (s *BMCServer) addBMCAddrToNetwork(info BMCInfo) error {
+func (s *bmcServer) addBMCAddrToNetwork(info BMCInfo) error {
 	br, err := s.findBridge(info.bmcAddress)
 	if err != nil {
 		return err
@@ -119,7 +124,7 @@ func (s *BMCServer) addBMCAddrToNetwork(info BMCInfo) error {
 	return nil
 }
 
-func (s *BMCServer) findBridge(address string) (*dcnet.Network, error) {
+func (s *bmcServer) findBridge(address string) (dcnet.Network, error) {
 	ip := net.ParseIP(address)
 
 	for _, n := range s.networks {

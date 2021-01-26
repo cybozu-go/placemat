@@ -191,7 +191,7 @@ func handleComputerSystemCollection(c *gin.Context) {
 	c.JSON(http.StatusOK, computerSystemCollectionResponse)
 }
 
-func (r Redfish) handleComputerSystem(c *gin.Context) {
+func (r *redfishServer) handleComputerSystem(c *gin.Context) {
 	id := c.Param("id")
 	_, ok := r.systemIDs[id]
 	if !ok {
@@ -372,7 +372,7 @@ func createComputerSystemResponse(systemID string, powerState PowerStatus) Compu
 	}
 }
 
-func (r Redfish) handleComputerSystemActionsReset(c *gin.Context) {
+func (r *redfishServer) handleComputerSystemActionsReset(c *gin.Context) {
 	var json RequestBody
 	if err := c.ShouldBindJSON(&json); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

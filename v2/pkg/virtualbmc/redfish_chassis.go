@@ -122,7 +122,7 @@ func handleChassisCollection(c *gin.Context) {
 	c.JSON(http.StatusOK, chassisCollectionResponse)
 }
 
-func (r Redfish) handleChassis(c *gin.Context) {
+func (r *redfishServer) handleChassis(c *gin.Context) {
 	id := c.Param("id")
 	_, ok := r.systemIDs[id]
 	if !ok {
@@ -276,7 +276,7 @@ func createChassisNotFoundErrorResponse(chassisID string) ErrorResponse {
 		}}
 }
 
-func (r Redfish) handleChassisActionsReset(c *gin.Context) {
+func (r *redfishServer) handleChassisActionsReset(c *gin.Context) {
 	var json RequestBody
 	if err := c.ShouldBindJSON(&json); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

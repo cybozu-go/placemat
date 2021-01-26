@@ -17,6 +17,7 @@ const (
 
 const prefix = "pm_"
 
+// RandomLinkName generates a random link name
 func RandomLinkName(typ LinkType) (string, error) {
 	entropy := make([]byte, 4)
 	_, err := rand.Reader.Read(entropy)
@@ -27,6 +28,7 @@ func RandomLinkName(typ LinkType) (string, error) {
 	return fmt.Sprintf("%s%s%x", prefix, typ, entropy), nil
 }
 
+// CleanupAllLinks removes all links placemat added
 func CleanupAllLinks() error {
 	links, err := netlink.LinkList()
 	if err != nil {
