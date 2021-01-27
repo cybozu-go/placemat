@@ -65,19 +65,19 @@ interfaces:
 		internetSpec := cluster.Networks[0]
 		internet, err := NewNetwork(internetSpec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(internet.Setup(1460)).NotTo(HaveOccurred())
+		Expect(internet.Setup(1460, false)).NotTo(HaveOccurred())
 		defer internet.Cleanup()
 
 		coreToS1Spec := cluster.Networks[1]
 		coreToS1, err := NewNetwork(coreToS1Spec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(coreToS1.Setup(1460)).NotTo(HaveOccurred())
+		Expect(coreToS1.Setup(1460, false)).NotTo(HaveOccurred())
 		defer coreToS1.Cleanup()
 
 		nnsSpec := cluster.NetNSs[0]
 		nns, err := NewNetNS(nnsSpec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(nns.Setup(context.Background(), 1460)).NotTo(HaveOccurred())
+		Expect(nns.Setup(context.Background(), 1460, false)).NotTo(HaveOccurred())
 		defer nns.Cleanup()
 
 		// Check if a networks namespace is properly created

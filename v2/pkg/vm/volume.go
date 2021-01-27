@@ -265,17 +265,14 @@ func newHosPathVolume(name string, path string, writable bool) nodeVolume {
 }
 
 func (v *hostPathVolume) create(ctx context.Context, _ string) (volumeArgs, error) {
-	st, err := os.Stat(v.path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to stat the path %s: %w", v.path, err)
-	}
-	if !st.IsDir() {
-		return nil, errors.New(v.path + " is not a directory")
-	}
 	p, err := filepath.Abs(v.path)
 	if err != nil {
 		return nil, err
 	}
+	if err := os.MkdirAll(p, 0755); err != nil {
+		return nil, fmt.Errorf("failed to mkdir %s: %w", v.path, err)
+	}
+
 	return &hostPathVolumeArgs{
 		volumePath: p,
 		cache:      "",

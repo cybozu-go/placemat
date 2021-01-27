@@ -47,10 +47,8 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 	defer c.cleanup(r)
 
 	if r.Force {
-		err := c.forceCleanup(r)
-		if err != nil {
-			return err
-		}
+		dcnet.CleanupNatRules()
+		dcnet.CleanupAllLinks()
 	}
 
 	err := dcnet.CreateNatRules()
@@ -70,7 +68,7 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 		}
 		c.networks = append(c.networks, network)
 
-		if err := network.Setup(mtu); err != nil {
+		if err := network.Setup(mtu, r.Force); err != nil {
 			return fmt.Errorf("failed to create Network: %w", err)
 		}
 	}
@@ -130,7 +128,7 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 
 		n := netNs
 		env.Go(func(ctx context.Context) error {
-			return n.Setup(ctx, mtu)
+			return n.Setup(ctx, mtu, r.Force)
 		})
 	}
 
@@ -176,24 +174,4 @@ func (c *cluster) cleanup(r *vm.Runtime) {
 	for _, vm := range c.vms {
 		vm.Cleanup()
 	}
-}
-
-func (c *cluster) forceCleanup(r *vm.Runtime) error {
-	for _, n := range c.nodes {
-		n.CleanupGarbage(r)
-	}
-
-	for _, n := range c.netNss {
-		n.Cleanup()
-	}
-
-	for _, n := range c.networks {
-		n.Cleanup()
-	}
-
-	if err := dcnet.CleanupAllLinks(); err != nil {
-		return err
-	}
-
-	return nil
 }

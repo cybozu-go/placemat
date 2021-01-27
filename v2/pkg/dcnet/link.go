@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cybozu-go/log"
 	"github.com/vishvananda/netlink"
 )
 
@@ -29,19 +30,23 @@ func RandomLinkName(typ LinkType) (string, error) {
 }
 
 // CleanupAllLinks removes all links placemat added
-func CleanupAllLinks() error {
+func CleanupAllLinks() {
 	links, err := netlink.LinkList()
 	if err != nil {
-		return fmt.Errorf("failed to list links: %w", err)
+		log.Warn("failed to list links", map[string]interface{}{
+			log.FnError: err,
+		})
+		return
 	}
 
 	for _, link := range links {
 		if strings.HasPrefix(link.Attrs().Name, prefix) {
 			if err := netlink.LinkDel(link); err != nil {
-				return fmt.Errorf("failed to delete the link %s: %w", link.Attrs().Name, err)
+				log.Warn("failed to delete the link", map[string]interface{}{
+					log.FnError: err,
+					"name":      link.Attrs().Name,
+				})
 			}
 		}
 	}
-
-	return nil
 }

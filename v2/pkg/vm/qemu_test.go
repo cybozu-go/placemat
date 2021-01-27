@@ -92,7 +92,7 @@ use-nat: false
 			network, err := dcnet.NewNetwork(n)
 			Expect(err).NotTo(HaveOccurred())
 			networks = append(networks, network)
-			Expect(network.Setup(1460)).NotTo(HaveOccurred())
+			Expect(network.Setup(1460, false)).NotTo(HaveOccurred())
 		}
 		defer func() {
 			for _, n := range networks {
@@ -240,7 +240,7 @@ use-nat: false
 			network, err := dcnet.NewNetwork(n)
 			Expect(err).NotTo(HaveOccurred())
 			networks = append(networks, network)
-			Expect(network.Setup(1460)).NotTo(HaveOccurred())
+			Expect(network.Setup(1460, false)).NotTo(HaveOccurred())
 		}
 		defer func() {
 			for _, n := range networks {

@@ -21,7 +21,7 @@ import (
 // NetNS represents a NetworkNamespace resource.
 type NetNS interface {
 	// Setup creates a linux network namespace and runs applications as specified
-	Setup(context.Context, int) error
+	Setup(context.Context, int, bool) error
 	// Cleanup removes network namespaces and veths placemat added
 	Cleanup()
 	// HostVethNames returns host veth names placemat added
@@ -95,7 +95,11 @@ func NewNetNS(spec *types.NetNSSpec) (NetNS, error) {
 	return n, nil
 }
 
-func (n *netNS) Setup(ctx context.Context, mtu int) error {
+func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
+	if force {
+		n.Cleanup()
+	}
+
 	createdNS, err := n.createNetNS()
 	if err != nil {
 		return err

@@ -32,7 +32,7 @@ use-nat: false
 		networkSpec := cluster.Networks[0]
 		network, err := dcnet.NewNetwork(networkSpec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(network.Setup(1460)).NotTo(HaveOccurred())
+		Expect(network.Setup(1460, false)).NotTo(HaveOccurred())
 		defer network.Cleanup()
 
 		tap, err := newTap("r0-node1")
@@ -60,7 +60,7 @@ use-nat: false
 		networkSpec := cluster.Networks[0]
 		network, err := dcnet.NewNetwork(networkSpec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(network.Setup(0)).NotTo(HaveOccurred())
+		Expect(network.Setup(0, false)).NotTo(HaveOccurred())
 		defer network.Cleanup()
 
 		tap, err := newTap("r0-node1")

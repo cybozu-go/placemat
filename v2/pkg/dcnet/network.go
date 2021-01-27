@@ -15,7 +15,7 @@ import (
 // Network represents a network configuration
 type Network interface {
 	// Setup creates a virtual L2 switch using Linux bridge.
-	Setup(int) error
+	Setup(int, bool) error
 	// Cleanup deletes all the created bridges and restores all the modified configs.
 	Cleanup()
 	// IsType checks whether this Network's type is specified type or not
@@ -51,7 +51,11 @@ func NewNetwork(spec *types.NetworkSpec) (Network, error) {
 	return n, nil
 }
 
-func (n *network) Setup(mtu int) error {
+func (n *network) Setup(mtu int, force bool) error {
+	if force {
+		n.Cleanup()
+	}
+
 	la := netlink.NewLinkAttrs()
 	la.Name = n.name
 	bridge := &netlink.Bridge{LinkAttrs: la}
@@ -136,6 +140,7 @@ func (n *network) Cleanup() {
 			log.FnError: err,
 			"name":      n.name,
 		})
+		return
 	}
 	err = netlink.LinkDel(link)
 	if err != nil {

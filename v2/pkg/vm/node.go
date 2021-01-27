@@ -94,6 +94,10 @@ func (n *node) Prepare(ctx context.Context, c *util.Cache) error {
 }
 
 func (n *node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMCInfo) (VM, string, error) {
+	if r.Force {
+		n.CleanupGarbage(r)
+	}
+
 	if n.tpm {
 		err := n.startSWTPM(ctx, r)
 		if err != nil {

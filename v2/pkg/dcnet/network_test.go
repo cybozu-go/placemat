@@ -34,7 +34,7 @@ address: 10.0.0.1/24
 		Expect(yaml.Unmarshal([]byte(networkYaml), spec)).NotTo(HaveOccurred())
 		network, err := NewNetwork(spec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(network.Setup(1460)).NotTo(HaveOccurred())
+		Expect(network.Setup(1460, false)).NotTo(HaveOccurred())
 		defer network.Cleanup()
 
 		// Check if the bridge network is properly created.
@@ -69,7 +69,7 @@ use-nat: false
 		Expect(yaml.Unmarshal([]byte(networkYaml), spec)).NotTo(HaveOccurred())
 		network, err := NewNetwork(spec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(network.Setup(1460)).NotTo(HaveOccurred())
+		Expect(network.Setup(1460, false)).NotTo(HaveOccurred())
 		defer network.Cleanup()
 
 		// Check if the bridge network is properly created.
@@ -110,7 +110,7 @@ address: 10.72.16.1/20
 		Expect(yaml.Unmarshal([]byte(networkYaml), spec)).NotTo(HaveOccurred())
 		network, err := NewNetwork(spec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(network.Setup(1460)).NotTo(HaveOccurred())
+		Expect(network.Setup(1460, false)).NotTo(HaveOccurred())
 		defer network.Cleanup()
 
 		// Check if the bridge network is properly created.
@@ -150,7 +150,7 @@ use-nat: false
 		Expect(yaml.Unmarshal([]byte(networkYaml), spec)).NotTo(HaveOccurred())
 		network, err := NewNetwork(spec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(network.Setup(0)).NotTo(HaveOccurred())
+		Expect(network.Setup(0, false)).NotTo(HaveOccurred())
 		defer network.Cleanup()
 
 		// Check if the bridge network is properly created.

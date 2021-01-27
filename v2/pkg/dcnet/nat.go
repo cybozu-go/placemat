@@ -44,6 +44,7 @@ func CleanupNatRules() {
 		log.Warn("failed to new IpTables", map[string]interface{}{
 			log.FnError: err,
 		})
+		return
 	}
 
 	for _, ipt := range []*iptables.IPTables{ipt4, ipt6} {
