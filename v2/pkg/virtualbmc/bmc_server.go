@@ -96,6 +96,9 @@ func StartRedfishServer(ctx context.Context, listener net.Listener, outDir strin
 
 func prepareRouter(machine Machine) http.Handler {
 	router := gin.Default()
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, nil)
+	})
 	router.GET("redfish/v1", handleServiceRoot)
 	router.GET("redfish/v1/", handleServiceRoot)
 
