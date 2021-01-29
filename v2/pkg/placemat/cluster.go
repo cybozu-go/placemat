@@ -3,6 +3,7 @@ package placemat
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"sync"
 
@@ -28,6 +29,9 @@ type cluster struct {
 	netNss       []dcnet.NetNS
 	nodes        []vm.Node
 	vms          map[string]vm.VM
+	networkMap   map[string]dcnet.Network
+	nodeSpecMap  map[string]*types.NodeSpec
+	nodeMap      map[string]vm.Node
 }
 
 // NewCluster creates a Cluster from spec.
@@ -37,8 +41,15 @@ func NewCluster(spec *types.ClusterSpec) (*cluster, error) {
 		netNSSpecs:   spec.NetNSs,
 		nodeSpecs:    spec.Nodes,
 		imageSpecs:   spec.Images,
+		vms:          make(map[string]vm.VM),
+		networkMap:   make(map[string]dcnet.Network),
+		nodeSpecMap:  make(map[string]*types.NodeSpec),
+		nodeMap:      make(map[string]vm.Node),
 	}
-	cluster.vms = make(map[string]vm.VM)
+
+	for _, node := range cluster.nodeSpecs {
+		cluster.nodeSpecMap[node.Name] = node
+	}
 
 	return cluster, nil
 }
@@ -67,6 +78,7 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 			return err
 		}
 		c.networks = append(c.networks, network)
+		c.networkMap[spec.Name] = network
 
 		if err := network.Setup(mtu, r.Force); err != nil {
 			return fmt.Errorf("failed to create Network: %w", err)
@@ -79,6 +91,7 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 			return err
 		}
 		c.nodes = append(c.nodes, node)
+		c.nodeMap[spec.Name] = node
 
 		if err := node.Prepare(ctx, r.ImageCache); err != nil {
 			return fmt.Errorf("failed to prepare Node: %w", err)
@@ -137,6 +150,25 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 		env.Go(func(ctx context.Context) error {
 			return vm.Wait()
 		})
+	}
+
+	addr, err := net.ResolveTCPAddr("tcp", r.ListenAddr)
+	if err != nil {
+		log.Error("failed to resolve TCP address", map[string]interface{}{
+			log.FnError: err,
+			"address":   r.ListenAddr,
+		})
+	}
+	listener, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		log.Error("failed to listen TCP address", map[string]interface{}{
+			log.FnError: err,
+			"address":   r.ListenAddr,
+		})
+	}
+	apiServer := newAPIServer(c, r)
+	if err := apiServer.start(ctx, listener); err != nil {
+		return err
 	}
 
 	env.Stop()

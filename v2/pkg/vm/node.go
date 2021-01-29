@@ -24,6 +24,8 @@ type Node interface {
 	Prepare(context.Context, *util.Cache) error
 	// Setup creates volumes and taps, and then run a virtual machine as a QEMU process
 	Setup(context.Context, *Runtime, int, chan<- BMCInfo) (VM, string, error)
+	// Taps returns Tap information
+	Taps() map[string]string
 	// Cleanup removes taps placemat added
 	Cleanup()
 	// CleanupGarbage cleanups all garbage
@@ -264,6 +266,15 @@ func (n *node) startSWTPM(ctx context.Context, r *Runtime) error {
 	return nil
 }
 
+func (n *node) Taps() map[string]string {
+	var taps = make(map[string]string)
+	for _, tap := range n.taps {
+		taps[tap.bridge.Attrs().Name] = tap.tapName
+	}
+
+	return taps
+}
+
 func (n *node) Cleanup() {
 	for _, tap := range n.taps {
 		tap.Cleanup()
@@ -305,6 +316,8 @@ type VM interface {
 	virtualbmc.Machine
 	// Wait waits until VM process exits
 	Wait() error
+	// SocketPath returns socket path
+	SocketPath() string
 	// Cleanup remove all socket files created by the VM
 	Cleanup()
 }
@@ -390,6 +403,10 @@ func (n *vm) powerOff() error {
 
 func (n *vm) Wait() error {
 	return n.cmd.Wait()
+}
+
+func (n *vm) SocketPath() string {
+	return n.socket
 }
 
 func (n *vm) Cleanup() {

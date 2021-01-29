@@ -16,14 +16,14 @@ import (
 type Network interface {
 	// Setup creates a virtual L2 switch using Linux bridge.
 	Setup(int, bool) error
-	// Cleanup deletes all the created bridges and restores all the modified configs.
-	Cleanup()
 	// IsType checks whether this Network's type is specified type or not
 	IsType(types.NetworkType) bool
-	// IPNet checks whether this Network's address includes specified ip
+	// Contains checks whether this Network's address includes specified ip
 	Contains(net.IP) bool
 	// AddAddr adds IP address to this Network
 	AddAddr(string) error
+	// Cleanup deletes all the created bridges and restores all the modified configs.
+	Cleanup()
 }
 
 type network struct {
@@ -133,29 +133,14 @@ func appendMasqueradeRule(ipt *iptables.IPTables, ipNet string) error {
 	return nil
 }
 
-func (n *network) Cleanup() {
-	link, err := netlink.LinkByName(n.name)
-	if err != nil {
-		log.Warn("failed to find link by name", map[string]interface{}{
-			log.FnError: err,
-			"name":      n.name,
-		})
-		return
-	}
-	err = netlink.LinkDel(link)
-	if err != nil {
-		log.Warn("failed to delete link", map[string]interface{}{
-			log.FnError: err,
-			"name":      n.name,
-		})
-	}
-}
-
 func (n *network) IsType(typ types.NetworkType) bool {
 	return n.typ == typ
 }
 
 func (n *network) Contains(ip net.IP) bool {
+	if n.addr == nil {
+		return false
+	}
 	return n.addr.Contains(ip)
 }
 
@@ -175,4 +160,22 @@ func (n *network) AddAddr(addr string) error {
 	}
 
 	return nil
+}
+
+func (n *network) Cleanup() {
+	link, err := netlink.LinkByName(n.name)
+	if err != nil {
+		log.Warn("failed to find link by name", map[string]interface{}{
+			log.FnError: err,
+			"name":      n.name,
+		})
+		return
+	}
+	err = netlink.LinkDel(link)
+	if err != nil {
+		log.Warn("failed to delete link", map[string]interface{}{
+			log.FnError: err,
+			"name":      n.name,
+		})
+	}
 }

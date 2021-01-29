@@ -88,7 +88,7 @@ OUTER:
 			}
 			listener, err := net.ListenTCP("tcp", addr)
 			if err != nil {
-				log.Error("failed to listen TCPk address", map[string]interface{}{
+				log.Error("failed to listen TCP address", map[string]interface{}{
 					log.FnError: err,
 					"address":   info.bmcAddress,
 				})
