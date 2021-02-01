@@ -127,9 +127,16 @@ func (r *redfishServer) handleChassis(c *gin.Context) {
 	_, ok := r.systemIDs[id]
 	if !ok {
 		c.JSON(http.StatusNotFound, createChassisNotFoundErrorResponse(id))
+		return
 	}
 
-	c.JSON(http.StatusOK, createChassisResponse(id, r.machine.PowerStatus()))
+	status, err := r.machine.PowerStatus()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+
+	c.JSON(http.StatusOK, createChassisResponse(id, status))
 }
 
 func createChassisResponse(chassisID string, powerState PowerStatus) Chassis {
@@ -291,18 +298,28 @@ func (r *redfishServer) handleChassisActionsReset(c *gin.Context) {
 
 	switch resetType {
 	case ResetTypeOn:
-		powerStatus := r.machine.PowerStatus()
+		powerStatus, err := r.machine.PowerStatus()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 		if powerStatus == PowerStatusOn || powerStatus == PowerStatusPoweringOn {
 			c.JSON(http.StatusConflict, nil)
+			return
 		}
 		if err := r.machine.PowerOn(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	case ResetTypeForceOff:
-		powerStatus := r.machine.PowerStatus()
+		powerStatus, err := r.machine.PowerStatus()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 		if powerStatus == PowerStatusOff || powerStatus == PowerStatusPoweringOff {
 			c.JSON(http.StatusConflict, nil)
+			return
 		}
 		if err := r.machine.PowerOff(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

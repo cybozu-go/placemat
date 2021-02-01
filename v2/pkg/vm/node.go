@@ -1,14 +1,13 @@
 package vm
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/cybozu-go/log"
@@ -138,9 +137,9 @@ func (n *node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMC
 	}
 
 	guest := r.guestSocketPath(n.name)
-	monitor := r.monitorSocketPath(n.name)
+	qmp := r.qmpSocketPath(n.name)
 	for {
-		_, err := os.Stat(monitor)
+		_, err := os.Stat(qmp)
 		if err != nil && !os.IsNotExist(err) {
 			return nil, "", err
 		}
@@ -173,13 +172,12 @@ func (n *node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMC
 	go gc.handle()
 
 	vm := &vm{
-		cmd:         qemuCommand,
-		powerStatus: virtualbmc.PowerStatusOn,
-		monitor:     monitor,
-		connGuest:   connGuest,
-		guest:       guest,
-		socket:      r.socketPath(n.name),
-		swtpm:       r.swtpmSocketPath(n.name),
+		cmd:       qemuCommand,
+		qmp:       qmp,
+		connGuest: connGuest,
+		guest:     guest,
+		socket:    r.socketPath(n.name),
+		swtpmDir:  r.swtpmSocketDirPath(n.name),
 	}
 
 	return vm, n.smbios.serial, nil
@@ -284,7 +282,7 @@ func (n *node) Cleanup() {
 func (n *node) CleanupGarbage(r *Runtime) {
 	files := []string{
 		r.guestSocketPath(n.name),
-		r.monitorSocketPath(n.name),
+		r.qmpSocketPath(n.name),
 		r.socketPath(n.name),
 	}
 	for _, f := range files {
@@ -323,81 +321,194 @@ type VM interface {
 }
 
 type vm struct {
-	cmd         *well.LogCmd
-	powerStatus virtualbmc.PowerStatus
-	monitor     string
-	connGuest   net.Conn
-	guest       string
-	socket      string
-	swtpm       string
-	mu          sync.Mutex
+	cmd       *well.LogCmd
+	qmp       string
+	connGuest net.Conn
+	guest     string
+	socket    string
+	swtpmDir  string
 }
 
-func (n *vm) PowerStatus() virtualbmc.PowerStatus {
-	return n.powerStatus
+// ExecuteCommand represents QMP's execute command
+type ExecuteCommand struct {
+	Execute string `json:"execute"`
+}
+
+// QueryStatusResponse represents QMP's query-status command response
+type QueryStatusResponse struct {
+	Return QueryStatusReturn `json:"return"`
+}
+
+// QueryStatusReturn represents QMP's Return field
+type QueryStatusReturn struct {
+	Status     string `json:"status"`
+	Singlestep bool   `json:"singlestep"`
+	Running    bool   `json:"running"`
+}
+
+const readTimeout = 5 * time.Second
+
+// When a new QMP connection is established, QMP sends its greeting message and enters capabilities negotiation mode.
+// In this mode, only the qmp_capabilities command works.
+// To exit capabilities negotiation mode and enter command mode, the qmp_capabilities command must be issued.
+// See https://wiki.qemu.org/Documentation/QMP for more information
+func (n *vm) PowerStatus() (virtualbmc.PowerStatus, error) {
+	conn, err := net.Dial("unix", n.qmp)
+	if err != nil {
+		return virtualbmc.PowerStatusUnknown, err
+	}
+	err = conn.SetDeadline(time.Now().Add(readTimeout))
+	if err != nil {
+		return virtualbmc.PowerStatusUnknown, err
+	}
+	defer conn.Close()
+
+	bufr := bufio.NewReader(conn)
+
+	if _, err := read(bufr); err != nil {
+		return virtualbmc.PowerStatusUnknown, err
+	}
+
+	if err := writeCommand(conn, "qmp_capabilities"); err != nil {
+		return virtualbmc.PowerStatusUnknown, err
+	}
+
+	if _, err := read(bufr); err != nil {
+		return virtualbmc.PowerStatusUnknown, err
+	}
+
+	if err := writeCommand(conn, "query-status"); err != nil {
+		return virtualbmc.PowerStatusUnknown, err
+	}
+
+	res, err := read(bufr)
+	if err != nil {
+		return virtualbmc.PowerStatusUnknown, err
+	}
+
+	status := &QueryStatusResponse{}
+	if err := json.Unmarshal(res, status); err != nil {
+		return virtualbmc.PowerStatusUnknown, err
+	}
+
+	if status.Return.Running {
+		return virtualbmc.PowerStatusOn, nil
+	}
+
+	return virtualbmc.PowerStatusOff, nil
+}
+
+func read(reader *bufio.Reader) ([]byte, error) {
+	line, err := reader.ReadBytes('\n')
+	if err != nil {
+		return line, err
+	}
+	log.Info("QMP response", map[string]interface{}{"response": string(line)})
+
+	return line, nil
+}
+
+func writeCommand(conn net.Conn, command string) error {
+	exec := ExecuteCommand{
+		Execute: command,
+	}
+	j, err := json.Marshal(exec)
+	if err != nil {
+		return err
+	}
+	if _, err = conn.Write(j); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (n *vm) PowerOn() error {
-	n.mu.Lock()
-	err := n.powerOn()
-	n.mu.Unlock()
-	return err
-}
-
-func (n *vm) powerOn() error {
-	if n.powerStatus == virtualbmc.PowerStatusOn || n.powerStatus == virtualbmc.PowerStatusPoweringOn {
-		return nil
+	conn, err := net.Dial("unix", n.qmp)
+	if err != nil {
+		return err
 	}
-
-	n.powerStatus = virtualbmc.PowerStatusPoweringOn
-
-	conn, err := net.Dial("unix", n.monitor)
+	err = conn.SetDeadline(time.Now().Add(readTimeout))
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	go func() {
-		io.Copy(ioutil.Discard, conn)
-	}()
 
-	_, err = io.WriteString(conn, "system_reset\ncont\n")
-	if err != nil {
+	bufr := bufio.NewReader(conn)
+
+	// Read Greeting response
+	if _, err := read(bufr); err != nil {
 		return err
 	}
 
-	n.powerStatus = virtualbmc.PowerStatusOn
+	if err := writeCommand(conn, "qmp_capabilities"); err != nil {
+		return err
+	}
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+
+	if err := writeCommand(conn, "system_reset"); err != nil {
+		return err
+	}
+	// Read success and event log response
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+
+	if err := writeCommand(conn, "cont"); err != nil {
+		return err
+	}
+	// Read success and event log response
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (n *vm) PowerOff() error {
-	n.mu.Lock()
-	err := n.powerOff()
-	n.mu.Unlock()
-	return err
-}
-
-func (n *vm) powerOff() error {
-	if n.powerStatus == virtualbmc.PowerStatusOff || n.powerStatus == virtualbmc.PowerStatusPoweringOff {
-		return nil
+	conn, err := net.Dial("unix", n.qmp)
+	if err != nil {
+		return err
 	}
-
-	n.powerStatus = virtualbmc.PowerStatusPoweringOff
-
-	conn, err := net.Dial("unix", n.monitor)
+	err = conn.SetDeadline(time.Now().Add(readTimeout))
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	go func() {
-		io.Copy(ioutil.Discard, conn)
-	}()
 
-	_, err = io.WriteString(conn, "stop\n")
-	if err != nil {
+	bufr := bufio.NewReader(conn)
+
+	// Read Greeting response
+	if _, err := read(bufr); err != nil {
 		return err
 	}
 
-	n.powerStatus = virtualbmc.PowerStatusOff
+	if err := writeCommand(conn, "qmp_capabilities"); err != nil {
+		return err
+	}
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+
+	if err := writeCommand(conn, "stop"); err != nil {
+		return err
+	}
+	// Read success and event log response
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -410,29 +521,39 @@ func (n *vm) SocketPath() string {
 }
 
 func (n *vm) Cleanup() {
-	if err := n.connGuest.Close(); err != nil {
-		log.Warn("failed to close guest connection", map[string]interface{}{
-			log.FnError: err,
-		})
+	if _, err := os.Stat(n.guest); err == nil {
+		if err := n.connGuest.Close(); err != nil {
+			log.Warn("failed to close guest connection", map[string]interface{}{
+				log.FnError: err,
+			})
+		}
 	}
-	if err := os.Remove(n.guest); err != nil {
-		log.Warn("failed to remove guest socket", map[string]interface{}{
-			log.FnError: err,
-		})
+
+	files := []string{
+		n.guest,
+		n.qmp,
+		n.socket,
 	}
-	if err := os.Remove(n.monitor); err != nil {
-		log.Warn("failed to remove monitor socket", map[string]interface{}{
-			log.FnError: err,
-		})
+	for _, f := range files {
+		_, err := os.Stat(f)
+		if err == nil {
+			err = os.Remove(f)
+			if err != nil {
+				log.Warn("failed to clean", map[string]interface{}{
+					"filename":  f,
+					log.FnError: err,
+				})
+			}
+		}
 	}
-	if err := os.Remove(n.socket); err != nil {
-		log.Warn("failed to remove socket", map[string]interface{}{
-			log.FnError: err,
-		})
-	}
-	if err := os.RemoveAll(n.swtpm); err != nil {
-		log.Warn("failed to remove swtpm socket", map[string]interface{}{
-			log.FnError: err,
-		})
+	_, err := os.Stat(n.swtpmDir)
+	if err == nil {
+		err = os.RemoveAll(n.swtpmDir)
+		if err != nil {
+			log.Warn("failed to clean", map[string]interface{}{
+				"directory": n.swtpmDir,
+				log.FnError: err,
+			})
+		}
 	}
 }

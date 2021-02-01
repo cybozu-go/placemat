@@ -88,8 +88,8 @@ func (c *qemu) command(r *Runtime) []string {
 	params = append(params, "-device", "virtio-serial")
 	params = append(params, "-device", "virtserialport,chardev=char0,name=placemat")
 
-	monitor := r.monitorSocketPath(c.name)
-	params = append(params, "-monitor", fmt.Sprintf("unix:%s,server,nowait", monitor))
+	qmp := r.qmpSocketPath(c.name)
+	params = append(params, "-qmp", fmt.Sprintf("unix:%s,server,nowait", qmp))
 
 	// Random generator passthrough for fast boot
 	params = append(params, "-object", "rng-random,id=rng0,filename=/dev/urandom")

@@ -299,8 +299,8 @@ type MachineMock struct {
 	status PowerStatus
 }
 
-func (v *MachineMock) PowerStatus() PowerStatus {
-	return v.status
+func (v *MachineMock) PowerStatus() (PowerStatus, error) {
+	return v.status, nil
 }
 
 func (v *MachineMock) PowerOn() error {

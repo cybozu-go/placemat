@@ -159,7 +159,7 @@ qemu-system-x86_64
  -chardev socket,id=char0,path=%s/boot-0.guest,server,nowait
  -device virtio-serial
  -device virtserialport,chardev=char0,name=placemat
- -monitor unix:%s/boot-0.monitor,server,nowait
+ -qmp unix:%s/boot-0.qmp,server,nowait
  -object rng-random,id=rng0,filename=/dev/urandom
  -device virtio-rng-pci,rng=rng0
  -cpu host
@@ -312,7 +312,7 @@ qemu-system-x86_64
  -chardev socket,id=char0,path=%s/boot-0.guest,server,nowait
  -device virtio-serial
  -device virtserialport,chardev=char0,name=placemat
- -monitor unix:%s/boot-0.monitor,server,nowait
+ -qmp unix:%s/boot-0.qmp,server,nowait
  -object rng-random,id=rng0,filename=/dev/urandom
  -device virtio-rng-pci,rng=rng0
  -cpu host

@@ -16,7 +16,7 @@ import (
 
 // Machine defines the interface to manipulate Machine
 type Machine interface {
-	PowerStatus() PowerStatus
+	PowerStatus() (PowerStatus, error)
 	PowerOn() error
 	PowerOff() error
 }
@@ -28,6 +28,7 @@ const (
 	PowerStatusPoweringOn  = PowerStatus("PoweringOn")
 	PowerStatusOff         = PowerStatus("Off")
 	PowerStatusPoweringOff = PowerStatus("PoweringOff")
+	PowerStatusUnknown     = PowerStatus("")
 )
 
 // StartIPMIServer starts an ipmi server that handles RMCP requests

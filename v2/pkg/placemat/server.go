@@ -84,14 +84,24 @@ func (s *apiServer) handleNode(c *gin.Context) {
 		c.JSON(http.StatusNotFound, nil)
 		return
 	}
-	status := newNodeStatus(spec, s.cluster.nodeMap[name], s.cluster.vms[spec.SMBIOS.Serial], s.runtime)
+	status, err := newNodeStatus(spec, s.cluster.nodeMap[name], s.cluster.vms[spec.SMBIOS.Serial], s.runtime)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+
 	c.JSON(http.StatusOK, status)
 }
 
 func (s *apiServer) handleNodes(c *gin.Context) {
 	statuses := make([]*NodeStatus, len(s.cluster.nodeSpecs))
 	for i, spec := range s.cluster.nodeSpecs {
-		statuses[i] = newNodeStatus(spec, s.cluster.nodeMap[spec.Name], s.cluster.vms[spec.SMBIOS.Serial], s.runtime)
+		status, err := newNodeStatus(spec, s.cluster.nodeMap[spec.Name], s.cluster.vms[spec.SMBIOS.Serial], s.runtime)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
+		statuses[i] = status
 	}
 	c.JSON(http.StatusOK, statuses)
 }
@@ -132,10 +142,15 @@ func (s *apiServer) handleNodeAction(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, vm.PowerStatus())
+	c.JSON(http.StatusOK, nil)
 }
 
-func newNodeStatus(spec *types.NodeSpec, node vm.Node, vm vm.VM, runtime *vm.Runtime) *NodeStatus {
+func newNodeStatus(spec *types.NodeSpec, node vm.Node, vm vm.VM, runtime *vm.Runtime) (*NodeStatus, error) {
+	powerStatus, err := vm.PowerStatus()
+	if err != nil {
+		return nil, err
+	}
+
 	status := &NodeStatus{
 		Name:        spec.Name,
 		Taps:        node.Taps(),
@@ -143,7 +158,7 @@ func newNodeStatus(spec *types.NodeSpec, node vm.Node, vm vm.VM, runtime *vm.Run
 		Memory:      spec.Memory,
 		UEFI:        spec.UEFI,
 		TPM:         spec.TPM,
-		PowerStatus: vm.PowerStatus(),
+		PowerStatus: powerStatus,
 	}
 	status.SMBIOS.Serial = spec.SMBIOS.Serial
 	status.SMBIOS.Manufacturer = spec.SMBIOS.Manufacturer
@@ -155,5 +170,5 @@ func newNodeStatus(spec *types.NodeSpec, node vm.Node, vm vm.VM, runtime *vm.Run
 	for i, v := range spec.Volumes {
 		status.Volumes[i] = v.Name
 	}
-	return status
+	return status, nil
 }

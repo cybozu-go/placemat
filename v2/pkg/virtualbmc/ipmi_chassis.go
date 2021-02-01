@@ -79,7 +79,10 @@ func (i *ipmi) handleIPMIChassis(message *ipmiMessage) ([]byte, error) {
 
 func (i *ipmi) handleIPMIGetChassisStatus() ([]byte, error) {
 	response := ipmiGetChassisStatusResponse{}
-	powerStatus := i.machine.PowerStatus()
+	powerStatus, err := i.machine.PowerStatus()
+	if err != nil {
+		return nil, err
+	}
 	if powerStatus == PowerStatusOn || powerStatus == PowerStatusPoweringOn {
 		response.CurrentPowerState |= chassisPowerStateBitmaskPowerOn
 	}
@@ -104,19 +107,28 @@ func (i *ipmi) handleIPMIChassisControl(message *ipmiMessage) error {
 
 	switch request.ChassisControl {
 	case chassisControlPowerDown:
-		powerState := i.machine.PowerStatus()
+		powerState, err := i.machine.PowerStatus()
+		if err != nil {
+			return err
+		}
 		if powerState == PowerStatusOff || powerState == PowerStatusPoweringOff {
 			return errors.New("server is already powered off")
 		}
 		return i.machine.PowerOff()
 	case chassisControlPowerUp:
-		powerState := i.machine.PowerStatus()
+		powerState, err := i.machine.PowerStatus()
+		if err != nil {
+			return err
+		}
 		if powerState == PowerStatusOn || powerState == PowerStatusPoweringOn {
 			return errors.New("server is already powered on")
 		}
 		return i.machine.PowerOn()
 	case chassisControlPowerCycle:
-		powerState := i.machine.PowerStatus()
+		powerState, err := i.machine.PowerStatus()
+		if err != nil {
+			return err
+		}
 		if powerState == PowerStatusOff || powerState == PowerStatusPoweringOff {
 			return errors.New("server is already powered off")
 		}
@@ -125,7 +137,10 @@ func (i *ipmi) handleIPMIChassisControl(message *ipmiMessage) error {
 		}
 		return i.machine.PowerOn()
 	case chassisControlHardReset:
-		powerState := i.machine.PowerStatus()
+		powerState, err := i.machine.PowerStatus()
+		if err != nil {
+			return err
+		}
 		if powerState == PowerStatusOff || powerState == PowerStatusPoweringOff {
 			return errors.New("server is already powered off")
 		}

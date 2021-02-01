@@ -130,8 +130,8 @@ func (r *Runtime) socketPath(host string) string {
 	return filepath.Join(r.RunDir, host+".socket")
 }
 
-func (r *Runtime) monitorSocketPath(host string) string {
-	return filepath.Join(r.RunDir, host+".monitor")
+func (r *Runtime) qmpSocketPath(host string) string {
+	return filepath.Join(r.RunDir, host+".qmp")
 }
 
 func (r *Runtime) guestSocketPath(host string) string {
