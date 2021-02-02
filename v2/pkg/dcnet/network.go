@@ -103,9 +103,13 @@ func (n *network) Setup(mtu int, force bool) error {
 	} else {
 		ipt = ipt6
 	}
+	err = appendAcceptRule([]*iptables.IPTables{ipt4, ipt6}, n.name)
+	if err != nil {
+		return fmt.Errorf("failed to append accept rule: %w", err)
+	}
 	err = appendMasqueradeRule(ipt, n.addr.IPNet.String())
 	if err != nil {
-		return fmt.Errorf("failed to append append masquerade rule: %w", err)
+		return fmt.Errorf("failed to append masquerade rule: %w", err)
 	}
 
 	return nil

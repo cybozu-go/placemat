@@ -107,6 +107,13 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 	defer createdNS.Close()
 
 	err = createdNS.Do(func(hostNS ns.NetNS) error {
+		lo, err := netlink.LinkByName("lo")
+		if err != nil {
+			return fmt.Errorf("failed to find lo: %w", err)
+		}
+		if err := netlink.LinkSetUp(lo); err != nil {
+			return fmt.Errorf("failed to set up to lo : %w", err)
+		}
 		// Enable IP Forwarding
 		if err := ip.EnableIP4Forward(); err != nil {
 			return fmt.Errorf("failed to enable IPv4 forwarding: %w", err)

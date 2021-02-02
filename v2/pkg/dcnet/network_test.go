@@ -48,10 +48,25 @@ address: 10.0.0.1/24
 		Expect(isForwarding("net.ipv4.ip_forward")).To(BeTrue())
 		Expect(isForwarding("net.ipv6.conf.all.forwarding")).To(BeTrue())
 
-		// Check if the masquerade rule is properly configured.
-		ipt4, _, err := newIptables()
+		// Check if the accept rules are properly configured.
+		ipt4, ipt6, err := newIptables()
 		Expect(err).NotTo(HaveOccurred())
-		exists, err := ipt4.Exists("nat", "PLACEMAT", "-s", "10.0.0.0/24", "!", "--destination", "10.0.0.0/24", "-j", "MASQUERADE")
+		exists, err := ipt4.Exists("filter", "PLACEMAT", "-i", spec.Name, "-j", "ACCEPT")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exists).To(BeTrue())
+		exists, err = ipt4.Exists("filter", "PLACEMAT", "-o", spec.Name, "-j", "ACCEPT")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exists).To(BeTrue())
+		exists, err = ipt6.Exists("filter", "PLACEMAT", "-i", spec.Name, "-j", "ACCEPT")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exists).To(BeTrue())
+		exists, err = ipt6.Exists("filter", "PLACEMAT", "-o", spec.Name, "-j", "ACCEPT")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exists).To(BeTrue())
+
+		// Check if the masquerade rule is properly configured.
+		Expect(err).NotTo(HaveOccurred())
+		exists, err = ipt4.Exists("nat", "PLACEMAT", "-s", "10.0.0.0/24", "!", "--destination", "10.0.0.0/24", "-j", "MASQUERADE")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(exists).To(BeTrue())
 	})
