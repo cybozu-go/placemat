@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/coreos/go-iptables/iptables"
+	"github.com/cybozu-go/log"
 )
 
 // CreateNatRules creates nat rules with iptables
 func CreateNatRules() error {
-	ipt4, ipt6, err := NewIptables()
+	ipt4, ipt6, err := newIptables()
 	if err != nil {
 		return err
 	}
@@ -37,45 +38,58 @@ func CreateNatRules() error {
 }
 
 // CleanupNatRules destroys nat rules
-func CleanupNatRules() error {
-	ipt4, ipt6, err := NewIptables()
+func CleanupNatRules() {
+	ipt4, ipt6, err := newIptables()
 	if err != nil {
-		return err
+		log.Warn("failed to new IpTables", map[string]interface{}{
+			log.FnError: err,
+		})
+		return
 	}
 
 	for _, ipt := range []*iptables.IPTables{ipt4, ipt6} {
 		err := ipt.Delete("filter", "FORWARD", "-j", "PLACEMAT")
 		if err != nil {
-			return fmt.Errorf("failed to delete the PLACEMAT rule in filter table: %w", err)
+			log.Warn("failed to delete the PLACEMAT rule in filter table", map[string]interface{}{
+				log.FnError: err,
+			})
 		}
 		err = ipt.Delete("nat", "POSTROUTING", "-j", "PLACEMAT")
 		if err != nil {
-			return fmt.Errorf("failed to delete the PLACEMAT rule in nat table: %w", err)
+			log.Warn("failed to delete the PLACEMAT rule in nat table", map[string]interface{}{
+				log.FnError: err,
+			})
 		}
 
 		err = ipt.ClearChain("filter", "PLACEMAT")
 		if err != nil {
-			return fmt.Errorf("failed to clear the PLACEMAT chain in filter table: %w", err)
+			log.Warn("failed to clear the PLACEMAT chain in filter table", map[string]interface{}{
+				log.FnError: err,
+			})
 		}
 		err = ipt.DeleteChain("filter", "PLACEMAT")
 		if err != nil {
-			return fmt.Errorf("failed to delete the PLACEMAT chain in filter table: %w", err)
+			log.Warn("failed to delete the PLACEMAT chain in filter table", map[string]interface{}{
+				log.FnError: err,
+			})
 		}
 
 		err = ipt.ClearChain("nat", "PLACEMAT")
 		if err != nil {
-			return fmt.Errorf("failed to clear the PLACEMAT chain in nat table: %w", err)
+			log.Warn("failed to clear the PLACEMAT chain in nat table", map[string]interface{}{
+				log.FnError: err,
+			})
 		}
 		err = ipt.DeleteChain("nat", "PLACEMAT")
 		if err != nil {
-			return fmt.Errorf("failed to delete the PLACEMAT chain in nat table: %w", err)
+			log.Warn("failed to delete the PLACEMAT chain in nat table", map[string]interface{}{
+				log.FnError: err,
+			})
 		}
 	}
-	return nil
 }
 
-// NewIptables creates IPTables
-func NewIptables() (*iptables.IPTables, *iptables.IPTables, error) {
+func newIptables() (*iptables.IPTables, *iptables.IPTables, error) {
 	ipt4, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create iptables for IPv4: %w", err)

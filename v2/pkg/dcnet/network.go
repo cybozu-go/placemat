@@ -2,24 +2,40 @@ package dcnet
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/coreos/go-iptables/iptables"
+	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/vishvananda/netlink"
 )
 
 // Network represents a network configuration
-type Network struct {
+type Network interface {
+	// Setup creates a virtual L2 switch using Linux bridge.
+	Setup(int, bool) error
+	// IsType checks whether this Network's type is specified type or not
+	IsType(types.NetworkType) bool
+	// Contains checks whether this Network's address includes specified ip
+	Contains(net.IP) bool
+	// AddAddr adds IP address to this Network
+	AddAddr(string) error
+	// Cleanup deletes all the created bridges and restores all the modified configs.
+	Cleanup()
+}
+
+type network struct {
 	name   string
-	typ    string
+	typ    types.NetworkType
 	useNAT bool
 	addr   *netlink.Addr
 }
 
 // NewNetwork creates *Network from spec.
-func NewNetwork(spec *types.NetworkSpec) (*Network, error) {
-	n := &Network{
+func NewNetwork(spec *types.NetworkSpec) (Network, error) {
+	n := &network{
 		name:   spec.Name,
 		typ:    spec.Type,
 		useNAT: spec.UseNAT,
@@ -35,8 +51,11 @@ func NewNetwork(spec *types.NetworkSpec) (*Network, error) {
 	return n, nil
 }
 
-// Create creates a virtual L2 switch using Linux bridge.
-func (n *Network) Create(mtu int) error {
+func (n *network) Setup(mtu int, force bool) error {
+	if force {
+		n.Cleanup()
+	}
+
 	la := netlink.NewLinkAttrs()
 	la.Name = n.name
 	bridge := &netlink.Bridge{LinkAttrs: la}
@@ -57,7 +76,7 @@ func (n *Network) Create(mtu int) error {
 		}
 	}
 
-	ipt4, ipt6, err := NewIptables()
+	ipt4, ipt6, err := newIptables()
 	if err != nil {
 		return err
 	}
@@ -84,9 +103,13 @@ func (n *Network) Create(mtu int) error {
 	} else {
 		ipt = ipt6
 	}
+	err = appendAcceptRule([]*iptables.IPTables{ipt4, ipt6}, n.name)
+	if err != nil {
+		return fmt.Errorf("failed to append accept rule: %w", err)
+	}
 	err = appendMasqueradeRule(ipt, n.addr.IPNet.String())
 	if err != nil {
-		return fmt.Errorf("failed to append append masquerade rule: %w", err)
+		return fmt.Errorf("failed to append masquerade rule: %w", err)
 	}
 
 	return nil
@@ -114,15 +137,49 @@ func appendMasqueradeRule(ipt *iptables.IPTables, ipNet string) error {
 	return nil
 }
 
-// Cleanup deletes all the created bridges and restores all the modified configs.
-func (n *Network) Cleanup() error {
+func (n *network) IsType(typ types.NetworkType) bool {
+	return n.typ == typ
+}
+
+func (n *network) Contains(ip net.IP) bool {
+	if n.addr == nil {
+		return false
+	}
+	return n.addr.Contains(ip)
+}
+
+func (n *network) AddAddr(addr string) error {
+	prefixLen, _ := n.addr.Mask.Size()
+	addrWithMask, err := netlink.ParseAddr(addr + "/" + strconv.Itoa(prefixLen))
+	if err != nil {
+		return fmt.Errorf("failed to parse the address: %w", err)
+	}
+
 	link, err := netlink.LinkByName(n.name)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find the link %s: %w", n.name, err)
+	}
+	if err := netlink.AddrAdd(link, addrWithMask); err != nil {
+		return fmt.Errorf("failed to add the address %s: %w", addrWithMask.String(), err)
+	}
+
+	return nil
+}
+
+func (n *network) Cleanup() {
+	link, err := netlink.LinkByName(n.name)
+	if err != nil {
+		log.Warn("failed to find link by name", map[string]interface{}{
+			log.FnError: err,
+			"name":      n.name,
+		})
+		return
 	}
 	err = netlink.LinkDel(link)
 	if err != nil {
-		return err
+		log.Warn("failed to delete link", map[string]interface{}{
+			log.FnError: err,
+			"name":      n.name,
+		})
 	}
-	return nil
 }

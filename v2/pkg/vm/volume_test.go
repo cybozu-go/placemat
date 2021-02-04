@@ -49,11 +49,11 @@ file: temp/cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 		nodeSpec := cluster.Nodes[0]
 		volumeSpec := nodeSpec.Volumes[0]
 
-		volume, err := NewNodeVolume(volumeSpec, cluster.Images)
+		volume, err := newNodeVolume(volumeSpec, cluster.Images)
 		Expect(err).NotTo(HaveOccurred())
-		args, err := volume.Create(context.Background(), temp)
+		args, err := volume.create(context.Background(), temp)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(args.Args()).To(Equal([]string{
+		Expect(args.args()).To(Equal([]string{
 			"-drive",
 			fmt.Sprintf("if=virtio,cache=writeback,aio=threads,file=%s/root.img", temp),
 		}))
@@ -94,11 +94,11 @@ smbios:
 		nodeSpec := cluster.Nodes[0]
 		volumeSpec := nodeSpec.Volumes[0]
 
-		volume, err := NewNodeVolume(volumeSpec, cluster.Images)
+		volume, err := newNodeVolume(volumeSpec, cluster.Images)
 		Expect(err).NotTo(HaveOccurred())
-		args, err := volume.Create(context.Background(), temp)
+		args, err := volume.create(context.Background(), temp)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(args.Args()).To(Equal([]string{
+		Expect(args.args()).To(Equal([]string{
 			"-drive",
 			fmt.Sprintf("if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img", temp),
 		}))
@@ -137,11 +137,11 @@ smbios:
 		nodeSpec := cluster.Nodes[0]
 		volumeSpec := nodeSpec.Volumes[0]
 
-		volume, err := NewNodeVolume(volumeSpec, cluster.Images)
+		volume, err := newNodeVolume(volumeSpec, cluster.Images)
 		Expect(err).NotTo(HaveOccurred())
-		args, err := volume.Create(context.Background(), temp)
+		args, err := volume.create(context.Background(), temp)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(args.Args()).To(Equal([]string{
+		Expect(args.args()).To(Equal([]string{
 			"-virtfs",
 			fmt.Sprintf("local,path=%s/shared-dir,mount_tag=sabakan,security_model=none,readonly", temp),
 		}))
@@ -173,11 +173,11 @@ smbios:
 		nodeSpec := cluster.Nodes[0]
 		volumeSpec := nodeSpec.Volumes[0]
 
-		volume, err := NewNodeVolume(volumeSpec, cluster.Images)
+		volume, err := newNodeVolume(volumeSpec, cluster.Images)
 		Expect(err).NotTo(HaveOccurred())
-		args, err := volume.Create(context.Background(), temp)
+		args, err := volume.create(context.Background(), temp)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(args.Args()).To(Equal([]string{
+		Expect(args.args()).To(Equal([]string{
 			"-drive",
 			fmt.Sprintf("if=virtio,cache=none,aio=native,format=qcow2,file=%s/data.img", temp),
 		}))

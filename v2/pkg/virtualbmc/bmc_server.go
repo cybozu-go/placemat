@@ -16,7 +16,7 @@ import (
 
 // Machine defines the interface to manipulate Machine
 type Machine interface {
-	PowerStatus() PowerStatus
+	PowerStatus() (PowerStatus, error)
 	PowerOn() error
 	PowerOff() error
 }
@@ -28,18 +28,19 @@ const (
 	PowerStatusPoweringOn  = PowerStatus("PoweringOn")
 	PowerStatusOff         = PowerStatus("Off")
 	PowerStatusPoweringOff = PowerStatus("PoweringOff")
+	PowerStatusUnknown     = PowerStatus("")
 )
 
-// StartIPMIServer starts an IPMI server that handles RMCP requests
+// StartIPMIServer starts an ipmi server that handles RMCP requests
 func StartIPMIServer(ctx context.Context, conn net.PacketConn, machine Machine) error {
 	go func() {
 		<-ctx.Done()
 		conn.Close()
 	}()
 
-	session := NewRMCPPlusSessionHolder()
-	bmcUser := NewBMCUserHolder()
-	bmcUser.AddBMCUser("cybozu", "cybozu")
+	session := newRMCPPlusSessionHolder()
+	bmcUser := newBMCUserHolder()
+	bmcUser.addBMCUser("cybozu", "cybozu")
 
 	buf := make([]byte, 1024)
 	for {
@@ -49,7 +50,7 @@ func StartIPMIServer(ctx context.Context, conn net.PacketConn, machine Machine) 
 		}
 
 		bytebuf := bytes.NewBuffer(buf)
-		res, err := HandleRMCPRequest(bytebuf, machine, session, bmcUser)
+		res, err := handleRMCPRequest(bytebuf, machine, session, bmcUser)
 		if err != nil {
 			log.Warn("failed to handle RMCP request", map[string]interface{}{
 				log.FnError: err,
@@ -66,7 +67,7 @@ func StartIPMIServer(ctx context.Context, conn net.PacketConn, machine Machine) 
 	}
 }
 
-// StartRedfishServer starts a Redfish server
+// StartRedfishServer starts a redfish server
 func StartRedfishServer(ctx context.Context, listener net.Listener, outDir string, machine Machine) error {
 	serv := &well.HTTPServer{
 		Server: &http.Server{
@@ -74,7 +75,7 @@ func StartRedfishServer(ctx context.Context, listener net.Listener, outDir strin
 		},
 	}
 
-	cert, key, err := GenerateCertificate("placemat.com", outDir, 36500*24*time.Hour)
+	cert, key, err := generateCertificate("placemat.com", outDir, 36500*24*time.Hour)
 	if err != nil {
 		return fmt.Errorf("failed to generate certificate: %w", err)
 	}
@@ -96,13 +97,16 @@ func StartRedfishServer(ctx context.Context, listener net.Listener, outDir strin
 
 func prepareRouter(machine Machine) http.Handler {
 	router := gin.Default()
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, nil)
+	})
 	router.GET("redfish/v1", handleServiceRoot)
 	router.GET("redfish/v1/", handleServiceRoot)
 
 	authorized := router.Group("/", gin.BasicAuth(gin.Accounts{
 		"cybozu": "cybozu",
 	}))
-	redfish := NewRedfish(machine)
+	redfish := newRedfishServer(machine)
 	authorized.GET("redfish/v1/Chassis", handleChassisCollection)
 	authorized.GET("redfish/v1/Chassis/:id", redfish.handleChassis)
 	authorized.POST("redfish/v1/Chassis/:id/Actions/Chassis.Reset", redfish.handleChassisActionsReset)

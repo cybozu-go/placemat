@@ -13,7 +13,8 @@ require (
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/onsi/ginkgo v1.14.2
-	github.com/onsi/gomega v1.10.3
+	github.com/onsi/gomega v1.10.5
+	github.com/spf13/cobra v1.1.1
 	github.com/stmcginnis/gofish v0.7.0
 	github.com/ugorji/go v1.2.3 // indirect
 	github.com/vishvananda/netlink v1.1.0

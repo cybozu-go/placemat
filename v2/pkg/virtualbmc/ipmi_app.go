@@ -11,234 +11,229 @@ import (
 // port from OpenIPMI
 // App Network Function
 const (
-	IPMICmdGetDeviceID                = 0x01
-	IPMICmdBroadcastGetDeviceID       = 0x01
-	IPMICmdColdReset                  = 0x02
-	IPMICmdWarmReset                  = 0x03
-	IPMICmdGetSelfTestResults         = 0x04
-	IPMICmdManufacturingTestOn        = 0x05
-	IPMICmdSetACPIPowerState          = 0x06
-	IPMICmdGetACPIPowerState          = 0x07
-	IPMICmdGetDeviceGUID              = 0x08
-	IPMICmdResetWatchdogTimer         = 0x22
-	IPMICmdSetWatchdogTimer           = 0x24
-	IPMICmdGetWatchdogTimer           = 0x25
-	IPMICmdSetBMCGlobalEnables        = 0x2e
-	IPMICmdGetBMCGlobalEnables        = 0x2f
-	IPMICmdClearMSGFlags              = 0x30
-	IPMICmdGetMSGFlags                = 0x31
-	IPMICmdEnableMessageChannelRCV    = 0x32
-	IPMICmdGetMSG                     = 0x33
-	IPMICmdSendMSG                    = 0x34
-	IPMICmdReadEventMSGBuffer         = 0x35
-	IPMICmdGetBTInterfaceCapabilities = 0x36
-	IPMICmdGetSystemGUID              = 0x37
-	IPMICmdGetChannelAuthCapabilities = 0x38
-	IPMICmdGetSessionChallenge        = 0x39
-	IPMICmdActivateSession            = 0x3a
-	IPMICmdSetSessionPrivilege        = 0x3b
-	IPMICmdCloseSession               = 0x3c
-	IPMICmdGetSessionInfo             = 0x3d
+	ipmiCmdGetDeviceID                = 0x01
+	ipmiCmdBroadcastGetDeviceID       = 0x01
+	ipmiCmdColdReset                  = 0x02
+	ipmiCmdWarmReset                  = 0x03
+	ipmiCmdGetSelfTestResults         = 0x04
+	ipmiCmdManufacturingTestOn        = 0x05
+	ipmiCmdSetACPIPowerState          = 0x06
+	ipmiCmdGetACPIPowerState          = 0x07
+	ipmiCmdGetDeviceGUID              = 0x08
+	ipmiCmdResetWatchdogTimer         = 0x22
+	ipmiCmdSetWatchdogTimer           = 0x24
+	ipmiCmdGetWatchdogTimer           = 0x25
+	ipmiCmdSetBMCGlobalEnables        = 0x2e
+	ipmiCmdGetBMCGlobalEnables        = 0x2f
+	ipmiCmdClearMSGFlags              = 0x30
+	ipmiCmdGetMSGFlags                = 0x31
+	ipmiCmdEnableMessageChannelRCV    = 0x32
+	ipmiCmdGetMSG                     = 0x33
+	ipmiCmdSendMSG                    = 0x34
+	ipmiCmdReadEventMSGBuffer         = 0x35
+	ipmiCmdGetBTInterfaceCapabilities = 0x36
+	ipmiCmdGetSystemGUID              = 0x37
+	ipmiCmdGetChannelAuthCapabilities = 0x38
+	ipmiCmdGetSessionChallenge        = 0x39
+	ipmiCmdActivateSession            = 0x3a
+	ipmiCmdSetSessionPrivilege        = 0x3b
+	ipmiCmdCloseSession               = 0x3c
+	ipmiCmdGetSessionInfo             = 0x3d
 
-	IPMICmdGetAuthCode                = 0x3f
-	IPMICmdSetChannelAccess           = 0x40
-	IPMICmdGetChannelAccess           = 0x41
-	IPMICmdGetChannelInfo             = 0x42
-	IPMICmdSetUserAccess              = 0x43
-	IPMICmdGetUserAccess              = 0x44
-	IPMICmdSetUserName                = 0x45
-	IPMICmdGetUserName                = 0x46
-	IPMICmdSetUserPassword            = 0x47
-	IPMICmdActivatePayload            = 0x48
-	IPMICmdDeactivatePayload          = 0x49
-	IPMICmdGetPayloadActivationStatus = 0x4a
-	IPMICmdGetPayloadInstanceInfo     = 0x4b
-	IPMICmdSetUserPayloadAccess       = 0x4c
-	IPMICmdGetUserPayloadAccess       = 0x4d
-	IPMICmdGetChannelPayloadSupport   = 0x4e
-	IPMICmdGetChannelPayloadVersion   = 0x4f
-	IPMICmdGetChannelOEMPayloadInfo   = 0x50
+	ipmiCmdGetAuthCode                = 0x3f
+	ipmiCmdSetChannelAccess           = 0x40
+	ipmiCmdGetChannelAccess           = 0x41
+	ipmiCmdGetChannelInfo             = 0x42
+	ipmiCmdSetUserAccess              = 0x43
+	ipmiCmdGetUserAccess              = 0x44
+	ipmiCmdSetUserName                = 0x45
+	ipmiCmdGetUserName                = 0x46
+	ipmiCmdSetUserPassword            = 0x47
+	ipmiCmdActivatePayload            = 0x48
+	ipmiCmdDeactivatePayload          = 0x49
+	ipmiCmdGetPayloadActivationStatus = 0x4a
+	ipmiCmdGetPayloadInstanceInfo     = 0x4b
+	ipmiCmdSetUserPayloadAccess       = 0x4c
+	ipmiCmdGetUserPayloadAccess       = 0x4d
+	ipmiCmdGetChannelPayloadSupport   = 0x4e
+	ipmiCmdGetChannelPayloadVersion   = 0x4f
+	ipmiCmdGetChannelOEMPayloadInfo   = 0x50
 
-	IPMICmdMasterReadWrite = 0x52
+	ipmiCmdMasterReadWrite = 0x52
 
-	IPMICmdGetChannelCipherSuites         = 0x54
-	IPMICmdSuspendResumePayloadEncryption = 0x55
-	IPMICmdSetChannelSecurityKey          = 0x56
-	IPMICmdGetSystemInterfaceCapabilities = 0x57
+	ipmiCmdGetChannelCipherSuites         = 0x54
+	ipmiCmdSuspendResumePayloadEncryption = 0x55
+	ipmiCmdSetChannelSecurityKey          = 0x56
+	ipmiCmdGetSystemInterfaceCapabilities = 0x57
 )
 
 const (
-	AuthBitmaskNone        = 0x01
-	AuthBitmaskMD2         = 0x02
-	AuthBitmaskMD5         = 0x04
-	AuthBitmaskStraightKey = 0x10
-	AuthBitmaskOEM         = 0x20
-	AuthBitmaskIPMIV2      = 0x80
+	authBitmaskNone        = 0x01
+	authBitmaskMD2         = 0x02
+	authBitmaskMD5         = 0x04
+	authBitmaskStraightKey = 0x10
+	authBitmaskOEM         = 0x20
+	authBitmaskIPMIV2      = 0x80
 )
 
 const (
-	AuthStatusAnonymous   = 0x01
-	AuthStatusNullUser    = 0x02
-	AuthStatusNonNullUser = 0x04
-	AuthStatusUserLevel   = 0x08
-	AuthStatusPerMessage  = 0x10
-	AuthStatusKG          = 0x20
+	authStatusAnonymous   = 0x01
+	authStatusNullUser    = 0x02
+	authStatusNonNullUser = 0x04
+	authStatusUserLevel   = 0x08
+	authStatusPerMessage  = 0x10
+	authStatusKG          = 0x20
 )
 
 const (
-	ExtendedCapabilitiesChannel15 = 0x01
-	ExtendedCapabilitiesChannel20 = 0x02
+	extendedCapabilitiesChannel15 = 0x01
+	extendedCapabilitiesChannel20 = 0x02
 )
 
-// IPMIAuthenticationCapabilitiesRequest represents Get Authentication Capabilities request
-type IPMIAuthenticationCapabilitiesRequest struct {
+type ipmiAuthenticationCapabilitiesRequest struct {
 	AutnticationTypeSupport uint8
 	RequestedPrivilegeLevel uint8
 }
 
-// IPMIAuthenticationCapabilitiesResponse represents Get Authentication Capabilities response
-type IPMIAuthenticationCapabilitiesResponse struct {
+type ipmiAuthenticationCapabilitiesResponse struct {
 	Channel                   uint8
 	AuthenticationTypeSupport uint8
 	AuthenticationStatus      uint8
-	ExtCapabilities           uint8 // In IPMI v1.5, 0 is always put here. (Reserved)
+	ExtCapabilities           uint8 // In ipmi v1.5, 0 is always put here. (Reserved)
 	OEMID                     [3]uint8
 	OEMAuxiliaryData          uint8
 }
 
-// IPMISetSessionPrivilegeLevelRequest represents Set RMCPPlusSession Privilege Level request
-type IPMISetSessionPrivilegeLevelRequest struct {
+type ipmiSetSessionPrivilegeLevelRequest struct {
 	RequestPrivilegeLevel uint8
 }
 
-// IPMISetSessionPrivilegeLevelResponse represents Set RMCPPlusSession Privilege Level response
-type IPMISetSessionPrivilegeLevelResponse struct {
+type ipmiSetSessionPrivilegeLevelResponse struct {
 	NewPrivilegeLevel uint8
 }
 
-// IPMICloseSessionRequest represents Close RMCPPlusSession request
-type IPMICloseSessionRequest struct {
+type ipmiCloseSessionRequest struct {
 	SessionID uint32
 }
 
-func (i *IPMI) handleIPMIApp(message *IPMIMessage) ([]byte, error) {
+func (i *ipmi) handleIPMIApp(message *ipmiMessage) ([]byte, error) {
 	switch message.Command {
-	case IPMICmdGetChannelAuthCapabilities:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES", map[string]interface{}{})
+	case ipmiCmdGetChannelAuthCapabilities:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES", map[string]interface{}{})
 		return handleIPMIAuthenticationCapabilities(message)
-	case IPMICmdSetSessionPrivilege:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SET_SESSION_PRIVILEGE", map[string]interface{}{})
+	case ipmiCmdSetSessionPrivilege:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_SESSION_PRIVILEGE", map[string]interface{}{})
 		return handleIPMISetSessionPrivilegeLevel(message)
-	case IPMICmdCloseSession:
-		log.Info("      IPMI APP: Command = IPMI_CMD_CLOSE_SESSION", map[string]interface{}{})
+	case ipmiCmdCloseSession:
+		log.Info("      ipmi APP: Command = IPMI_CMD_CLOSE_SESSION", map[string]interface{}{})
 		return nil, i.handleIPMICloseSession(message)
-	case IPMICmdGetDeviceID:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_DEVICE_ID", map[string]interface{}{})
-	case IPMICmdColdReset:
-		log.Info("      IPMI APP: Command = IPMI_CMD_COLD_RESET", map[string]interface{}{})
-	case IPMICmdWarmReset:
-		log.Info("      IPMI APP: Command = IPMI_CMD_WARM_RESET", map[string]interface{}{})
-	case IPMICmdGetSelfTestResults:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_SELF_TEST_RESULTS", map[string]interface{}{})
-	case IPMICmdManufacturingTestOn:
-		log.Info("      IPMI APP: Command = IPMI_CMD_MANUFACTURING_TEST_ON", map[string]interface{}{})
-	case IPMICmdSetACPIPowerState:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SET_ACPI_POWER_STATE", map[string]interface{}{})
-	case IPMICmdGetACPIPowerState:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_ACPI_POWER_STATE", map[string]interface{}{})
-	case IPMICmdGetDeviceGUID:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_DEVICE_GUID", map[string]interface{}{})
-	case IPMICmdResetWatchdogTimer:
-		log.Info("      IPMI APP: Command = IPMI_CMD_RESET_WATCHDOG_TIMER", map[string]interface{}{})
-	case IPMICmdSetWatchdogTimer:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SET_WATCHDOG_TIMER", map[string]interface{}{})
-	case IPMICmdGetWatchdogTimer:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_WATCHDOG_TIMER", map[string]interface{}{})
-	case IPMICmdSetBMCGlobalEnables:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SET_BMC_GLOBAL_ENABLES", map[string]interface{}{})
-	case IPMICmdGetBMCGlobalEnables:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_BMC_GLOBAL_ENABLES", map[string]interface{}{})
-	case IPMICmdClearMSGFlags:
-		log.Info("      IPMI APP: Command =IPMI_CMD_CLEAR_MSG_FLAGS", map[string]interface{}{})
-	case IPMICmdGetMSGFlags:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_MSG_FLAGS", map[string]interface{}{})
-	case IPMICmdEnableMessageChannelRCV:
-		log.Info("      IPMI APP: Command = IPMI_CMD_ENABLE_MESSAGE_CHANNEL_RCV", map[string]interface{}{})
-	case IPMICmdGetMSG:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_MSG", map[string]interface{}{})
-	case IPMICmdSendMSG:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SEND_MSG", map[string]interface{}{})
-	case IPMICmdReadEventMSGBuffer:
-		log.Info("      IPMI APP: Command = IPMI_CMD_READ_EVENT_MSG_BUFFER", map[string]interface{}{})
-	case IPMICmdGetBTInterfaceCapabilities:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_BT_INTERFACE_CAPABILITIES", map[string]interface{}{})
-	case IPMICmdGetSystemGUID:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_SYSTEM_GUID", map[string]interface{}{})
-	case IPMICmdGetSessionChallenge:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_SESSION_CHALLENGE", map[string]interface{}{})
-	case IPMICmdActivateSession:
-		log.Info("      IPMI APP: Command = IPMI_CMD_ACTIVATE_SESSION", map[string]interface{}{})
-	case IPMICmdGetSessionInfo:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_SESSION_INFO", map[string]interface{}{})
-	case IPMICmdGetAuthCode:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_AUTHCODE", map[string]interface{}{})
-	case IPMICmdSetChannelAccess:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SET_CHANNEL_ACCESS", map[string]interface{}{})
-	case IPMICmdGetChannelAccess:
-		log.Info("      IPMI APP: Command =IPMI_CMD_GET_CHANNEL_ACCESS", map[string]interface{}{})
-	case IPMICmdGetChannelInfo:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_INFO", map[string]interface{}{})
-	case IPMICmdSetUserAccess:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SET_USER_ACCESS", map[string]interface{}{})
-	case IPMICmdGetUserAccess:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_USER_ACCESS", map[string]interface{}{})
-	case IPMICmdSetUserName:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SET_USER_NAME", map[string]interface{}{})
-	case IPMICmdGetUserName:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_USER_NAME", map[string]interface{}{})
-	case IPMICmdSetUserPassword:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SET_USER_PASSWORD", map[string]interface{}{})
-	case IPMICmdActivatePayload:
-		log.Info("      IPMI APP: Command = IPMI_CMD_ACTIVATE_PAYLOAD", map[string]interface{}{})
-	case IPMICmdDeactivatePayload:
-		log.Info("      IPMI APP: Command = IPMI_CMD_DEACTIVATE_PAYLOAD", map[string]interface{}{})
-	case IPMICmdGetPayloadActivationStatus:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_PAYLOAD_ACTIVATION_STATUS", map[string]interface{}{})
-	case IPMICmdGetPayloadInstanceInfo:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_PAYLOAD_INSTANCE_INFO", map[string]interface{}{})
-	case IPMICmdSetUserPayloadAccess:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SET_USER_PAYLOAD_ACCESS", map[string]interface{}{})
-	case IPMICmdGetUserPayloadAccess:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_USER_PAYLOAD_ACCESS", map[string]interface{}{})
-	case IPMICmdGetChannelPayloadSupport:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_SUPPORT", map[string]interface{}{})
-	case IPMICmdGetChannelPayloadVersion:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_VERSION", map[string]interface{}{})
-	case IPMICmdGetChannelOEMPayloadInfo:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_OEM_PAYLOAD_INFO", map[string]interface{}{})
-	case IPMICmdMasterReadWrite:
-		log.Info("      IPMI APP: Command = IPMI_CMD_MASTER_READ_WRITE", map[string]interface{}{})
-	case IPMICmdGetChannelCipherSuites:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_CIPHER_SUITES", map[string]interface{}{})
-	case IPMICmdSuspendResumePayloadEncryption:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SUSPEND_RESUME_PAYLOAD_ENCRYPTION", map[string]interface{}{})
-	case IPMICmdSetChannelSecurityKey:
-		log.Info("      IPMI APP: Command = IPMI_CMD_SET_CHANNEL_SECURITY_KEY", map[string]interface{}{})
-	case IPMICmdGetSystemInterfaceCapabilities:
-		log.Info("      IPMI APP: Command = IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES", map[string]interface{}{})
+	case ipmiCmdGetDeviceID:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_DEVICE_ID", map[string]interface{}{})
+	case ipmiCmdColdReset:
+		log.Info("      ipmi APP: Command = IPMI_CMD_COLD_RESET", map[string]interface{}{})
+	case ipmiCmdWarmReset:
+		log.Info("      ipmi APP: Command = IPMI_CMD_WARM_RESET", map[string]interface{}{})
+	case ipmiCmdGetSelfTestResults:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SELF_TEST_RESULTS", map[string]interface{}{})
+	case ipmiCmdManufacturingTestOn:
+		log.Info("      ipmi APP: Command = IPMI_CMD_MANUFACTURING_TEST_ON", map[string]interface{}{})
+	case ipmiCmdSetACPIPowerState:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_ACPI_POWER_STATE", map[string]interface{}{})
+	case ipmiCmdGetACPIPowerState:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_ACPI_POWER_STATE", map[string]interface{}{})
+	case ipmiCmdGetDeviceGUID:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_DEVICE_GUID", map[string]interface{}{})
+	case ipmiCmdResetWatchdogTimer:
+		log.Info("      ipmi APP: Command = IPMI_CMD_RESET_WATCHDOG_TIMER", map[string]interface{}{})
+	case ipmiCmdSetWatchdogTimer:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_WATCHDOG_TIMER", map[string]interface{}{})
+	case ipmiCmdGetWatchdogTimer:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_WATCHDOG_TIMER", map[string]interface{}{})
+	case ipmiCmdSetBMCGlobalEnables:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_BMC_GLOBAL_ENABLES", map[string]interface{}{})
+	case ipmiCmdGetBMCGlobalEnables:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_BMC_GLOBAL_ENABLES", map[string]interface{}{})
+	case ipmiCmdClearMSGFlags:
+		log.Info("      ipmi APP: Command =IPMI_CMD_CLEAR_MSG_FLAGS", map[string]interface{}{})
+	case ipmiCmdGetMSGFlags:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_MSG_FLAGS", map[string]interface{}{})
+	case ipmiCmdEnableMessageChannelRCV:
+		log.Info("      ipmi APP: Command = IPMI_CMD_ENABLE_MESSAGE_CHANNEL_RCV", map[string]interface{}{})
+	case ipmiCmdGetMSG:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_MSG", map[string]interface{}{})
+	case ipmiCmdSendMSG:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SEND_MSG", map[string]interface{}{})
+	case ipmiCmdReadEventMSGBuffer:
+		log.Info("      ipmi APP: Command = IPMI_CMD_READ_EVENT_MSG_BUFFER", map[string]interface{}{})
+	case ipmiCmdGetBTInterfaceCapabilities:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_BT_INTERFACE_CAPABILITIES", map[string]interface{}{})
+	case ipmiCmdGetSystemGUID:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SYSTEM_GUID", map[string]interface{}{})
+	case ipmiCmdGetSessionChallenge:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SESSION_CHALLENGE", map[string]interface{}{})
+	case ipmiCmdActivateSession:
+		log.Info("      ipmi APP: Command = IPMI_CMD_ACTIVATE_SESSION", map[string]interface{}{})
+	case ipmiCmdGetSessionInfo:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SESSION_INFO", map[string]interface{}{})
+	case ipmiCmdGetAuthCode:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_AUTHCODE", map[string]interface{}{})
+	case ipmiCmdSetChannelAccess:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_CHANNEL_ACCESS", map[string]interface{}{})
+	case ipmiCmdGetChannelAccess:
+		log.Info("      ipmi APP: Command =IPMI_CMD_GET_CHANNEL_ACCESS", map[string]interface{}{})
+	case ipmiCmdGetChannelInfo:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_INFO", map[string]interface{}{})
+	case ipmiCmdSetUserAccess:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_ACCESS", map[string]interface{}{})
+	case ipmiCmdGetUserAccess:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_USER_ACCESS", map[string]interface{}{})
+	case ipmiCmdSetUserName:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_NAME", map[string]interface{}{})
+	case ipmiCmdGetUserName:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_USER_NAME", map[string]interface{}{})
+	case ipmiCmdSetUserPassword:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_PASSWORD", map[string]interface{}{})
+	case ipmiCmdActivatePayload:
+		log.Info("      ipmi APP: Command = IPMI_CMD_ACTIVATE_PAYLOAD", map[string]interface{}{})
+	case ipmiCmdDeactivatePayload:
+		log.Info("      ipmi APP: Command = IPMI_CMD_DEACTIVATE_PAYLOAD", map[string]interface{}{})
+	case ipmiCmdGetPayloadActivationStatus:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_PAYLOAD_ACTIVATION_STATUS", map[string]interface{}{})
+	case ipmiCmdGetPayloadInstanceInfo:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_PAYLOAD_INSTANCE_INFO", map[string]interface{}{})
+	case ipmiCmdSetUserPayloadAccess:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_PAYLOAD_ACCESS", map[string]interface{}{})
+	case ipmiCmdGetUserPayloadAccess:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_USER_PAYLOAD_ACCESS", map[string]interface{}{})
+	case ipmiCmdGetChannelPayloadSupport:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_SUPPORT", map[string]interface{}{})
+	case ipmiCmdGetChannelPayloadVersion:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_VERSION", map[string]interface{}{})
+	case ipmiCmdGetChannelOEMPayloadInfo:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_OEM_PAYLOAD_INFO", map[string]interface{}{})
+	case ipmiCmdMasterReadWrite:
+		log.Info("      ipmi APP: Command = IPMI_CMD_MASTER_READ_WRITE", map[string]interface{}{})
+	case ipmiCmdGetChannelCipherSuites:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_CIPHER_SUITES", map[string]interface{}{})
+	case ipmiCmdSuspendResumePayloadEncryption:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SUSPEND_RESUME_PAYLOAD_ENCRYPTION", map[string]interface{}{})
+	case ipmiCmdSetChannelSecurityKey:
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_CHANNEL_SECURITY_KEY", map[string]interface{}{})
+	case ipmiCmdGetSystemInterfaceCapabilities:
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES", map[string]interface{}{})
 	}
 
 	return nil, fmt.Errorf("unsupported Command: %x", message.Command)
 }
 
-func handleIPMISetSessionPrivilegeLevel(message *IPMIMessage) ([]byte, error) {
+func handleIPMISetSessionPrivilegeLevel(message *ipmiMessage) ([]byte, error) {
 	buf := bytes.NewBuffer(message.Data)
-	request := IPMISetSessionPrivilegeLevelRequest{}
+	request := ipmiSetSessionPrivilegeLevelRequest{}
 	if err := binary.Read(buf, binary.LittleEndian, &request); err != nil {
-		return nil, fmt.Errorf("failed to read IPMISetSessionPrivilegeLevelRequest: %w", err)
+		return nil, fmt.Errorf("failed to read ipmiSetSessionPrivilegeLevelRequest: %w", err)
 	}
 
-	response := IPMISetSessionPrivilegeLevelResponse{}
+	response := ipmiSetSessionPrivilegeLevelResponse{}
 	response.NewPrivilegeLevel = request.RequestPrivilegeLevel
 
 	dataBuf := bytes.Buffer{}
@@ -249,37 +244,37 @@ func handleIPMISetSessionPrivilegeLevel(message *IPMIMessage) ([]byte, error) {
 	return dataBuf.Bytes(), nil
 }
 
-func handleIPMIAuthenticationCapabilities(message *IPMIMessage) ([]byte, error) {
+func handleIPMIAuthenticationCapabilities(message *ipmiMessage) ([]byte, error) {
 	buf := bytes.NewBuffer(message.Data)
-	request := IPMIAuthenticationCapabilitiesRequest{}
+	request := ipmiAuthenticationCapabilitiesRequest{}
 	if err := binary.Read(buf, binary.LittleEndian, &request); err != nil {
-		return nil, fmt.Errorf("failed to read IPMIAuthenticationCapabilitiesRequest: %w", err)
+		return nil, fmt.Errorf("failed to read ipmiAuthenticationCapabilitiesRequest: %w", err)
 	}
 
 	// prepare for response data
 	// We don't simulate OEM related behavior
-	response := IPMIAuthenticationCapabilitiesResponse{}
+	response := ipmiAuthenticationCapabilitiesResponse{}
 	response.Channel = 1
-	response.AuthenticationTypeSupport = AuthBitmaskIPMIV2 | AuthBitmaskMD5 | AuthBitmaskMD2 | AuthBitmaskNone
-	response.AuthenticationStatus = AuthStatusNonNullUser | AuthStatusNullUser
-	response.ExtCapabilities = ExtendedCapabilitiesChannel20
+	response.AuthenticationTypeSupport = authBitmaskIPMIV2 | authBitmaskMD5 | authBitmaskMD2 | authBitmaskNone
+	response.AuthenticationStatus = authStatusNonNullUser | authStatusNullUser
+	response.ExtCapabilities = extendedCapabilitiesChannel20
 	response.OEMAuxiliaryData = 0
 
 	dataBuf := bytes.Buffer{}
 	if err := binary.Write(&dataBuf, binary.LittleEndian, response); err != nil {
-		return nil, fmt.Errorf("failed to write IPMIAuthenticationCapabilitiesResponse: %w", err)
+		return nil, fmt.Errorf("failed to write ipmiAuthenticationCapabilitiesResponse: %w", err)
 	}
 
 	return dataBuf.Bytes(), nil
 }
 
-func (i *IPMI) handleIPMICloseSession(message *IPMIMessage) error {
+func (i *ipmi) handleIPMICloseSession(message *ipmiMessage) error {
 	buf := bytes.NewBuffer(message.Data)
-	request := IPMICloseSessionRequest{}
+	request := ipmiCloseSessionRequest{}
 	if err := binary.Read(buf, binary.LittleEndian, &request); err != nil {
 		return err
 	}
 
-	i.session.RemoveRMCPPlusSession(request.SessionID)
+	i.session.removeRMCPPlusSession(request.SessionID)
 	return nil
 }

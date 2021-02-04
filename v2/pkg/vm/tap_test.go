@@ -16,7 +16,7 @@ var _ = Describe("Tap", func() {
 	})
 
 	AfterEach(func() {
-		Expect(dcnet.CleanupNatRules()).ToNot(HaveOccurred())
+		dcnet.CleanupNatRules()
 	})
 
 	It("should create a tap as specified", func() {
@@ -32,12 +32,12 @@ use-nat: false
 		networkSpec := cluster.Networks[0]
 		network, err := dcnet.NewNetwork(networkSpec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(network.Create(1460)).NotTo(HaveOccurred())
+		Expect(network.Setup(1460, false)).NotTo(HaveOccurred())
 		defer network.Cleanup()
 
-		tap, err := NewTap("r0-node1")
+		tap, err := newTap("r0-node1")
 		Expect(err).NotTo(HaveOccurred())
-		tapInfo, err := tap.Create(1460)
+		tapInfo, err := tap.create(1460)
 		Expect(err).NotTo(HaveOccurred())
 		defer tap.Cleanup()
 
@@ -60,12 +60,12 @@ use-nat: false
 		networkSpec := cluster.Networks[0]
 		network, err := dcnet.NewNetwork(networkSpec)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(network.Create(0)).NotTo(HaveOccurred())
+		Expect(network.Setup(0, false)).NotTo(HaveOccurred())
 		defer network.Cleanup()
 
-		tap, err := NewTap("r0-node1")
+		tap, err := newTap("r0-node1")
 		Expect(err).NotTo(HaveOccurred())
-		tapInfo, err := tap.Create(0)
+		tapInfo, err := tap.create(0)
 		Expect(err).NotTo(HaveOccurred())
 		defer tap.Cleanup()
 

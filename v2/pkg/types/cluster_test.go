@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Cluster resource types", func() {
+var _ = Describe("ClusterSpec resource types", func() {
 	It("should create a cluster from a yaml", func() {
 		clusterYaml := `
 kind: Network
@@ -80,7 +80,7 @@ file: cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 `
 		cluster, err := Parse(strings.NewReader(clusterYaml))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(*cluster).To(Equal(Cluster{
+		Expect(*cluster).To(Equal(ClusterSpec{
 			Networks: []*NetworkSpec{{
 				Kind:    "Network",
 				Name:    "internet",

@@ -11,32 +11,42 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// Cluster represents a set of resources for a virtual data center.
-type Cluster struct {
+// ClusterSpec represents a set of resources for a virtual data center.
+type ClusterSpec struct {
 	Networks []*NetworkSpec
 	NetNSs   []*NetNSSpec
 	Nodes    []*NodeSpec
 	Images   []*ImageSpec
 }
 
+// Append appends another cluster into the receiver.
+func (c *ClusterSpec) Append(other *ClusterSpec) *ClusterSpec {
+	c.Networks = append(c.Networks, other.Networks...)
+	c.NetNSs = append(c.NetNSs, other.NetNSs...)
+	c.Nodes = append(c.Nodes, other.Nodes...)
+	c.Images = append(c.Images, other.Images...)
+	return c
+}
+
 const (
 	maxNetworkNameLen = 15
 )
 
-// Network types.
+type NetworkType string
+
 const (
-	NetworkInternal = "internal"
-	NetworkExternal = "external"
-	NetworkBMC      = "bmc"
+	NetworkInternal = NetworkType("internal")
+	NetworkExternal = NetworkType("external")
+	NetworkBMC      = NetworkType("bmc")
 )
 
 // NetworkSpec represents a Network specification in YAML
 type NetworkSpec struct {
-	Kind    string `json:"kind"`
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	UseNAT  bool   `json:"use-nat"`
-	Address string `json:"address,omitempty"`
+	Kind    string      `json:"kind"`
+	Name    string      `json:"name"`
+	Type    NetworkType `json:"type"`
+	UseNAT  bool        `json:"use-nat"`
+	Address string      `json:"address,omitempty"`
 }
 
 func (n *NetworkSpec) validate() error {
@@ -64,7 +74,7 @@ func (n *NetworkSpec) validate() error {
 			return errors.New("address must be specified for BMC network")
 		}
 	default:
-		return errors.New("unknown type: " + n.Type)
+		return fmt.Errorf("unknown type: %s", n.Type)
 	}
 
 	return nil
@@ -113,19 +123,19 @@ type NodeVolumeKind string
 type NodeVolumeFormat string
 
 const (
-	NodeVolumeCacheWriteback    NodeVolumeCache = "writeback"
-	NodeVolumeCacheNone         NodeVolumeCache = "none"
-	NodeVolumeCacheWritethrough NodeVolumeCache = "writethrough"
-	NodeVolumeCacheDirectSync   NodeVolumeCache = "directsync"
-	NodeVolumeCacheUnsafe       NodeVolumeCache = "unsafe"
+	NodeVolumeCacheWriteback    = NodeVolumeCache("writeback")
+	NodeVolumeCacheNone         = NodeVolumeCache("none")
+	NodeVolumeCacheWritethrough = NodeVolumeCache("writethrough")
+	NodeVolumeCacheDirectSync   = NodeVolumeCache("directsync")
+	NodeVolumeCacheUnsafe       = NodeVolumeCache("unsafe")
 
-	NodeVolumeKindImage    NodeVolumeKind = "image"
-	NodeVolumeKindLocalds  NodeVolumeKind = "localds"
-	NodeVolumeKindRaw      NodeVolumeKind = "raw"
-	NodeVolumeKindHostPath NodeVolumeKind = "hostPath"
+	NodeVolumeKindImage    = NodeVolumeKind("image")
+	NodeVolumeKindLocalds  = NodeVolumeKind("localds")
+	NodeVolumeKindRaw      = NodeVolumeKind("raw")
+	NodeVolumeKindHostPath = NodeVolumeKind("hostPath")
 
-	NodeVolumeFormatQcow2 NodeVolumeFormat = "qcow2"
-	NodeVolumeFormatRaw   NodeVolumeFormat = "raw"
+	NodeVolumeFormatQcow2 = NodeVolumeFormat("qcow2")
+	NodeVolumeFormatRaw   = NodeVolumeFormat("raw")
 )
 
 // NodeSpec represents a Node specification in YAML
@@ -253,9 +263,9 @@ type baseConfig struct {
 	Kind string `json:"kind"`
 }
 
-// Parse reads a yaml document and create Cluster
-func Parse(r io.Reader) (*Cluster, error) {
-	cluster := &Cluster{}
+// Parse reads a yaml document and create ClusterSpec
+func Parse(r io.Reader) (*ClusterSpec, error) {
+	cluster := &ClusterSpec{}
 	f := json.YAMLFramer.NewFrameReader(ioutil.NopCloser(r))
 	for {
 		y, err := readSingleYamlDoc(f)

@@ -4,25 +4,21 @@ import (
 	"github.com/cybozu-go/log"
 )
 
-// BMCUser holds BMCUsers
-type BMCUserHolder struct {
-	users map[string]*BMCUser
+type bmcUserHolder struct {
+	users map[string]*bmcUser
 }
 
-// BMCUser represents user name and password
-type BMCUser struct {
+type bmcUser struct {
 	Username string
 	Password string
 }
 
-// NewBMCUserHolder creates a BMCUser
-func NewBMCUserHolder() *BMCUserHolder {
-	return &BMCUserHolder{users: make(map[string]*BMCUser)}
+func newBMCUserHolder() *bmcUserHolder {
+	return &bmcUserHolder{users: make(map[string]*bmcUser)}
 }
 
-// AddBMCUser add a user to the holder
-func (b *BMCUserHolder) AddBMCUser(name string, password string) {
-	newUser := &BMCUser{
+func (b *bmcUserHolder) addBMCUser(name string, password string) {
+	newUser := &bmcUser{
 		Username: name,
 		Password: password,
 	}
@@ -30,13 +26,7 @@ func (b *BMCUserHolder) AddBMCUser(name string, password string) {
 	log.Info("BMC USer: Add user", map[string]interface{}{"user": name})
 }
 
-// RemoveBMCUser removes the user specified from the holder
-func (b *BMCUserHolder) RemoveBMCUser(name string) {
-	delete(b.users, name)
-}
-
-// GetBMCUser get the user specified from the holder
-func (b *BMCUserHolder) GetBMCUser(name string) (*BMCUser, bool) {
+func (b *bmcUserHolder) getBMCUser(name string) (*bmcUser, bool) {
 	obj, ok := b.users[name]
 
 	return obj, ok

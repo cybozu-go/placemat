@@ -6,7 +6,7 @@ address: 172.16.0.1/24
 ---
 kind: Image
 name: ubuntu-image
-url: https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+url: https://cloud-images.ubuntu.com/releases/20.04/release/ubuntu-20.04-server-cloudimg-amd64.img
 ---
 kind: Node
 name: boot

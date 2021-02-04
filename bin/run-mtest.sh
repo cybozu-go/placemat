@@ -38,13 +38,9 @@ cat >run.sh <<EOF
 #!/bin/sh -e
 
 # mkfs and mount local SSD on /var/scratch
-pvcreate /dev/disk/by-id/google-local-ssd-0
-vgcreate vg1 /dev/disk/by-id/google-local-ssd-0
-lvcreate -n scratch -L 100g vg1
-while [ ! -e /dev/vg1/scratch ]; do sleep 1; done
-mkfs -t ext4 -F /dev/vg1/scratch
+mkfs -t ext4 -F /dev/disk/by-id/google-local-ssd-0
 mkdir -p /var/scratch
-mount -t ext4 /dev/vg1/scratch /var/scratch
+mount -t ext4 /dev/disk/by-id/google-local-ssd-0 /var/scratch
 chmod 1777 /var/scratch
 
 # Run mtest
@@ -55,15 +51,18 @@ export GO111MODULE
 PATH=/usr/local/go/bin:\$GOPATH/bin:\$PATH
 export PATH
 
-git clone https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} \
-    \$HOME/go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
-cd \$HOME/go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
-git checkout -qf ${CIRCLE_SHA1}
+git clone https://github.com/${GITHUB_REPOSITORY} \
+    \$HOME/go/src/github.com/${GITHUB_REPOSITORY}
+cd \$HOME/go/src/github.com/${GITHUB_REPOSITORY}
+if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+  git fetch --prune origin +${GITHUB_SHA}:refs/remotes/pull/merge
+fi
+git checkout -qf ${GITHUB_SHA}
 
-cd mtest
+cd v2/e2e
 cp /assets/ubuntu-*.img .
 make setup
-exec make test SUITE=${SUITE} TARGET="${TARGET}" VG=vg1
+exec make test
 EOF
 chmod +x run.sh
 

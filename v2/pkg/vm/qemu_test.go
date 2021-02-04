@@ -19,7 +19,7 @@ var _ = Describe("QEMU command builder", func() {
 	})
 
 	AfterEach(func() {
-		Expect(dcnet.CleanupNatRules()).ToNot(HaveOccurred())
+		dcnet.CleanupNatRules()
 	})
 
 	It("should build a QEMU command which runs a virtual machine as specified", func() {
@@ -87,12 +87,12 @@ use-nat: false
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create bridges
-		var networks []*dcnet.Network
+		var networks []dcnet.Network
 		for _, n := range cluster.Networks {
 			network, err := dcnet.NewNetwork(n)
 			Expect(err).NotTo(HaveOccurred())
 			networks = append(networks, network)
-			Expect(network.Create(1460)).NotTo(HaveOccurred())
+			Expect(network.Setup(1460, false)).NotTo(HaveOccurred())
 		}
 		defer func() {
 			for _, n := range networks {
@@ -103,25 +103,25 @@ use-nat: false
 		nodeSpec := cluster.Nodes[0]
 
 		// Create volumes
-		var volumeArgs []VolumeArgs
+		var volumeArgs []volumeArgs
 		for _, volumeSpec := range nodeSpec.Volumes {
-			volume, err := NewNodeVolume(volumeSpec, cluster.Images)
+			volume, err := newNodeVolume(volumeSpec, cluster.Images)
 			Expect(err).NotTo(HaveOccurred())
 
-			args, err := volume.Create(context.Background(), r.dataDir)
+			args, err := volume.create(context.Background(), r.DataDir)
 			Expect(err).NotTo(HaveOccurred())
 			volumeArgs = append(volumeArgs, args)
 		}
 
 		// Create taps
-		var taps []*Tap
-		var tapInfos []*TapInfo
+		var taps []*tap
+		var tapInfos []*tapInfo
 		for _, i := range nodeSpec.Interfaces {
-			tap, err := NewTap(i)
+			tap, err := newTap(i)
 			Expect(err).NotTo(HaveOccurred())
 			taps = append(taps, tap)
 
-			tapInfo, err := tap.Create(1460)
+			tapInfo, err := tap.create(1460)
 			Expect(err).NotTo(HaveOccurred())
 			tapInfos = append(tapInfos, tapInfo)
 		}
@@ -131,14 +131,14 @@ use-nat: false
 			}
 		}()
 
-		qemu := NewQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
-			nodeSpec.UEFI, nodeSpec.TPM, SMBIOSConfig{
+		qemu := newQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
+			nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
 				manufacturer: nodeSpec.SMBIOS.Manufacturer,
 				product:      nodeSpec.SMBIOS.Product,
 				serial:       nodeSpec.SMBIOS.Serial,
 			})
-		qemu.MACGenerator = &MACGeneratorMock{}
-		command := qemu.Command(r)
+		qemu.macGenerator = &macGeneratorMock{}
+		command := qemu.command(r)
 
 		expected := strings.ReplaceAll(fmt.Sprintf(`
 qemu-system-x86_64
@@ -148,22 +148,22 @@ qemu-system-x86_64
  -nographic
  -serial unix:%s/boot-0.socket,server,nowait
  -smbios type=1,serial=fb8f2417d0b4db30050719c31ce02a2e8141bbd8
- -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
- -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
- -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -netdev tap,id=r0-node1,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node1,mac=placemat
  -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node2,mac=placemat
+ -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
+ -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
+ -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -boot reboot-timeout=30000
  -chardev socket,id=char0,path=%s/boot-0.guest,server,nowait
  -device virtio-serial
  -device virtserialport,chardev=char0,name=placemat
- -monitor unix:%s/boot-0.monitor,server,nowait
+ -qmp unix:%s/boot-0.qmp,server,nowait
  -object rng-random,id=rng0,filename=/dev/urandom
  -device virtio-rng-pci,rng=rng0
  -cpu host
-`, r.runDir, r.dataDir, r.dataDir, sharedDir, tapInfos[0].tap, tapInfos[1].tap, r.runDir, r.runDir), "\n", "")
+`, r.RunDir, tapInfos[0].tap, tapInfos[1].tap, r.DataDir, r.DataDir, sharedDir, r.RunDir, r.RunDir), "\n", "")
 		actual := strings.Join(command, " ")
 		Expect(actual).To(Equal(expected))
 	})
@@ -235,12 +235,12 @@ use-nat: false
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create bridges
-		var networks []*dcnet.Network
+		var networks []dcnet.Network
 		for _, n := range cluster.Networks {
 			network, err := dcnet.NewNetwork(n)
 			Expect(err).NotTo(HaveOccurred())
 			networks = append(networks, network)
-			Expect(network.Create(1460)).NotTo(HaveOccurred())
+			Expect(network.Setup(1460, false)).NotTo(HaveOccurred())
 		}
 		defer func() {
 			for _, n := range networks {
@@ -251,25 +251,25 @@ use-nat: false
 		nodeSpec := cluster.Nodes[0]
 
 		// Create volumes
-		var volumeArgs []VolumeArgs
+		var volumeArgs []volumeArgs
 		for _, volumeSpec := range nodeSpec.Volumes {
-			volume, err := NewNodeVolume(volumeSpec, cluster.Images)
+			volume, err := newNodeVolume(volumeSpec, cluster.Images)
 			Expect(err).NotTo(HaveOccurred())
 
-			args, err := volume.Create(context.Background(), r.dataDir)
+			args, err := volume.create(context.Background(), r.DataDir)
 			Expect(err).NotTo(HaveOccurred())
 			volumeArgs = append(volumeArgs, args)
 		}
 
 		// Create taps
-		var taps []*Tap
-		var tapInfos []*TapInfo
+		var taps []*tap
+		var tapInfos []*tapInfo
 		for _, i := range nodeSpec.Interfaces {
-			tap, err := NewTap(i)
+			tap, err := newTap(i)
 			Expect(err).NotTo(HaveOccurred())
 			taps = append(taps, tap)
 
-			tapInfo, err := tap.Create(1460)
+			tapInfo, err := tap.create(1460)
 			Expect(err).NotTo(HaveOccurred())
 			tapInfos = append(tapInfos, tapInfo)
 		}
@@ -279,14 +279,14 @@ use-nat: false
 			}
 		}()
 
-		qemu := NewQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
-			nodeSpec.UEFI, nodeSpec.TPM, SMBIOSConfig{
+		qemu := newQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
+			nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
 				manufacturer: nodeSpec.SMBIOS.Manufacturer,
 				product:      nodeSpec.SMBIOS.Product,
 				serial:       nodeSpec.SMBIOS.Serial,
 			})
-		qemu.MACGenerator = &MACGeneratorMock{}
-		command := qemu.Command(r)
+		qemu.macGenerator = &macGeneratorMock{}
+		command := qemu.command(r)
 
 		expected := strings.ReplaceAll(fmt.Sprintf(`
 qemu-system-x86_64
@@ -298,13 +298,13 @@ qemu-system-x86_64
  -drive if=pflash,file=/usr/share/OVMF/OVMF_CODE.fd,format=raw,readonly
  -drive if=pflash,file=%s/nvram/boot-0.fd,format=raw
  -smbios type=1,serial=fb8f2417d0b4db30050719c31ce02a2e8141bbd8
- -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
- -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
- -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -netdev tap,id=r0-node1,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node1,mac=placemat,romfile=
  -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node2,mac=placemat,romfile=
+ -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
+ -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
+ -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -chardev socket,id=chrtpm,path=%s/boot-0/swtpm.socket
  -tpmdev emulator,id=tpm0,chardev=chrtpm
  -device tpm-tis,tpmdev=tpm0
@@ -312,19 +312,19 @@ qemu-system-x86_64
  -chardev socket,id=char0,path=%s/boot-0.guest,server,nowait
  -device virtio-serial
  -device virtserialport,chardev=char0,name=placemat
- -monitor unix:%s/boot-0.monitor,server,nowait
+ -qmp unix:%s/boot-0.qmp,server,nowait
  -object rng-random,id=rng0,filename=/dev/urandom
  -device virtio-rng-pci,rng=rng0
  -cpu host
-`, r.runDir, r.dataDir, r.dataDir, r.dataDir, sharedDir, tapInfos[0].tap, tapInfos[1].tap, r.runDir, r.runDir, r.runDir), "\n", "")
+`, r.RunDir, r.DataDir, tapInfos[0].tap, tapInfos[1].tap, r.DataDir, r.DataDir, sharedDir, r.RunDir, r.RunDir, r.RunDir), "\n", "")
 		actual := strings.Join(command, " ")
 		Expect(actual).To(Equal(expected))
 	})
 })
 
-type MACGeneratorMock struct {
+type macGeneratorMock struct {
 }
 
-func (m *MACGeneratorMock) Generate() string {
+func (m *macGeneratorMock) generate() string {
 	return "placemat"
 }

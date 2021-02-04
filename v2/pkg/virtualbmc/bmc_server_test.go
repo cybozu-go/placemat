@@ -14,7 +14,7 @@ import (
 )
 
 var _ = Describe("Virtual BMC", func() {
-	It("should turn on and off Machine power via IPMI v2.0", func() {
+	It("should turn on and off Machine power via ipmi v2.0", func() {
 		serverAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", "127.0.0.1", 9623))
 		Expect(err).NotTo(HaveOccurred())
 		conn, err := net.ListenUDP("udp", serverAddr)
@@ -110,7 +110,7 @@ var _ = Describe("Virtual BMC", func() {
 		env.Wait()
 	})
 
-	It("should turn on and off Machine power via Redfish", func() {
+	It("should turn on and off Machine power via redfish", func() {
 		addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", "127.0.0.1", 9443))
 		Expect(err).NotTo(HaveOccurred())
 		listener, err := net.ListenTCP("tcp", addr)
@@ -299,8 +299,8 @@ type MachineMock struct {
 	status PowerStatus
 }
 
-func (v *MachineMock) PowerStatus() PowerStatus {
-	return v.status
+func (v *MachineMock) PowerStatus() (PowerStatus, error) {
+	return v.status, nil
 }
 
 func (v *MachineMock) PowerOn() error {

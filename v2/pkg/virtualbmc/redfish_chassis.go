@@ -122,14 +122,21 @@ func handleChassisCollection(c *gin.Context) {
 	c.JSON(http.StatusOK, chassisCollectionResponse)
 }
 
-func (r Redfish) handleChassis(c *gin.Context) {
+func (r *redfishServer) handleChassis(c *gin.Context) {
 	id := c.Param("id")
 	_, ok := r.systemIDs[id]
 	if !ok {
 		c.JSON(http.StatusNotFound, createChassisNotFoundErrorResponse(id))
+		return
 	}
 
-	c.JSON(http.StatusOK, createChassisResponse(id, r.machine.PowerStatus()))
+	status, err := r.machine.PowerStatus()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+
+	c.JSON(http.StatusOK, createChassisResponse(id, status))
 }
 
 func createChassisResponse(chassisID string, powerState PowerStatus) Chassis {
@@ -276,7 +283,7 @@ func createChassisNotFoundErrorResponse(chassisID string) ErrorResponse {
 		}}
 }
 
-func (r Redfish) handleChassisActionsReset(c *gin.Context) {
+func (r *redfishServer) handleChassisActionsReset(c *gin.Context) {
 	var json RequestBody
 	if err := c.ShouldBindJSON(&json); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -291,18 +298,28 @@ func (r Redfish) handleChassisActionsReset(c *gin.Context) {
 
 	switch resetType {
 	case ResetTypeOn:
-		powerStatus := r.machine.PowerStatus()
+		powerStatus, err := r.machine.PowerStatus()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 		if powerStatus == PowerStatusOn || powerStatus == PowerStatusPoweringOn {
 			c.JSON(http.StatusConflict, nil)
+			return
 		}
 		if err := r.machine.PowerOn(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	case ResetTypeForceOff:
-		powerStatus := r.machine.PowerStatus()
+		powerStatus, err := r.machine.PowerStatus()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 		if powerStatus == PowerStatusOff || powerStatus == PowerStatusPoweringOff {
 			c.JSON(http.StatusConflict, nil)
+			return
 		}
 		if err := r.machine.PowerOff(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -1,14 +1,16 @@
 package virtualbmc
 
-import "math/rand"
+import (
+	"bytes"
+	"crypto/rand"
+	"encoding/binary"
+)
 
-// RMCPPlusSessionHolder holds RMCP+ sessions
-type RMCPPlusSessionHolder struct {
-	sessions map[uint32]*RMCPPlusSession
+type rmcpPlusSessionHolder struct {
+	sessions map[uint32]*rmcpPlusSession
 }
 
-// RMCPPlusSession represents RMCP+ session
-type RMCPPlusSession struct {
+type rmcpPlusSession struct {
 	RemoteConsoleSessionId    uint32
 	ManagedSystemSessionId    uint32
 	RemoteConsoleRandomNumber [16]byte
@@ -22,40 +24,58 @@ type RMCPPlusSession struct {
 	ConfidentialityKey        []byte
 }
 
-// NewRMCPPlusSessionHolder creates a RMCPPlusSessionHolder
-func NewRMCPPlusSessionHolder() *RMCPPlusSessionHolder {
-	return &RMCPPlusSessionHolder{sessions: make(map[uint32]*RMCPPlusSession)}
+func newRMCPPlusSessionHolder() *rmcpPlusSessionHolder {
+	return &rmcpPlusSessionHolder{sessions: make(map[uint32]*rmcpPlusSession)}
 }
 
-// GetNewRMCPPlusSession creates a RMCP+ session and saves it to the holder with specified session ID
-func (r *RMCPPlusSessionHolder) GetNewRMCPPlusSession(remoteConsoleSessionId uint32) *RMCPPlusSession {
-	sessionId := rand.Uint32()
+func (r *rmcpPlusSessionHolder) getNewRMCPPlusSession(remoteConsoleSessionId uint32) (*rmcpPlusSession, error) {
+	sessionId, err := generateRandomUint32()
+	if err != nil {
+		return nil, err
+	}
 	for {
-		if _, ok := r.sessions[sessionId]; ok {
-			sessionId = rand.Uint32()
+		if _, ok := r.sessions[*sessionId]; ok {
+			sessionId, err = generateRandomUint32()
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			break
 		}
 	}
 
-	session := &RMCPPlusSession{}
-	session.ManagedSystemSessionId = sessionId
+	session := &rmcpPlusSession{}
+	session.ManagedSystemSessionId = *sessionId
 	session.RemoteConsoleSessionId = remoteConsoleSessionId
-	r.sessions[sessionId] = session
+	r.sessions[*sessionId] = session
 
-	return session
+	return session, nil
 }
 
-// GetRMCPPlusSession gets the RMCPPlus session specified from the holder
-func (r *RMCPPlusSessionHolder) GetRMCPPlusSession(id uint32) (*RMCPPlusSession, bool) {
+func (r *rmcpPlusSessionHolder) getRMCPPlusSession(id uint32) (*rmcpPlusSession, bool) {
 	session, ok := r.sessions[id]
 	return session, ok
 }
 
-// RemoveRMCPPlusSession removes the RMCP+ session specified
-func (r *RMCPPlusSessionHolder) RemoveRMCPPlusSession(id uint32) {
+func (r *rmcpPlusSessionHolder) removeRMCPPlusSession(id uint32) {
 	_, ok := r.sessions[id]
 	if ok {
 		delete(r.sessions, id)
 	}
+}
+
+func generateRandomUint32() (*uint32, error) {
+	b := make([]byte, 4)
+	_, err := rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := bytes.NewBuffer(b)
+	var num uint32
+	if err := binary.Read(buf, binary.LittleEndian, &num); err != nil {
+		return nil, err
+	}
+
+	return &num, err
 }

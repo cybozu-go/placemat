@@ -13,13 +13,12 @@ import (
 	"github.com/cybozu-go/well"
 )
 
-// NodeVolume defines the interface for Node volumes.
-type NodeVolume interface {
-	Create(context.Context, string) (VolumeArgs, error)
+type nodeVolume interface {
+	create(context.Context, string) (volumeArgs, error)
+	prepare(ctx context.Context, c *util.Cache) error
 }
 
-// NewNodeVolume creates NodeVolume from specs
-func NewNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (NodeVolume, error) {
+func newNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (nodeVolume, error) {
 	var cache types.NodeVolumeCache
 	switch spec.Cache {
 	case "":
@@ -34,11 +33,11 @@ func NewNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (No
 	case types.NodeVolumeKindImage:
 		for _, imageSpec := range imageSpecs {
 			if spec.Image == imageSpec.Name {
-				image, err := NewImage(imageSpec)
+				image, err := newImage(imageSpec)
 				if err != nil {
 					return nil, fmt.Errorf("failed to create the image %s: %w", imageSpec.Name, err)
 				}
-				return NewImageVolume(spec.Name, cache, image, spec.CopyOnWrite), nil
+				return newImageVolume(spec.Name, cache, image, spec.CopyOnWrite), nil
 			}
 		}
 		return nil, fmt.Errorf("failed to find the image %s", spec.Image)
@@ -69,12 +68,11 @@ func volumePath(dataDir, name string) string {
 type imageVolume struct {
 	name        string
 	cache       types.NodeVolumeCache
-	image       *Image
+	image       *image
 	copyOnWrite bool
 }
 
-// NewImageVolume creates a volume for type "image".
-func NewImageVolume(name string, cache types.NodeVolumeCache, image *Image, cow bool) NodeVolume {
+func newImageVolume(name string, cache types.NodeVolumeCache, image *image, cow bool) nodeVolume {
 	return &imageVolume{
 		name:        name,
 		cache:       cache,
@@ -83,11 +81,11 @@ func NewImageVolume(name string, cache types.NodeVolumeCache, image *Image, cow 
 	}
 }
 
-func (v *imageVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, error) {
+func (v *imageVolume) create(ctx context.Context, dataDir string) (volumeArgs, error) {
 	vPath := volumePath(dataDir, v.name)
 	_, err := os.Stat(vPath)
 	if err == nil {
-		return &ImageVolumeArgs{
+		return &imageVolumeArgs{
 			volumePath: vPath,
 			cache:      v.cache,
 		}, nil
@@ -113,19 +111,19 @@ func (v *imageVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, e
 				return nil, err
 			}
 		}
-		return &ImageVolumeArgs{
+		return &imageVolumeArgs{
 			volumePath: vPath,
 			cache:      v.cache,
 		}, nil
 	}
 
-	baseImage := v.image.Path()
+	baseImage := v.image.path()
 	if v.copyOnWrite {
 		err = createCoWImageFromBase(ctx, baseImage, vPath)
 		if err != nil {
 			return nil, err
 		}
-		return &ImageVolumeArgs{
+		return &imageVolumeArgs{
 			volumePath: vPath,
 			cache:      v.cache,
 		}, nil
@@ -148,7 +146,7 @@ func (v *imageVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, e
 		return nil, err
 	}
 
-	return &ImageVolumeArgs{
+	return &imageVolumeArgs{
 		volumePath: vPath,
 		cache:      v.cache,
 	}, nil
@@ -159,6 +157,10 @@ func createCoWImageFromBase(ctx context.Context, base, dest string) error {
 	return c.Run()
 }
 
+func (v *imageVolume) prepare(ctx context.Context, c *util.Cache) error {
+	return v.image.prepare(ctx, c)
+}
+
 type localDSVolume struct {
 	name          string
 	cache         types.NodeVolumeCache
@@ -166,8 +168,7 @@ type localDSVolume struct {
 	networkConfig string
 }
 
-// NewLocalDSVolume creates a volume for type "localds".
-func newLocalDSVolume(name string, cache types.NodeVolumeCache, u, n string) NodeVolume {
+func newLocalDSVolume(name string, cache types.NodeVolumeCache, u, n string) nodeVolume {
 	return &localDSVolume{
 		name:          name,
 		cache:         cache,
@@ -176,7 +177,7 @@ func newLocalDSVolume(name string, cache types.NodeVolumeCache, u, n string) Nod
 	}
 }
 
-func (v *localDSVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, error) {
+func (v *localDSVolume) create(ctx context.Context, dataDir string) (volumeArgs, error) {
 	vPath := volumePath(dataDir, v.name)
 
 	_, err := os.Stat(vPath)
@@ -198,10 +199,14 @@ func (v *localDSVolume) Create(ctx context.Context, dataDir string) (VolumeArgs,
 		return nil, err
 	}
 
-	return &LocalDSVolumeArgs{
+	return &localDSVolumeArgs{
 		volumePath: vPath,
 		cache:      v.cache,
 	}, nil
+}
+
+func (v *localDSVolume) prepare(ctx context.Context, c *util.Cache) error {
+	return nil
 }
 
 type rawVolume struct {
@@ -211,8 +216,7 @@ type rawVolume struct {
 	format types.NodeVolumeFormat
 }
 
-// NewRawVolume creates a volume for type "raw".
-func newRawVolume(name string, cache types.NodeVolumeCache, size string, format types.NodeVolumeFormat) NodeVolume {
+func newRawVolume(name string, cache types.NodeVolumeCache, size string, format types.NodeVolumeFormat) nodeVolume {
 	return &rawVolume{
 		name:   name,
 		cache:  cache,
@@ -221,7 +225,7 @@ func newRawVolume(name string, cache types.NodeVolumeCache, size string, format 
 	}
 }
 
-func (v *rawVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, error) {
+func (v *rawVolume) create(ctx context.Context, dataDir string) (volumeArgs, error) {
 	vPath := volumePath(dataDir, v.name)
 	_, err := os.Stat(vPath)
 	switch {
@@ -235,11 +239,15 @@ func (v *rawVolume) Create(ctx context.Context, dataDir string) (VolumeArgs, err
 		return nil, err
 	}
 
-	return &RawVolumeArgs{
+	return &rawVolumeArgs{
 		volumePath: vPath,
 		cache:      v.cache,
 		format:     v.format,
 	}, nil
+}
+
+func (v *rawVolume) prepare(ctx context.Context, c *util.Cache) error {
+	return nil
 }
 
 type hostPathVolume struct {
@@ -248,7 +256,7 @@ type hostPathVolume struct {
 	writable bool
 }
 
-func newHosPathVolume(name string, path string, writable bool) NodeVolume {
+func newHosPathVolume(name string, path string, writable bool) nodeVolume {
 	return &hostPathVolume{
 		name:     name,
 		path:     path,
@@ -256,22 +264,23 @@ func newHosPathVolume(name string, path string, writable bool) NodeVolume {
 	}
 }
 
-func (v *hostPathVolume) Create(ctx context.Context, _ string) (VolumeArgs, error) {
-	st, err := os.Stat(v.path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to stat the path %s: %w", v.path, err)
-	}
-	if !st.IsDir() {
-		return nil, errors.New(v.path + " is not a directory")
-	}
+func (v *hostPathVolume) create(ctx context.Context, _ string) (volumeArgs, error) {
 	p, err := filepath.Abs(v.path)
 	if err != nil {
 		return nil, err
 	}
+	if err := os.MkdirAll(p, 0755); err != nil {
+		return nil, fmt.Errorf("failed to mkdir %s: %w", v.path, err)
+	}
+
 	return &hostPathVolumeArgs{
 		volumePath: p,
 		cache:      "",
 		writable:   v.writable,
 		mountTag:   v.name,
 	}, nil
+}
+
+func (v *hostPathVolume) prepare(ctx context.Context, c *util.Cache) error {
+	return nil
 }

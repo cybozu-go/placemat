@@ -21,6 +21,10 @@ type Cache struct {
 	dir string
 }
 
+func NewCache(dir string) *Cache {
+	return &Cache{dir: dir}
+}
+
 func escapeKey(key string) string {
 	h := sha256.New()
 	h.Write([]byte(key))

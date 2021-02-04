@@ -6,8 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Redfish contains a target machine and its systemIDs.
-type Redfish struct {
+type redfishServer struct {
 	machine   Machine
 	systemIDs map[string]struct{}
 }
@@ -182,9 +181,8 @@ var serviceRootResponse = ServiceRoot{
 	},
 }
 
-// NewRedfish creates a new Redfish instance.
-func NewRedfish(machine Machine) *Redfish {
-	return &Redfish{
+func newRedfishServer(machine Machine) *redfishServer {
+	return &redfishServer{
 		machine:   machine,
 		systemIDs: map[string]struct{}{systemID: {}},
 	}

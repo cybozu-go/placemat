@@ -191,14 +191,21 @@ func handleComputerSystemCollection(c *gin.Context) {
 	c.JSON(http.StatusOK, computerSystemCollectionResponse)
 }
 
-func (r Redfish) handleComputerSystem(c *gin.Context) {
+func (r *redfishServer) handleComputerSystem(c *gin.Context) {
 	id := c.Param("id")
 	_, ok := r.systemIDs[id]
 	if !ok {
 		c.JSON(http.StatusNotFound, nil)
+		return
 	}
 
-	c.JSON(http.StatusOK, createComputerSystemResponse(id, r.machine.PowerStatus()))
+	status, err := r.machine.PowerStatus()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+
+	c.JSON(http.StatusOK, createComputerSystemResponse(id, status))
 }
 
 func createComputerSystemResponse(systemID string, powerState PowerStatus) ComputerSystem {
@@ -372,7 +379,7 @@ func createComputerSystemResponse(systemID string, powerState PowerStatus) Compu
 	}
 }
 
-func (r Redfish) handleComputerSystemActionsReset(c *gin.Context) {
+func (r *redfishServer) handleComputerSystemActionsReset(c *gin.Context) {
 	var json RequestBody
 	if err := c.ShouldBindJSON(&json); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -381,7 +388,11 @@ func (r Redfish) handleComputerSystemActionsReset(c *gin.Context) {
 
 	switch json.ResetType {
 	case ResetTypeOn:
-		powerStatus := r.machine.PowerStatus()
+		powerStatus, err := r.machine.PowerStatus()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 		if powerStatus == PowerStatusOn || powerStatus == PowerStatusPoweringOn {
 			c.JSON(http.StatusConflict, serverIsAlreadyPoweredOnResponse)
 			return
@@ -391,7 +402,11 @@ func (r Redfish) handleComputerSystemActionsReset(c *gin.Context) {
 			return
 		}
 	case ResetTypeForceOff:
-		powerStatus := r.machine.PowerStatus()
+		powerStatus, err := r.machine.PowerStatus()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 		if powerStatus == PowerStatusOff || powerStatus == PowerStatusPoweringOff {
 			c.JSON(http.StatusConflict, serverIsAlreadyPoweredOffResponse)
 			return
@@ -401,7 +416,11 @@ func (r Redfish) handleComputerSystemActionsReset(c *gin.Context) {
 			return
 		}
 	case ResetTypeGracefulShutdown:
-		powerStatus := r.machine.PowerStatus()
+		powerStatus, err := r.machine.PowerStatus()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 		if powerStatus == PowerStatusOff || powerStatus == PowerStatusPoweringOff {
 			c.JSON(http.StatusConflict, serverIsAlreadyPoweredOffResponse)
 			return
@@ -411,7 +430,11 @@ func (r Redfish) handleComputerSystemActionsReset(c *gin.Context) {
 			return
 		}
 	case ResetTypeForceRestart:
-		powerStatus := r.machine.PowerStatus()
+		powerStatus, err := r.machine.PowerStatus()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 		if powerStatus == PowerStatusOff || powerStatus == PowerStatusPoweringOff {
 			c.JSON(http.StatusConflict, serverIsAlreadyPoweredOffResponse)
 			return
