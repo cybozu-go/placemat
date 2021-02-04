@@ -60,11 +60,8 @@ func run(yamls []string) error {
 			config.cacheDir = config.dataDir
 		}
 	}
-	runDir := os.ExpandEnv(config.runDir)
-	dataDir := os.ExpandEnv(config.dataDir)
-	cacheDir := os.ExpandEnv(config.cacheDir)
 	vm.LoadModules()
-	r, err := vm.NewRuntime(config.force, config.graphic, runDir, dataDir, cacheDir, config.listenAddr)
+	r, err := vm.NewRuntime(config.force, config.graphic, config.runDir, config.dataDir, config.cacheDir, config.listenAddr)
 	if err != nil {
 		return err
 	}

@@ -5,12 +5,12 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"io"
-	"math/rand"
 )
 
 const (
@@ -248,7 +248,10 @@ func (r *rmcpPlus) handleOpenSessionRequest(buf io.Reader) ([]byte, error) {
 	}
 
 	// Serialize Open RMCPPlusSession Response Payload
-	session := r.session.getNewRMCPPlusSession(payload.RemoteConsoleSessionId)
+	session, err := r.session.getNewRMCPPlusSession(payload.RemoteConsoleSessionId)
+	if err != nil {
+		return nil, err
+	}
 	response := &openSessionResponsePayload{
 		MessageTag:                      payload.MessageTag,
 		RmcpPlusStatusCode:              rmcpPlusStatusNoErrors,

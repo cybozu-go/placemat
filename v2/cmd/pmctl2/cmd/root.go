@@ -15,7 +15,7 @@ var globalParams struct {
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "pmctl",
+	Use:   "pmctl2",
 	Short: "control nodes, pods, and networks on placemat",
 	Long:  `pmctl is a command-line tool to control nodes, pods, and networks on placemat`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {

@@ -31,7 +31,8 @@ var rootCmd = &cobra.Command{
 	Short: "Virtual data center build tool",
 	Long: `Placemat2 is a CLI tool for Go that empowers automated test for distributes system.
 
-This application is a tool to build a virtual data center as the given settings.`,
+This application is a tool to build a virtual data center as the given settings.
+Prepare a data directory before running placemat. /var/scratch is default.`,
 	Version: v2.Version(),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true

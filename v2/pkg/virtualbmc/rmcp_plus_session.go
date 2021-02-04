@@ -1,6 +1,10 @@
 package virtualbmc
 
-import "math/rand"
+import (
+	"bytes"
+	"crypto/rand"
+	"encoding/binary"
+)
 
 type rmcpPlusSessionHolder struct {
 	sessions map[uint32]*rmcpPlusSession
@@ -24,22 +28,28 @@ func newRMCPPlusSessionHolder() *rmcpPlusSessionHolder {
 	return &rmcpPlusSessionHolder{sessions: make(map[uint32]*rmcpPlusSession)}
 }
 
-func (r *rmcpPlusSessionHolder) getNewRMCPPlusSession(remoteConsoleSessionId uint32) *rmcpPlusSession {
-	sessionId := rand.Uint32()
+func (r *rmcpPlusSessionHolder) getNewRMCPPlusSession(remoteConsoleSessionId uint32) (*rmcpPlusSession, error) {
+	sessionId, err := generateRandomUint32()
+	if err != nil {
+		return nil, err
+	}
 	for {
-		if _, ok := r.sessions[sessionId]; ok {
-			sessionId = rand.Uint32()
+		if _, ok := r.sessions[*sessionId]; ok {
+			sessionId, err = generateRandomUint32()
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			break
 		}
 	}
 
 	session := &rmcpPlusSession{}
-	session.ManagedSystemSessionId = sessionId
+	session.ManagedSystemSessionId = *sessionId
 	session.RemoteConsoleSessionId = remoteConsoleSessionId
-	r.sessions[sessionId] = session
+	r.sessions[*sessionId] = session
 
-	return session
+	return session, nil
 }
 
 func (r *rmcpPlusSessionHolder) getRMCPPlusSession(id uint32) (*rmcpPlusSession, bool) {
@@ -52,4 +62,20 @@ func (r *rmcpPlusSessionHolder) removeRMCPPlusSession(id uint32) {
 	if ok {
 		delete(r.sessions, id)
 	}
+}
+
+func generateRandomUint32() (*uint32, error) {
+	b := make([]byte, 4)
+	_, err := rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := bytes.NewBuffer(b)
+	var num uint32
+	if err := binary.Read(buf, binary.LittleEndian, &num); err != nil {
+		return nil, err
+	}
+
+	return &num, err
 }

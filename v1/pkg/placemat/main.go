@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -161,8 +160,6 @@ func run(yamls []string) error {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	flag.Parse()
 	err := well.LogConfig{}.Apply()
 	if err != nil {

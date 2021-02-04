@@ -3,11 +3,29 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/well"
 	"github.com/spf13/cobra"
 )
+
+type nodeAction string
+
+const (
+	nodeActionStart   = nodeAction("start")
+	nodeActionStop    = nodeAction("stop")
+	nodeActionRestart = nodeAction("restart")
+)
+
+func (n nodeAction) valid() error {
+	switch n {
+	case nodeActionStart, nodeActionStop, nodeActionRestart:
+		return nil
+	default:
+		return fmt.Errorf("invalid node action: %s: valid actions are [%s|%s|%s]", n, nodeActionStart, nodeActionStop, nodeActionRestart)
+	}
+}
 
 // nodeActionCmd represents the nodeAction command
 var nodeActionCmd = &cobra.Command{
@@ -32,8 +50,12 @@ ACTION
 	Run: func(cmd *cobra.Command, args []string) {
 		action := args[0]
 		node := args[1]
+		if err := (nodeAction(action)).valid(); err != nil {
+			log.ErrorExit(err)
+		}
+
 		well.Go(func(ctx context.Context) error {
-			err := postAction(ctx, "/nodes/"+node+"/"+action, nil)
+			err := postAction(ctx, fmt.Sprintf("/nodes/%s/%s", node, action), nil)
 			return err
 		})
 		well.Stop()
