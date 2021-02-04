@@ -4,10 +4,8 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"math/rand"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat/v2/pkg/placemat"
@@ -18,8 +16,6 @@ import (
 )
 
 func subMain(args []string) error {
-	rand.Seed(time.Now().UnixNano())
-
 	err := well.LogConfig{}.Apply()
 	if err != nil {
 		log.ErrorExit(err)
