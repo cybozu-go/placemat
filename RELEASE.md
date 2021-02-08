@@ -53,7 +53,7 @@ Bump version
     $ git push origin "v$VERSION"
     ```
 
-The release will be automatically published by the CircleCI job.
+The release will be automatically published by the Github Action.
 
 [semver]: https://semver.org/spec/v2.0.0.html
 [example]: https://github.com/cybozu-go/etcdpasswd/commit/77d95384ac6c97e7f48281eaf23cb94f68867f79
