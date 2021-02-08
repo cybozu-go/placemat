@@ -5,6 +5,36 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2021-02-08
+
+Placemat version2 incorporates new features and improvements based on the knowledge we have accumulated over the years.
+
+### Added
+
+- Resources
+  - NetworkNamespace resource that creates separated network stack
+  - `hostPath` type volume of Node resource that creates virtio-9p-device and expose them to guests
+- Auto Tune MTU value
+- Virtual BMC
+  - IPMI v2.0
+  - Redfish API
+
+### Changed
+
+The deb package is now `placemat2`. The programs the deb package contains are `placemat2` and `pmctl2`.
+
+### Removed
+
+- Resources
+  - Pod resource. Placemat is no longer depends on `rkt` or any other container engines
+  - `vvfat` `lv` type volume from Node resource 
+  - DataFolder resource
+- pmctl
+  - `pod` `net` `snapshot` subcommands
+- placemat
+  - `-bmc-cert` `-bmc-key` `-enable-virtfs` options
+
+
 ## [1.5.3] - 2020-09-29
 
 ### Fixed
@@ -131,7 +161,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.5.3...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/cybozu-go/placemat/compare/v1.5.3...v2.0.0
 [1.5.3]: https://github.com/cybozu-go/placemat/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/cybozu-go/placemat/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/cybozu-go/placemat/compare/v1.5.0...v1.5.1
