@@ -1,7 +1,7 @@
 PROJECT=neco-test
 ZONE=asia-northeast2-c
 SERVICE_ACCOUNT=neco-test@neco-test.iam.gserviceaccount.com
-INSTANCE_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')-${GITHUB_RUN_NUMBER}-${GITHUB_ACTION}
+INSTANCE_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')-${GITHUB_RUN_NUMBER}-$(date "+%Y%m%d-%H%M%S")
 MACHINE_TYPE=n1-standard-8
 DISK_TYPE=pd-ssd
 BOOT_DISK_SIZE=20GB
