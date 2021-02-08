@@ -1,0 +1,67 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+defaults:
+  run:
+    working-directory: v2
+env:
+  go-version: 1.15
+jobs:
+  deb:
+    name: Build deb package
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.go-version }}
+      - run: |
+          version=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
+          deb_version=$(echo $version | sed -e "s/v//g")
+          echo "version=$version" >> $GITHUB_ENV
+          echo "deb_version=$deb_version" >> $GITHUB_ENV
+      - run: make setup
+      - run: make deb VERSION=${{ env.version }}
+      - name: Upload the deb package
+        uses: actions/upload-artifact@v2
+        with:
+          name: deb
+          path: v2/placemat2_${{ env.deb_version }}_amd64.deb
+  release:
+    name: Release on GitHub
+    needs: deb
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          version=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
+          deb_version=$(echo $version | sed -e "s/v//g")
+          echo "deb_version=$deb_version" >> $GITHUB_ENV
+      - name: Download the deb package
+        uses: actions/download-artifact@v2
+        with:
+          name: deb
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            See [CHANGELOG.md](./CHANGELOG.md) for details.
+          draft: false
+          prerelease: ${{ contains(github.ref, '-') }}
+      - name: Upload Release Asset
+        id: upload_release_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./placemat2_${{ env.deb_version }}_amd64.deb
+          asset_name: placemat2_${{ env.deb_version }}_amd64.deb
+          asset_content_type: application/vnd.debian.binary-package

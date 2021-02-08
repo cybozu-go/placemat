@@ -6,7 +6,7 @@
 Placemat
 ========
 
-Placemat is a tool to simulate data center networks and servers using [rkt][] Pods,
+Placemat is a tool to simulate data center networks and servers using
 QEMU/KVM virtual machines, and Linux networking stacks.  Placemat can simulate
 virtually *any* kind of network topologies to help tests and experiments for software
 usually used in data centers.
@@ -26,16 +26,16 @@ Features
     in YAML files in a declarative fashion.  Users need not mind the order
     of creation and/or destruction of resources.
 
-* Virtual BMC for IPMI power management
+* Virtual BMC
 
-    Power on/off/reset of VMs can be done by [IPMI][] commands.
+    Power on/off/reset of VMs can be done by [IPMI][] commands and [Redfish][] API.
     See [virtual BMC](docs/virtual_bmc.md) for details.
 
 * Automation
 
     Placemat supports [cloud-init][] and [ignition][] to automate
     virtual machine initialization.  Files on the host machine can be
-    exported to guests as a [VVFAT drive](https://en.wikibooks.org/wiki/QEMU/Devices/Storage).
+    exported to guests as a [9pfs](https://wiki.qemu.org/Documentation/9psetup).
     QEMU disk images can be downloaded from remote HTTP servers.
 
     All of these help implementation of fully-automated tests.
@@ -50,31 +50,25 @@ Usage
 
 This project provides these commands:
 
-* `placemat` is the main tool to build networks and virtual machines.
-* `pmctl` is a utility tool to control VMs and Pods.
+* `placemat2` is the main tool to build networks and virtual machines.
+* `pmctl2` is a utility tool to control VMs and Pods.
 
-### placemat command
+### placemat2 command
 
-`placemat` reads all YAML files specified in command-line arguments,
+`placemat2` reads all YAML files specified in command-line arguments,
 then creates resources defined in YAML.  To destroy, just kill the
 process (by sending a signal or Control-C).
 
 ```console
-$ placemat [OPTIONS] YAML [YAML ...]
+$ placemat2 [OPTIONS] YAML [YAML ...]
 
 Options:
-  -bmc-cert string
-        Certificate file for BMC HTTPS servers.
-  -bmc-key string
-        Key file for BMC HTTPS servers.
   -cache-dir string
         directory for cache data
   -data-dir string
         directory to store data (default "/var/scratch/placemat")
   -debug
-        show QEMU's and Pod's stdout and stderr
-  -enable-virtfs
-        enable VirtFS to share files between guest and host OS.
+        show QEMU's stdout and stderr
   -force
         force run with removal of garbage
   -graphic
@@ -83,8 +77,6 @@ Options:
         listen address (default "127.0.0.1:10808")
   -run-dir string
         run directory (default "/tmp")
-  -shared-dir string
-        shared directory (default "/mnt/placemat")
 ```
 
 If `-cache-dir` is not specified, the default will be `/home/${SUDO_USER}/placemat_data`
@@ -92,9 +84,9 @@ if `sudo` is used for `placemat`.  If `sudo` is not used, cache directory will b
 the same as `-data-dir`.
 `-force` is used for forced run. Remaining garbage, for example virtual networks, mounts, socket files will be removed.
 
-### pmctl command
+### pmctl2 command
 
-`pmctl` is a command line tool to control VMs, Pods and Networks.
+`pmctl2` is a command line tool to control VMs and Networks.
 
 See [pmctl](docs/pmctl.md)
 
@@ -105,9 +97,8 @@ Getting started
 
 - [QEMU][]
 - [OVMF][] for UEFI.
-- [picocom](https://github.com/npat-efault/picocom) for `pmctl`.
-- [rkt][] for `Pod` resource.
-- [socat](http://www.dest-unreach.org/socat/) for `pmctl`.
+- [picocom](https://github.com/npat-efault/picocom) for `pmctl2`.
+- [socat](http://www.dest-unreach.org/socat/) for `pmctl2`.
 - *(Optional)* [swtpm](https://github.com/stefanberger/swtpm) for providing TPM of `Node` resource.
 
 For Ubuntu or Debian, you can install them as follows:
@@ -117,22 +108,15 @@ $ sudo apt-get update
 $ sudo apt-get install qemu-system-x86 qemu-utils ovmf picocom socat cloud-utils
 ```
 
-As to rkt, obtain a deb (or rpm) package then install it as follows:
-
-```console
-$ wget https://github.com/rkt/rkt/releases/download/v1.30.0/rkt_1.30.0-1_amd64.deb
-$ sudo dpkg -i rkt_1.30.0-1_amd64.deb
-```
-
 ### Install placemat
 
 You can choose `go get` or debian package for installation.
 
-Install `placemat` and `pmctl`:
+Install `placemat2` and `pmctl2`:
 
 ```console
-$ go get -u github.com/cybozu-go/placemat/pkg/placemat
-$ go get -u github.com/cybozu-go/placemat/pkg/pmctl
+$ go get -u github.com/cybozu-go/placemat/v2/cmd/placemat2
+$ go get -u github.com/cybozu-go/placemat/v2/cmd/pmctl2
 ```
 
 or
@@ -149,13 +133,13 @@ See [examples](examples) how to write YAML files.
 To launch placemat from YAML files, run it with `sudo` as follows:
 
 ```console
-$ sudo $GOPATH/bin/placemat cluster.yml
+$ sudo $GOPATH/bin/placemat2 cluster.yml
 ```
 
-To connect to a serial console of a VM, use `pmctl node enter`:
+To connect to a serial console of a VM, use `pmctl2 node enter`:
 
 ```console
-$ sudo $GOPATH/bin/pmctl node enter VM
+$ sudo $GOPATH/bin/pmctl2 node enter VM
 ```
 
 This will launch `picocom`.  To exit, type `Ctrl-Q`, then `Ctrl-X`.
@@ -176,5 +160,5 @@ MIT
 [ignition]: https://coreos.com/ignition/docs/latest/
 [QEMU]: https://www.qemu.org/
 [OVMF]: https://github.com/tianocore/tianocore.github.io/wiki/OVMF
-[rkt]: https://coreos.com/rkt/
 [IPMI]: https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface
+[Redfish]: https://www.dmtf.org/standards/redfish

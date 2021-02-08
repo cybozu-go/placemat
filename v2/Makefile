@@ -1,4 +1,41 @@
-SUDO=sudo
+SUDO = sudo
+FAKEROOT = fakeroot
+
+### for debian package
+PACKAGES := fakeroot
+WORKDIR := $(CURDIR)/work
+CONTROL := $(WORKDIR)/DEBIAN/control
+DOCDIR := $(WORKDIR)/usr/share/doc/placemat2
+EXAMPLEDIR := $(WORKDIR)/usr/share/doc/placemat2/examples
+BASH_COMPLETION_DIR := $(WORKDIR)/etc/bash_completion.d
+BINDIR := $(WORKDIR)/usr/bin
+VERSION = v0.1
+DEB_VERSION = $(patsubst v%,%,$(VERSION))
+DEB = placemat2_$(DEB_VERSION)_amd64.deb
+DEST = .
+SBIN_PKGS = ./cmd/placemat2 ./cmd/pmctl2
+
+.PHONY: deb
+deb: $(DEB)
+
+$(DEB):
+	rm -rf $(WORKDIR)
+	cp -r debian $(WORKDIR)
+	sed 's/@VERSION@/$(DEB_VERSION)/' debian/DEBIAN/control > $(CONTROL)
+	mkdir -p $(BINDIR)
+	GOBIN=$(BINDIR) go install $(SBIN_PKGS)
+	mkdir -p $(DOCDIR)
+	cp ../README.md ../LICENSE ../docs/pmctl.md $(DOCDIR)
+	cp -r ../examples $(DOCDIR)
+	mkdir -p $(BASH_COMPLETION_DIR)
+	$(BINDIR)/pmctl2 completion bash > $(BASH_COMPLETION_DIR)/placemat2
+	chmod -R g-w $(WORKDIR)
+	$(FAKEROOT) dpkg-deb --build $(WORKDIR) $(DEST)
+	rm -rf $(WORKDIR)
+
+.PHONY: clean
+clean:
+	rm -rf $(WORKDIR) $(DEB)
 
 .PHONY: setup
 setup:
