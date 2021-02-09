@@ -11,6 +11,11 @@ Upgrade V2
   - [Obsolete Resources](#obsolete-resources)
   - [Command Line Programs](#command-line-programs)
   - [Deb Package](#deb-package)
+- [Internal Changes](#internal-changes)
+  - [Source files structure](#source-files-structure)
+  - [Network Configuration](#network-configuration)
+  - [Virtual BMC Implementation](#virtual-bmc-implementation)
+  - [QEMU](#qemu)
 
 ## Overview
 
