@@ -34,8 +34,12 @@ How it works
 4. The Placemat process interpret commands and controls the QEMU process
    of the node via its monitor socket.
 
-Supported IPMI commands
------------------------
+IPMI
+----
+
+Placemat supports IPMI v2.0, RMCP+ authentication.
+
+### Supported commands
 
 - Chassis Power On
 - Chassis Power Off

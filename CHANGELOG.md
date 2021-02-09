@@ -7,33 +7,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [2.0.0] - 2021-02-08
 
-Placemat version2 incorporates new features and improvements based on the knowledge we have accumulated over the years.
-
-### Added
-
-- Resources
-  - NetworkNamespace resource that creates separated network stack
-  - `hostPath` type volume of Node resource that creates virtio-9p-device and expose them to guests
-- Auto Tune MTU value
-- Virtual BMC
-  - IPMI v2.0
-  - Redfish API
-
-### Changed
-
-The deb package is now `placemat2`. The programs the deb package contains are `placemat2` and `pmctl2`.
-
-### Removed
-
-- Resources
-  - Pod resource. Placemat is no longer depends on `rkt` or any other container engines
-  - `vvfat` `lv` type volume from Node resource 
-  - DataFolder resource
-- pmctl
-  - `pod` `net` `snapshot` subcommands
-- placemat
-  - `-bmc-cert` `-bmc-key` `-enable-virtfs` options
-
+See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 ## [1.5.3] - 2020-09-29
 
