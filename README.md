@@ -63,26 +63,26 @@ process (by sending a signal or Control-C).
 $ placemat2 [OPTIONS] YAML [YAML ...]
 
 Options:
-  -cache-dir string
+  --cache-dir string
         directory for cache data
-  -data-dir string
+  --data-dir string
         directory to store data (default "/var/scratch/placemat")
-  -debug
+  --debug
         show QEMU's stdout and stderr
-  -force
+  --force
         force run with removal of garbage
-  -graphic
+  --graphic
         run QEMU with graphical console
-  -listen-addr string
+  --listen-addr string
         listen address (default "127.0.0.1:10808")
-  -run-dir string
+  --run-dir string
         run directory (default "/tmp")
 ```
 
-If `-cache-dir` is not specified, the default will be `/home/${SUDO_USER}/placemat_data`
+If `--cache-dir` is not specified, the default will be `/home/${SUDO_USER}/placemat_data`
 if `sudo` is used for `placemat`.  If `sudo` is not used, cache directory will be
-the same as `-data-dir`.
-`-force` is used for forced run. Remaining garbage, for example virtual networks, mounts, socket files will be removed.
+the same as `--data-dir`.
+`--force` is used for forced run. Remaining garbage, for example virtual networks, mounts, socket files will be removed.
 
 ### pmctl2 command
 

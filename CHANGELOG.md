@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2021-02-08
+
+See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
+
 ## [1.5.3] - 2020-09-29
 
 ### Fixed
@@ -131,7 +135,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v1.5.3...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/cybozu-go/placemat/compare/v1.5.3...v2.0.0
 [1.5.3]: https://github.com/cybozu-go/placemat/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/cybozu-go/placemat/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/cybozu-go/placemat/compare/v1.5.0...v1.5.1
