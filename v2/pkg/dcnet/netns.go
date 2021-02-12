@@ -250,23 +250,6 @@ func (n *netNS) Cleanup() {
 			"netns":     n.name,
 		})
 	}
-
-	for _, hostVethName := range n.hostVethNames {
-		hostVeth, err := netlink.LinkByName(hostVethName)
-		if err != nil {
-			log.Warn("failed to find the veth", map[string]interface{}{
-				log.FnError: err,
-				"veth":      hostVeth,
-			})
-			return
-		}
-		if err := netlink.LinkDel(hostVeth); err != nil {
-			log.Warn("failed to delete the veth", map[string]interface{}{
-				log.FnError: err,
-				"veth":      hostVeth,
-			})
-		}
-	}
 }
 
 func (n *netNS) HostVethNames() []string {
