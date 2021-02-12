@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -118,25 +119,8 @@ var _ = Describe("Placemat", func() {
 		})
 
 		By("forwarding to netns2 through netns1", func() {
-			err := exec.Command("sudo", pmctlPath, "forward", "add", "30000", "netns1:"+netns2+":8000").Run()
-			Expect(err).NotTo(HaveOccurred())
-
-			var forwards []*cmd.ForwardSetting
-			stdout, err := pmctl("forward", "list", "--json")
-			Expect(err).NotTo(HaveOccurred())
-			err = json.NewDecoder(strings.NewReader(string(stdout))).Decode(&forwards)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(len(forwards)).Should(Equal(1))
-			Expect(forwards[0].LocalPort).Should(Equal(30000))
-			Expect(forwards[0].PodName).Should(Equal("netns1"))
-			Expect(forwards[0].RemoteHost).Should(Equal(netns2))
-			Expect(forwards[0].RemotePort).Should(Equal(8000))
-
-			err = exec.Command("curl", "localhost:30000").Run()
-			Expect(err).NotTo(HaveOccurred())
-
-			err = exec.Command("sudo", pmctlPath, "forward", "delete", "30000").Run()
-			Expect(err).NotTo(HaveOccurred())
+			checkForwarding(8000)
+			checkForwarding(8800)
 		})
 
 		By("cleaning up garbage when it ends", func() {
@@ -162,3 +146,25 @@ var _ = Describe("Placemat", func() {
 		})
 	})
 })
+
+func checkForwarding(port int) {
+	err := exec.Command("sudo", pmctlPath, "forward", "add", "30000", fmt.Sprintf("netns1:%s:%d", netns2, port)).Run()
+	Expect(err).NotTo(HaveOccurred())
+
+	var forwards []*cmd.ForwardSetting
+	stdout, err := pmctl("forward", "list", "--json")
+	Expect(err).NotTo(HaveOccurred())
+	err = json.NewDecoder(strings.NewReader(string(stdout))).Decode(&forwards)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(len(forwards)).Should(Equal(1))
+	Expect(forwards[0].LocalPort).Should(Equal(30000))
+	Expect(forwards[0].PodName).Should(Equal("netns1"))
+	Expect(forwards[0].RemoteHost).Should(Equal(netns2))
+	Expect(forwards[0].RemotePort).Should(Equal(port))
+
+	err = exec.Command("curl", "localhost:30000").Run()
+	Expect(err).NotTo(HaveOccurred())
+
+	err = exec.Command("sudo", pmctlPath, "forward", "delete", "30000").Run()
+	Expect(err).NotTo(HaveOccurred())
+}

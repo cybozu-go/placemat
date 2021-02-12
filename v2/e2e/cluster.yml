@@ -82,9 +82,15 @@ interfaces:
     addresses:
       - @NETNS2@/24
 apps:
-  - name: http
+  - name: http8000
     command:
       - /usr/bin/python3
       - -m
       - http.server
       - 8000
+  - name: http8800
+    command:
+      - /usr/bin/python3
+      - -m
+      - http.server
+      - 8800
