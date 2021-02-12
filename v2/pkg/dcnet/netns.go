@@ -179,6 +179,7 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 	// Run Commands
 	env := well.NewEnvironment(ctx)
 	for _, app := range n.apps {
+		app := app
 		env.Go(func(ctx2 context.Context) error {
 			err := createdNS.Do(func(hostNS ns.NetNS) error {
 				if err := well.CommandContext(ctx, app.command[0], app.command[1:]...).Run(); err != nil {
