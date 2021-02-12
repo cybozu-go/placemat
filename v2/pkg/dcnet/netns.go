@@ -179,7 +179,8 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 	// Run Commands
 	env := well.NewEnvironment(ctx)
 	for _, app := range n.apps {
-		env.Go(func(ctx2 context.Context) error {
+		app := app
+		env.Go(func(ctx context.Context) error {
 			err := createdNS.Do(func(hostNS ns.NetNS) error {
 				if err := well.CommandContext(ctx, app.command[0], app.command[1:]...).Run(); err != nil {
 					return err
@@ -248,23 +249,6 @@ func (n *netNS) Cleanup() {
 			log.FnError: err,
 			"netns":     n.name,
 		})
-	}
-
-	for _, hostVethName := range n.hostVethNames {
-		hostVeth, err := netlink.LinkByName(hostVethName)
-		if err != nil {
-			log.Warn("failed to find the veth", map[string]interface{}{
-				log.FnError: err,
-				"veth":      hostVeth,
-			})
-			return
-		}
-		if err := netlink.LinkDel(hostVeth); err != nil {
-			log.Warn("failed to delete the veth", map[string]interface{}{
-				log.FnError: err,
-				"veth":      hostVeth,
-			})
-		}
 	}
 }
 
