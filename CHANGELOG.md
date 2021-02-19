@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.2] - 2021-02-19
+
+### Fixed
+
+- dcnet: detect MTU by "ip route get" (#135)
+
 ## [2.0.1] - 2021-02-12
 
 ### Fixed
@@ -141,7 +147,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/cybozu-go/placemat/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/cybozu-go/placemat/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/cybozu-go/placemat/compare/v1.5.3...v2.0.0
 [1.5.3]: https://github.com/cybozu-go/placemat/compare/v1.5.2...v1.5.3
