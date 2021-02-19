@@ -36,17 +36,18 @@ Bump version
 1. Determine a new version number.  Let it write `$VERSION` as `VERSION=x.y.z`.
 2. Checkout `main` branch.
 3. Make a branch to release, for example by `git neco dev "$VERSION"`
-4. Edit `CHANGELOG.md` for the new version ([example][]).
-5. Commit the change and push it.
+4. Edit `v2/version.go` for the new version.
+5. Edit `CHANGELOG.md` for the new version ([example][]).
+6. Commit the change and push it.
 
     ```console
     $ git commit -a -s -m "Bump version to $VERSION"
     $ git neco review
     ```
 
-6. Merge this branch.
-7. Checkout `main` branch.
-8. Add a git tag, then push it.
+7. Merge this branch.
+8. Checkout `main` branch.
+9. Add a git tag, then push it.
 
     ```console
     $ git tag "v$VERSION"
