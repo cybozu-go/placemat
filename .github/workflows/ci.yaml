@@ -20,11 +20,11 @@ jobs:
           go-version: ${{ env.go-version }}
       - run: make setup
       - run: make test
-        timeout-minutes: 10
+        timeout-minutes: 20
       - run: make test-dcnet
-        timeout-minutes: 10
+        timeout-minutes: 20
       - run: make test-vm
-        timeout-minutes: 10
+        timeout-minutes: 20
   e2e:
     name: End-to-end Test
     runs-on: ubuntu-20.04
