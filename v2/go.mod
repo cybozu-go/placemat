@@ -1,11 +1,12 @@
 module github.com/cybozu-go/placemat/v2
 
-go 1.13
+go 1.16
 
 require (
 	github.com/containernetworking/plugins v0.8.7
 	github.com/coreos/go-iptables v0.4.5
 	github.com/cybozu-go/log v1.6.0
+	github.com/cybozu-go/netutil v1.4.1
 	github.com/cybozu-go/well v1.10.0
 	github.com/fatih/color v1.10.0
 	github.com/gin-gonic/gin v1.6.3

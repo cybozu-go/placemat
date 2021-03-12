@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/netutil"
 	"github.com/cybozu-go/placemat/v2/pkg/dcnet"
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/placemat/v2/pkg/vm"
@@ -67,7 +68,7 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 		return err
 	}
 
-	mtu, err := dcnet.DetectMTU()
+	mtu, err := netutil.DetectMTU()
 	if err != nil {
 		return fmt.Errorf("failed to detect MTU: %w", err)
 	}
