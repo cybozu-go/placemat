@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
 	"sync"
 
 	"github.com/cybozu-go/log"
@@ -56,7 +55,7 @@ func NewCluster(spec *types.ClusterSpec) (*cluster, error) {
 }
 
 func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
-	defer c.cleanup(r)
+	defer c.cleanup()
 
 	if r.Force {
 		dcnet.CleanupNatRules()
@@ -129,7 +128,7 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 		return err
 	}
 
-	bmcServer := vm.NewBMCServer(c.vms, c.networks, nodeCh, r.TempDir)
+	bmcServer := vm.NewBMCServer(c.vms, c.networks, nodeCh)
 	env = well.NewEnvironment(ctx)
 	env.Go(bmcServer.Start)
 
@@ -180,13 +179,7 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 	return nil
 }
 
-func (c *cluster) cleanup(r *vm.Runtime) {
-	if err := os.RemoveAll(r.TempDir); err != nil {
-		log.Warn("failed to remove temp files", map[string]interface{}{
-			log.FnError: err,
-		})
-	}
-
+func (c *cluster) cleanup() {
 	dcnet.CleanupNatRules()
 
 	for _, n := range c.networks {

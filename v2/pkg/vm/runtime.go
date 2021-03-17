@@ -3,7 +3,6 @@ package vm
 import (
 	"bufio"
 	"errors"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -47,7 +46,6 @@ type Runtime struct {
 	Graphic    bool
 	RunDir     string
 	DataDir    string
-	TempDir    string
 	ListenAddr string
 	ImageCache *util.Cache
 }
@@ -111,17 +109,6 @@ func NewRuntime(force, graphic bool, runDir, dataDir, cacheDir, listenAddr strin
 	if err != nil {
 		return nil, err
 	}
-
-	tempDir := filepath.Join(dataDir, "temp")
-	err = os.MkdirAll(tempDir, 0755)
-	if err != nil {
-		return nil, err
-	}
-	myTempDir, err := ioutil.TempDir(tempDir, "")
-	if err != nil {
-		return nil, err
-	}
-	r.TempDir = myTempDir
 
 	return r, nil
 }

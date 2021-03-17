@@ -3,10 +3,10 @@ package virtualbmc
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/cybozu-go/log"
@@ -68,14 +68,14 @@ func StartIPMIServer(ctx context.Context, conn net.PacketConn, machine Machine) 
 }
 
 // StartRedfishServer starts a redfish server
-func StartRedfishServer(ctx context.Context, listener net.Listener, outDir string, machine Machine) error {
+func StartRedfishServer(ctx context.Context, listener net.Listener, machine Machine) error {
 	serv := &well.HTTPServer{
 		Server: &http.Server{
 			Handler: prepareRouter(machine),
 		},
 	}
 
-	cert, key, err := generateCertificate("placemat.com", outDir, 36500*24*time.Hour)
+	certPem, keyPem, err := generateCertificate("placemat.com", 36500*24*time.Hour)
 	if err != nil {
 		return fmt.Errorf("failed to generate certificate: %w", err)
 	}
@@ -84,11 +84,19 @@ func StartRedfishServer(ctx context.Context, listener net.Listener, outDir strin
 		<-ctx.Done()
 		listener.Close()
 		serv.Close()
-		os.Remove(cert)
-		os.Remove(key)
 	}()
 
-	if err := serv.ServeTLS(listener, cert, key); err != nil {
+	cert, err := tls.X509KeyPair(certPem, keyPem)
+	if err != nil {
+		return err
+	}
+
+	cfg := &tls.Config{Certificates: []tls.Certificate{cert}}
+	tlsListener := tls.NewListener(listener, cfg)
+	if err := serv.Server.Serve(tlsListener); err != nil {
+		log.Error("failed to serve TLS", map[string]interface{}{
+			log.FnError: err,
+		})
 		return err
 	}
 

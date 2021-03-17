@@ -23,15 +23,13 @@ type bmcServer struct {
 	nodeCh   <-chan BMCInfo
 	networks []dcnet.Network
 	vms      map[string]VM // key: serial
-	tempDir  string
 }
 
 // NewBMCServer creates a BMCServer instance
-func NewBMCServer(vms map[string]VM, networks []dcnet.Network, ch <-chan BMCInfo, tempDir string) BMCServer {
+func NewBMCServer(vms map[string]VM, networks []dcnet.Network, ch <-chan BMCInfo) BMCServer {
 	s := &bmcServer{
-		nodeCh:  ch,
-		vms:     vms,
-		tempDir: tempDir,
+		nodeCh: ch,
+		vms:    vms,
 	}
 	for _, n := range networks {
 		if n.IsType(types.NetworkBMC) {
@@ -94,7 +92,7 @@ OUTER:
 				})
 			}
 			env.Go(func(ctx context.Context) error {
-				return virtualbmc.StartRedfishServer(ctx, listener, s.tempDir, s.vms[info.serial])
+				return virtualbmc.StartRedfishServer(ctx, listener, s.vms[info.serial])
 			})
 
 		case <-ctx.Done():

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
 
 	"github.com/cybozu-go/well"
 	. "github.com/onsi/ginkgo"
@@ -116,12 +115,9 @@ var _ = Describe("Virtual BMC", func() {
 		listener, err := net.ListenTCP("tcp", addr)
 		Expect(err).NotTo(HaveOccurred())
 
-		cur, err := os.Getwd()
-		Expect(err).NotTo(HaveOccurred())
-
 		env := well.NewEnvironment(context.Background())
 		env.Go(func(ctx context.Context) error {
-			return StartRedfishServer(ctx, listener, cur, &MachineMock{status: PowerStatusOff})
+			return StartRedfishServer(ctx, listener, &MachineMock{status: PowerStatusOff})
 		})
 
 		By("Retrieving a ComputerSystem resource and manipulate it")
