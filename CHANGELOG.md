@@ -5,6 +5,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.3] - 2021-03-17
+
+### Fixed
+
+- Fix BMC server startup failure (#139)
+- Stabilize small test by extending timeout period (#138)
+- Import cybozu-go/netutil and replace DetectMTU (#137)
+
 ## [2.0.2] - 2021-02-19
 
 ### Fixed
@@ -147,7 +155,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.2...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.3...HEAD
+[2.0.3]: https://github.com/cybozu-go/placemat/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/cybozu-go/placemat/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/cybozu-go/placemat/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/cybozu-go/placemat/compare/v1.5.3...v2.0.0
