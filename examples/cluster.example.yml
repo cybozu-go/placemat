@@ -4,6 +4,12 @@ type: external
 use-nat: true
 address: 172.16.0.1/24
 ---
+kind: Network
+name: bmc
+type: bmc
+use-nat: false
+address: 172.16.1.1/24
+---
 kind: Image
 name: ubuntu-image
 url: https://cloud-images.ubuntu.com/releases/20.04/release/ubuntu-20.04-server-cloudimg-amd64.img

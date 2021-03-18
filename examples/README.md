@@ -19,7 +19,7 @@ is as follows:
 To run the example, launch `placemat` by the following command:
 
 ```console
-$ sudo placemat cluster.example.yml
+$ sudo placemat2 cluster.example.yml
 ```
 
 The cluster configuration is described in [`cluster.example.yml`](cluster.example.yml).
@@ -38,15 +38,15 @@ It downloads boot images, and then starts [dnsmasq][] and [nginx][] on Ubuntu
 to work as a network boot server.
 
 The worker nodes run Qemu's default BIOS to boot from the network.  They load
-[iPXE][] provided by the boot node, and then load [CoreOS Container Linux][].
+[iPXE][] provided by the boot node, and then load [Flatcar Container Linux][].
 They are configured with empty disks, which will be seen as `/dev/vda`.
 
 You can log-in to the `boot` node by `ubuntu`/`ubuntu`.  As for the worker
 nodes, they are configured to accept auto login from the console.
 
 ```console
-$ sudo pmctl node enter boot        # login with ubuntu/ubuntu
-$ sudo pmctl node enter worker-1    # autologin as "core" user
+$ sudo pmctl2 node enter boot        # login with ubuntu/ubuntu
+$ sudo pmctl2 node enter worker-1    # autologin as "core" user
 
 # type Ctrl-q and Ctrl-x to leave from the node console
 ```
@@ -56,4 +56,4 @@ $ sudo pmctl node enter worker-1    # autologin as "core" user
 [nginx]: https://nginx.org/
 [UEFI HTTP Boot]: https://github.com/tianocore/tianocore.github.io/wiki/HTTP-Boot
 [iPXE]: https://ipxe.org/
-[CoreOS Container Linux]: https://coreos.com/os/docs/latest/
+[Flatcar Container Linux]: https://kinvolk.io/docs/flatcar-container-linux/latest/

@@ -71,14 +71,20 @@ write_files:
         "networkd": {"units": [{"name": "00-eth0.network", "contents": "[Match]\nName=eth0\n\n[Network]\nAddress=172.16.0.102"}]}
       }
 
+  - path: /etc/resolv.conf
+    content: |
+      nameserver 8.8.8.8
+
 runcmd:
-  - [ curl, -sSL, -o, /var/lib/dnsmasq/ipxe.efi, "http://boot.ipxe.org/ipxe.efi"]
-  - [ curl, -sSL, -o, /var/www/html/coreos_production_pxe.vmlinuz, "https://stable.release.core-os.net/amd64-usr/current/coreos_production_pxe.vmlinuz"]
-  - [ curl, -sSL, -o, /var/www/html/coreos_production_pxe_image.cpio.gz, "https://stable.release.core-os.net/amd64-usr/current/coreos_production_pxe_image.cpio.gz"]
+  - [ systemctl, stop, systemd-resolved.service ]
+  - [ systemctl, disable, systemd-resolved.service ]
   - [ systemctl, enable, dnsmasq.service ]
   - [ systemctl, start, dnsmasq.service ]
   - [ systemctl, enable, nginx.service ]
   - [ systemctl, start, nginx.service ]
+  - [ curl, -sSL, -o, /var/lib/dnsmasq/ipxe.efi, "http://boot.ipxe.org/ipxe.efi" ]
+  - [ curl, -sSL, -o, /var/www/html/coreos_production_pxe.vmlinuz, "https://stable.release.flatcar-linux.net/amd64-usr/2605.12.0/flatcar_production_pxe.vmlinuz" ]
+  - [ curl, -sSL, -o, /var/www/html/coreos_production_pxe_image.cpio.gz, "https://stable.release.flatcar-linux.net/amd64-usr/2605.12.0/flatcar_production_pxe_image.cpio.gz" ]
 
 packages:
   - dnsmasq
