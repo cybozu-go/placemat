@@ -51,7 +51,7 @@ func run(yamls []string) error {
 
 	if config.cacheDir == "" {
 		if os.Getenv("SUDO_USER") != "" {
-			config.cacheDir = "/home/${SUDO_USER}/placemat_data"
+			config.cacheDir = os.ExpandEnv("/home/${SUDO_USER}/placemat_data")
 		} else {
 			config.cacheDir = config.dataDir
 		}
