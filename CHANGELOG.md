@@ -5,6 +5,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.4] - 2021-03-22
+
+### Fixed
+
+- Fix example (#141)
+  - The PR #141 also fixed the bug that doesn't expand SUDO_USER environment variable.
+
 ## [2.0.3] - 2021-03-17
 
 ### Fixed
@@ -155,7 +162,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.3...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.4...HEAD
+[2.0.4]: https://github.com/cybozu-go/placemat/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/cybozu-go/placemat/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/cybozu-go/placemat/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/cybozu-go/placemat/compare/v2.0.0...v2.0.1
