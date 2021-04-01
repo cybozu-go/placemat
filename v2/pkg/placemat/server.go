@@ -105,24 +105,24 @@ func (s *apiServer) handleNodeAction(c *gin.Context) {
 		return
 	}
 
-	vm := s.cluster.vms[spec.SMBIOS.Serial]
+	v := s.cluster.vms[spec.SMBIOS.Serial]
 	switch action {
 	case "start":
-		if err := vm.PowerOn(); err != nil {
+		if err := v.PowerOn(); err != nil {
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
 	case "stop":
-		if err := vm.PowerOff(); err != nil {
+		if err := v.PowerOff(); err != nil {
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
 	case "restart":
-		if err := vm.PowerOff(); err != nil {
+		if err := v.PowerOff(); err != nil {
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
-		if err := vm.PowerOn(); err != nil {
+		if err := v.PowerOn(); err != nil {
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
