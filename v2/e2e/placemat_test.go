@@ -67,6 +67,29 @@ var _ = Describe("Placemat", func() {
 			}).Should(Succeed())
 		})
 
+		By("serving node statuses", func() {
+			var statuses []placemat.NodeStatus
+			Eventually(func() error {
+				stdout, err := pmctl("node", "list", "--json")
+				if err != nil {
+					return err
+				}
+				err = json.Unmarshal(stdout, &statuses)
+				if err != nil {
+					return err
+				}
+				if len(statuses) != 2 {
+					return fmt.Errorf("statutes length should be 2 actual: %d", len(statuses))
+				}
+				for i, status := range statuses {
+					if status.PowerStatus != virtualbmc.PowerStatusOn {
+						return fmt.Errorf("node%d is not running", i+1)
+					}
+				}
+				return nil
+			}).Should(Succeed())
+		})
+
 		By("mounting vdc (raw volume, qcow2 format)", func() {
 			_, _, err := execAt(node1, "sudo", "dd", "if=/dev/zero", "of=/dev/vdc", "bs=1M", "count=1")
 			Expect(err).NotTo(HaveOccurred())
