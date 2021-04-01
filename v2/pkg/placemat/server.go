@@ -109,20 +109,24 @@ func (s *apiServer) handleNodeAction(c *gin.Context) {
 	switch action {
 	case "start":
 		if err := v.PowerOn(); err != nil {
+			log.Error("failed to power on", map[string]interface{}{log.FnError: err})
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
 	case "stop":
 		if err := v.PowerOff(); err != nil {
+			log.Error("failed to power off", map[string]interface{}{log.FnError: err})
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
 	case "restart":
 		if err := v.PowerOff(); err != nil {
+			log.Error("failed to power off during restart", map[string]interface{}{log.FnError: err})
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
 		if err := v.PowerOn(); err != nil {
+			log.Error("failed to power on during restart", map[string]interface{}{log.FnError: err})
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
