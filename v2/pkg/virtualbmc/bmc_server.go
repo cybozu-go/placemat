@@ -28,7 +28,7 @@ const (
 	PowerStatusPoweringOn  = PowerStatus("PoweringOn")
 	PowerStatusOff         = PowerStatus("Off")
 	PowerStatusPoweringOff = PowerStatus("PoweringOff")
-	PowerStatusUnknown     = PowerStatus("")
+	PowerStatusUnknown     = PowerStatus("Unknown")
 )
 
 // StartIPMIServer starts an ipmi server that handles RMCP requests

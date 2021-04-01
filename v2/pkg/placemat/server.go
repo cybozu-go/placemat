@@ -84,24 +84,13 @@ func (s *apiServer) handleNode(c *gin.Context) {
 		c.JSON(http.StatusNotFound, nil)
 		return
 	}
-	status, err := newNodeStatus(spec, s.cluster.nodeMap[name], s.cluster.vms[spec.SMBIOS.Serial], s.runtime)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, nil)
-		return
-	}
-
-	c.JSON(http.StatusOK, status)
+	c.JSON(http.StatusOK, newNodeStatus(spec, s.cluster.nodeMap[name], s.cluster.vms[spec.SMBIOS.Serial], s.runtime))
 }
 
 func (s *apiServer) handleNodes(c *gin.Context) {
 	statuses := make([]*NodeStatus, len(s.cluster.nodeSpecs))
 	for i, spec := range s.cluster.nodeSpecs {
-		status, err := newNodeStatus(spec, s.cluster.nodeMap[spec.Name], s.cluster.vms[spec.SMBIOS.Serial], s.runtime)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, nil)
-			return
-		}
-		statuses[i] = status
+		statuses[i] = newNodeStatus(spec, s.cluster.nodeMap[spec.Name], s.cluster.vms[spec.SMBIOS.Serial], s.runtime)
 	}
 	c.JSON(http.StatusOK, statuses)
 }
@@ -145,10 +134,10 @@ func (s *apiServer) handleNodeAction(c *gin.Context) {
 	c.JSON(http.StatusOK, nil)
 }
 
-func newNodeStatus(spec *types.NodeSpec, node vm.Node, vm vm.VM, runtime *vm.Runtime) (*NodeStatus, error) {
+func newNodeStatus(spec *types.NodeSpec, node vm.Node, vm vm.VM, runtime *vm.Runtime) *NodeStatus {
 	powerStatus, err := vm.PowerStatus()
 	if err != nil {
-		return nil, err
+		log.Error("failed to confirm vm's power status", map[string]interface{}{log.FnError: err})
 	}
 
 	status := &NodeStatus{
@@ -170,5 +159,5 @@ func newNodeStatus(spec *types.NodeSpec, node vm.Node, vm vm.VM, runtime *vm.Run
 	for i, v := range spec.Volumes {
 		status.Volumes[i] = v.Name
 	}
-	return status, nil
+	return status
 }
