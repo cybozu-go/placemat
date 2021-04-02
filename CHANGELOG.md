@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.5] - 2021-04-02
+
+### Fixed
+
+- Fix Internal Server Error when vm's power status cannot be confirmed (#145)
+
 ## [2.0.4] - 2021-03-22
 
 ### Fixed
@@ -162,7 +168,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.4...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.5...HEAD
+[2.0.5]: https://github.com/cybozu-go/placemat/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/cybozu-go/placemat/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/cybozu-go/placemat/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/cybozu-go/placemat/compare/v2.0.1...v2.0.2
