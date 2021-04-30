@@ -189,7 +189,7 @@ type localDSVolumeArgs struct {
 func (v *localDSVolumeArgs) args() []string {
 	return []string{
 		"-drive",
-		fmt.Sprintf("if=virtio,cache=%s,aio=%s,format=raw,file=%s", v.cache, selectAIOforCache(v.cache), v.volumePath),
+		fmt.Sprintf("if=virtio,cache=%s,aio=%s,format=qcow2,file=%s", v.cache, selectAIOforCache(v.cache), v.volumePath),
 	}
 }
 

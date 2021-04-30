@@ -153,7 +153,7 @@ qemu-system-x86_64
  -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node2,mac=placemat
  -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
- -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
+ -drive if=virtio,cache=none,aio=native,format=qcow2,file=%s/seed.img
  -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -boot reboot-timeout=30000
  -chardev socket,id=char0,path=%s/boot-0.guest,server,nowait
@@ -303,7 +303,7 @@ qemu-system-x86_64
  -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on
  -device virtio-net-pci,host_mtu=1460,netdev=r0-node2,mac=placemat,romfile=
  -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
- -drive if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img
+ -drive if=virtio,cache=none,aio=native,format=qcow2,file=%s/seed.img
  -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
  -chardev socket,id=chrtpm,path=%s/boot-0/swtpm.socket
  -tpmdev emulator,id=tpm0,chardev=chrtpm
