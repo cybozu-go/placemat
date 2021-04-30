@@ -1,6 +1,6 @@
 [![GitHub release](https://img.shields.io/github/release/cybozu-go/placemat.svg?maxAge=60)][releases]
-[![CircleCI](https://circleci.com/gh/cybozu-go/placemat.svg?style=svg)](https://circleci.com/gh/cybozu-go/placemat)
-[![GoDoc](https://godoc.org/github.com/cybozu-go/placemat?status.svg)][godoc]
+[![CI](https://github.com/cybozu-go/placemat/actions/workflows/ci.yaml/badge.svg)](https://github.com/cybozu-go/placemat/actions/workflows/ci.yaml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/cybozu-go/placemat/v2.svg)](https://pkg.go.dev/github.com/cybozu-go/placemat/v2)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cybozu-go/placemat)](https://goreportcard.com/report/github.com/cybozu-go/placemat)
 
 Placemat
