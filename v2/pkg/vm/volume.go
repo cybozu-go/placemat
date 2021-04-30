@@ -189,7 +189,7 @@ func (v *localDSVolume) create(ctx context.Context, dataDir string) (volumeArgs,
 				return nil, err
 			}
 		} else {
-			err := well.CommandContext(ctx, "cloud-localds", vPath, v.userData, "--network-config", v.networkConfig).Run()
+			err := well.CommandContext(ctx, "cloud-localds", vPath, v.userData, "--network-config", v.networkConfig, "--disk-format", "qcow2").Run()
 			if err != nil {
 				return nil, err
 			}

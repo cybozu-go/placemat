@@ -100,7 +100,7 @@ smbios:
 		Expect(err).NotTo(HaveOccurred())
 		Expect(args.args()).To(Equal([]string{
 			"-drive",
-			fmt.Sprintf("if=virtio,cache=none,aio=native,format=raw,file=%s/seed.img", temp),
+			fmt.Sprintf("if=virtio,cache=none,aio=native,format=qcow2,file=%s/seed.img", temp),
 		}))
 		_, err = os.Stat(filepath.Join(temp, "seed.img"))
 		Expect(err).NotTo(HaveOccurred())
