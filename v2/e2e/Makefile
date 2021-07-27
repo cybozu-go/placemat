@@ -102,4 +102,4 @@ clean:
 
 .PHONY: setup
 setup:
-	go install github.com/onsi/ginkgo/ginkgo
+	go install github.com/onsi/ginkgo/ginkgo@v1.16.4
