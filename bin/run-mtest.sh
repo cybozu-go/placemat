@@ -61,7 +61,6 @@ git checkout -qf ${GITHUB_SHA}
 
 cd v2/e2e
 cp /assets/ubuntu-*.img .
-make setup
 exec make test
 EOF
 chmod +x run.sh

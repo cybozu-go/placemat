@@ -39,7 +39,6 @@ all:
 	@echo "Specify one of these targets:"
 	@echo
 	@echo "    test     - run test."
-	@echo "    setup    - install dependencies."
 	@echo "    clean    - remove output directory."
 
 $(UBUNTU_IMAGE):
@@ -100,6 +99,3 @@ test: $(TEST_DEPS)
 clean:
 	rm -rf $(OUTPUT)
 
-.PHONY: setup
-setup:
-	go install github.com/onsi/ginkgo/ginkgo@v1.16.4
