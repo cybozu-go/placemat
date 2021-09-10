@@ -152,7 +152,7 @@ See specifications under [docs directory](docs/).
 License
 -------
 
-MIT
+placemat is licensed under the Apache License, Version 2.0.
 
 [releases]: https://github.com/cybozu-go/placemat/releases
 [godoc]: https://godoc.org/github.com/cybozu-go/placemat
