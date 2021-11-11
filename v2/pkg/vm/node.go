@@ -32,15 +32,16 @@ type Node interface {
 }
 
 type node struct {
-	name         string
-	taps         []*tap
-	volumes      []nodeVolume
-	ignitionFile string
-	cpu          int
-	memory       string
-	uefi         bool
-	tpm          bool
-	smbios       smBIOSConfig
+	name               string
+	taps               []*tap
+	volumes            []nodeVolume
+	ignitionFile       string
+	cpu                int
+	memory             string
+	networkDeviceQueue int
+	uefi               bool
+	tpm                bool
+	smbios             smBIOSConfig
 }
 
 type smBIOSConfig struct {
@@ -52,12 +53,13 @@ type smBIOSConfig struct {
 // NewNode creates a Node from spec.
 func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec) (Node, error) {
 	n := &node{
-		name:         spec.Name,
-		ignitionFile: spec.IgnitionFile,
-		cpu:          spec.CPU,
-		memory:       spec.Memory,
-		uefi:         spec.UEFI,
-		tpm:          spec.TPM,
+		name:               spec.Name,
+		ignitionFile:       spec.IgnitionFile,
+		cpu:                spec.CPU,
+		memory:             spec.Memory,
+		networkDeviceQueue: spec.NetworkDeviceQueue,
+		uefi:               spec.UEFI,
+		tpm:                spec.TPM,
 		smbios: smBIOSConfig{
 			manufacturer: spec.SMBIOS.Manufacturer,
 			product:      spec.SMBIOS.Product,
@@ -126,7 +128,7 @@ func (n *node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMC
 		}
 	}
 
-	qemu := newQemu(n.name, tapInfos, vArgs, n.ignitionFile, n.cpu, n.memory, n.uefi, n.tpm, n.smbios)
+	qemu := newQemu(n.name, tapInfos, vArgs, n.ignitionFile, n.cpu, n.memory, n.networkDeviceQueue, n.uefi, n.tpm, n.smbios)
 	c := qemu.command(r)
 	qemuCommand := well.CommandContext(ctx, c[0], c[1:]...)
 	qemuCommand.Stdout = util.NewColoredLogWriter("qemu", n.name, os.Stdout)
@@ -203,7 +205,7 @@ func (n *node) createVolumes(ctx context.Context, dataDir string) ([]volumeArgs,
 func (n *node) createTaps(mtu int) ([]*tapInfo, error) {
 	var tapInfos []*tapInfo
 	for _, tap := range n.taps {
-		tapInfo, err := tap.create(mtu)
+		tapInfo, err := tap.create(mtu, n.networkDeviceQueue)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create the tap: %w", err)
 		}

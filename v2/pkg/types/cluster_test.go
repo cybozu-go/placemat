@@ -52,6 +52,7 @@ interfaces:
 - r0-node2
 memory: 2G
 cpu: 8
+network-device-queue: 16
 smbios:
   manufacturer: cybozu
   product: mk2
@@ -159,11 +160,12 @@ file: cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 							Path: "/var/foo/sabakan-data",
 						},
 					},
-					IgnitionFile: "my-node.ign",
-					CPU:          8,
-					Memory:       "2G",
-					UEFI:         false,
-					TPM:          true,
+					IgnitionFile:       "my-node.ign",
+					CPU:                8,
+					Memory:             "2G",
+					NetworkDeviceQueue: 16,
+					UEFI:               false,
+					TPM:                true,
 					SMBIOS: SMBIOSConfigSpec{
 						Manufacturer: "cybozu",
 						Product:      "mk2",

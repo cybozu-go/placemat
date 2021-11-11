@@ -18,31 +18,33 @@ const (
 )
 
 type qemu struct {
-	name         string
-	taps         []*tapInfo
-	volumes      []volumeArgs
-	ignitionFile string
-	cpu          int
-	memory       string
-	uefi         bool
-	tpm          bool
-	smbios       smBIOSConfig
+	name               string
+	taps               []*tapInfo
+	volumes            []volumeArgs
+	ignitionFile       string
+	cpu                int
+	memory             string
+	networkDeviceQueue int
+	uefi               bool
+	tpm                bool
+	smbios             smBIOSConfig
 	macGenerator
 }
 
 func newQemu(nodeName string, taps []*tapInfo, volumes []volumeArgs, ignitionFile string, cpu int,
-	memory string, uefi bool, tpm bool, smbios smBIOSConfig) *qemu {
+	memory string, networkDeviceQueue int, uefi bool, tpm bool, smbios smBIOSConfig) *qemu {
 	return &qemu{
-		name:         nodeName,
-		taps:         taps,
-		volumes:      volumes,
-		ignitionFile: ignitionFile,
-		cpu:          cpu,
-		memory:       memory,
-		uefi:         uefi,
-		tpm:          tpm,
-		smbios:       smbios,
-		macGenerator: &macGeneratorForKVM{},
+		name:               nodeName,
+		taps:               taps,
+		volumes:            volumes,
+		ignitionFile:       ignitionFile,
+		cpu:                cpu,
+		memory:             memory,
+		networkDeviceQueue: networkDeviceQueue,
+		uefi:               uefi,
+		tpm:                tpm,
+		smbios:             smbios,
+		macGenerator:       &macGeneratorForKVM{},
 	}
 }
 
@@ -54,6 +56,9 @@ func (c *qemu) command(r *Runtime) []string {
 		if vhostNetSupported {
 			netdev += ",vhost=on"
 		}
+		if c.networkDeviceQueue > 1 {
+			netdev += fmt.Sprintf(",queues=%d", c.networkDeviceQueue)
+		}
 
 		params = append(params, "-netdev", netdev)
 
@@ -62,6 +67,9 @@ func (c *qemu) command(r *Runtime) []string {
 			fmt.Sprintf("host_mtu=%d", t.mtu),
 			fmt.Sprintf("netdev=%s", t.bridge),
 			fmt.Sprintf("mac=%s", c.generate()),
+		}
+		if c.networkDeviceQueue > 1 {
+			devParams = append(devParams, "mq=on", fmt.Sprintf("vectors=%d", 2*c.networkDeviceQueue+2))
 		}
 		if c.uefi {
 			// disable iPXE boot
