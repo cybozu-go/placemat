@@ -11,6 +11,7 @@ import (
 
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/containernetworking/plugins/pkg/utils/sysctl"
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/well"
@@ -120,6 +121,12 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 		}
 		if err := ip.EnableIP6Forward(); err != nil {
 			return fmt.Errorf("failed to enable IPv6 forwarding: %w", err)
+		}
+		if _, err := sysctl.Sysctl("net.ipv4.conf.default.rp_filter", "0"); err != nil {
+			return fmt.Errorf("failed to set net.ipv4.conf.default.rp_filter=0: %w", err)
+		}
+		if _, err := sysctl.Sysctl("net.ipv4.conf.all.rp_filter", "0"); err != nil {
+			return fmt.Errorf("failed to set net.ipv4.conf.all.rp_filter=0: %w", err)
 		}
 
 		// Create Veth

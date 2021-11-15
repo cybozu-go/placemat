@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/containernetworking/plugins/pkg/utils/sysctl"
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -148,6 +149,22 @@ interfaces:
 				return fmt.Errorf("failed to find the veth t1: %w", err)
 			}
 
+			// Check if the ip forwarding is properly configured.
+			if !isEnabled("net.ipv4.ip_forward") {
+				return fmt.Errorf("net.ipv4.ip_forward is not enabled")
+			}
+			if !isEnabled("net.ipv6.conf.all.forwarding") {
+				return fmt.Errorf("net.ipv6.conf.all.forwarding is not enabled")
+			}
+
+			// Check if the rp_filter is properly disabled.
+			if isEnabled("net.ipv4.conf.default.rp_filter") {
+				return fmt.Errorf("net.ipv4.conf.default.rp_filter is not disabled")
+			}
+			if isEnabled("net.ipv4.conf.all.rp_filter") {
+				return fmt.Errorf("net.ipv4.conf.all.rp_filter is not disabled")
+			}
+
 			return nil
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -167,3 +184,11 @@ interfaces:
 		Expect(veth1.Attrs().MasterIndex).To(Equal(bridge.Attrs().Index))
 	})
 })
+
+func isEnabled(name string) bool {
+	val, err := sysctl.Sysctl(name)
+	if err != nil {
+		return false
+	}
+	return len(val) > 0 && val[0] != '0'
+}
