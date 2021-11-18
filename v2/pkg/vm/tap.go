@@ -30,7 +30,7 @@ func newTap(bridgeName string) (*tap, error) {
 	}, nil
 }
 
-func (t *tap) create(mtu int) (*tapInfo, error) {
+func (t *tap) create(mtu, netDevQueue int) (*tapInfo, error) {
 	la := netlink.NewLinkAttrs()
 	name, err := dcnet.RandomLinkName(dcnet.LinkTypeTap)
 	if err != nil {
@@ -40,6 +40,10 @@ func (t *tap) create(mtu int) (*tapInfo, error) {
 	tap := &netlink.Tuntap{
 		LinkAttrs: la,
 		Mode:      netlink.TUNTAP_MODE_TAP,
+	}
+	if netDevQueue > 1 {
+		tap.Flags = netlink.TUNTAP_MULTI_QUEUE_DEFAULTS | netlink.TUNTAP_VNET_HDR
+		tap.Queues = netDevQueue
 	}
 	if err := netlink.LinkAdd(tap); err != nil {
 		return nil, fmt.Errorf("failed to add the tap %s: %w", name, err)

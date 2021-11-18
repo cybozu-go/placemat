@@ -19,8 +19,9 @@ kind: Node
 name: node1
 interfaces:
 - ext-net
-cpu: 1
+cpu: 2
 memory: 1G
+network-device-queue: 4
 smbios:
   serial: 4ae0771764376e0184274e24e0b18abd8fa5f285
 volumes:
@@ -53,8 +54,9 @@ kind: Node
 name: node2
 interfaces:
 - ext-net
-cpu: 1
+cpu: 2
 memory: 1G
+network-device-queue: 4
 smbios:
   serial: 1145129a085ecf521ab524028302a6b4a4e49a00
 volumes:

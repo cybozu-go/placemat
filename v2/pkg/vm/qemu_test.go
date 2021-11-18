@@ -50,6 +50,7 @@ kind: Node
 name: boot-0
 cpu: 8
 memory: 2G
+network-device-queue: 16
 interfaces:
 - r0-node1
 - r0-node2
@@ -121,7 +122,7 @@ use-nat: false
 			Expect(err).NotTo(HaveOccurred())
 			taps = append(taps, tap)
 
-			tapInfo, err := tap.create(1460)
+			tapInfo, err := tap.create(1460, nodeSpec.NetworkDeviceQueue)
 			Expect(err).NotTo(HaveOccurred())
 			tapInfos = append(tapInfos, tapInfo)
 		}
@@ -132,7 +133,7 @@ use-nat: false
 		}()
 
 		qemu := newQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
-			nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
+			nodeSpec.NetworkDeviceQueue, nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
 				manufacturer: nodeSpec.SMBIOS.Manufacturer,
 				product:      nodeSpec.SMBIOS.Product,
 				serial:       nodeSpec.SMBIOS.Serial,
@@ -148,10 +149,10 @@ qemu-system-x86_64
  -nographic
  -serial unix:%s/boot-0.socket,server,nowait
  -smbios type=1,serial=fb8f2417d0b4db30050719c31ce02a2e8141bbd8
- -netdev tap,id=r0-node1,ifname=%s,script=no,downscript=no,vhost=on
- -device virtio-net-pci,host_mtu=1460,netdev=r0-node1,mac=placemat
- -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on
- -device virtio-net-pci,host_mtu=1460,netdev=r0-node2,mac=placemat
+ -netdev tap,id=r0-node1,ifname=%s,script=no,downscript=no,vhost=on,queues=16
+ -device virtio-net-pci,host_mtu=1460,netdev=r0-node1,mac=placemat,mq=on,vectors=34
+ -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on,queues=16
+ -device virtio-net-pci,host_mtu=1460,netdev=r0-node2,mac=placemat,mq=on,vectors=34
  -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
  -drive if=virtio,cache=none,aio=native,format=qcow2,file=%s/seed.img
  -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly
@@ -196,6 +197,7 @@ kind: Node
 name: boot-0
 cpu: 8
 memory: 2G
+network-device-queue: 16
 interfaces:
 - r0-node1
 - r0-node2
@@ -269,7 +271,7 @@ use-nat: false
 			Expect(err).NotTo(HaveOccurred())
 			taps = append(taps, tap)
 
-			tapInfo, err := tap.create(1460)
+			tapInfo, err := tap.create(1460, nodeSpec.NetworkDeviceQueue)
 			Expect(err).NotTo(HaveOccurred())
 			tapInfos = append(tapInfos, tapInfo)
 		}
@@ -280,7 +282,7 @@ use-nat: false
 		}()
 
 		qemu := newQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
-			nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
+			nodeSpec.NetworkDeviceQueue, nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
 				manufacturer: nodeSpec.SMBIOS.Manufacturer,
 				product:      nodeSpec.SMBIOS.Product,
 				serial:       nodeSpec.SMBIOS.Serial,
@@ -298,10 +300,10 @@ qemu-system-x86_64
  -drive if=pflash,file=/usr/share/OVMF/OVMF_CODE.fd,format=raw,readonly
  -drive if=pflash,file=%s/nvram/boot-0.fd,format=raw
  -smbios type=1,serial=fb8f2417d0b4db30050719c31ce02a2e8141bbd8
- -netdev tap,id=r0-node1,ifname=%s,script=no,downscript=no,vhost=on
- -device virtio-net-pci,host_mtu=1460,netdev=r0-node1,mac=placemat,romfile=
- -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on
- -device virtio-net-pci,host_mtu=1460,netdev=r0-node2,mac=placemat,romfile=
+ -netdev tap,id=r0-node1,ifname=%s,script=no,downscript=no,vhost=on,queues=16
+ -device virtio-net-pci,host_mtu=1460,netdev=r0-node1,mac=placemat,mq=on,vectors=34,romfile=
+ -netdev tap,id=r0-node2,ifname=%s,script=no,downscript=no,vhost=on,queues=16
+ -device virtio-net-pci,host_mtu=1460,netdev=r0-node2,mac=placemat,mq=on,vectors=34,romfile=
  -drive if=virtio,cache=writeback,aio=threads,file=%s/root.img
  -drive if=virtio,cache=none,aio=native,format=qcow2,file=%s/seed.img
  -virtfs local,path=%s,mount_tag=sabakan,security_model=none,readonly

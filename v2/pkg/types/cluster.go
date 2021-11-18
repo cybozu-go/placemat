@@ -140,16 +140,17 @@ const (
 
 // NodeSpec represents a Node specification in YAML
 type NodeSpec struct {
-	Kind         string           `json:"kind"`
-	Name         string           `json:"name"`
-	Interfaces   []string         `json:"interfaces,omitempty"`
-	Volumes      []NodeVolumeSpec `json:"volumes,omitempty"`
-	IgnitionFile string           `json:"ignition,omitempty"`
-	CPU          int              `json:"cpu,omitempty"`
-	Memory       string           `json:"memory,omitempty"`
-	UEFI         bool             `json:"uefi,omitempty"`
-	TPM          bool             `json:"tpm,omitempty"`
-	SMBIOS       SMBIOSConfigSpec `json:"smbios,omitempty"`
+	Kind               string           `json:"kind"`
+	Name               string           `json:"name"`
+	Interfaces         []string         `json:"interfaces,omitempty"`
+	Volumes            []NodeVolumeSpec `json:"volumes,omitempty"`
+	IgnitionFile       string           `json:"ignition,omitempty"`
+	CPU                int              `json:"cpu,omitempty"`
+	Memory             string           `json:"memory,omitempty"`
+	NetworkDeviceQueue int              `json:"network-device-queue,omitempty"`
+	UEFI               bool             `json:"uefi,omitempty"`
+	TPM                bool             `json:"tpm,omitempty"`
+	SMBIOS             SMBIOSConfigSpec `json:"smbios,omitempty"`
 }
 
 func (n *NodeSpec) validate() error {

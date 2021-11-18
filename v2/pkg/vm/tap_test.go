@@ -37,7 +37,7 @@ use-nat: false
 
 		tap, err := newTap("r0-node1")
 		Expect(err).NotTo(HaveOccurred())
-		tapInfo, err := tap.create(1460)
+		tapInfo, err := tap.create(1460, 4)
 		Expect(err).NotTo(HaveOccurred())
 		defer tap.Cleanup()
 
@@ -65,7 +65,7 @@ use-nat: false
 
 		tap, err := newTap("r0-node1")
 		Expect(err).NotTo(HaveOccurred())
-		tapInfo, err := tap.create(0)
+		tapInfo, err := tap.create(0, 0)
 		Expect(err).NotTo(HaveOccurred())
 		defer tap.Cleanup()
 

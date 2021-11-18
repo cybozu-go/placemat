@@ -80,6 +80,7 @@ volumes:
 ignition: my-node.ign
 cpu: 2
 memory: 4G
+network-device-queue: 4
 smbios:
   manufacturer: cybozu
   product: mk2
@@ -99,6 +100,7 @@ The properties are:
 - `ignition`: [Ignition file](https://coreos.com/ignition/docs/latest/configuration-v2_1.html).
 - `cpu`: The amount of virtual CPUs.
 - `memory`: The amount of memory.
+- `network-device-queue`: The count of VM's network device queue. Placemat enables multi queue virtio-net if network-device-queue is greater than 1.
 - `smbios`: System Management BIOS (SMBIOS) values for `manufacturer`, `product`, and `serial`.  If `serial` is not set, a hash value of the node's name is used.
 - `uefi`: BIOS mode of the VM.
     - If false: The VM will load Qemu's default BIOS (SeaBIO) and enable iPXE boot by a net device.
