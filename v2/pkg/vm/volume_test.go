@@ -49,9 +49,9 @@ file: temp/cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 		nodeSpec := cluster.Nodes[0]
 		volumeSpec := nodeSpec.Volumes[0]
 
-		volume, err := newNodeVolume(volumeSpec, cluster.Images)
+		volume, err := newNodeVolume(volumeSpec, cluster.Images, cluster.DeviceClasses)
 		Expect(err).NotTo(HaveOccurred())
-		args, err := volume.create(context.Background(), temp)
+		args, err := volume.create(context.Background(), temp, "")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(args.args()).To(Equal([]string{
 			"-drive",
@@ -94,9 +94,9 @@ smbios:
 		nodeSpec := cluster.Nodes[0]
 		volumeSpec := nodeSpec.Volumes[0]
 
-		volume, err := newNodeVolume(volumeSpec, cluster.Images)
+		volume, err := newNodeVolume(volumeSpec, cluster.Images, cluster.DeviceClasses)
 		Expect(err).NotTo(HaveOccurred())
-		args, err := volume.create(context.Background(), temp)
+		args, err := volume.create(context.Background(), temp, "")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(args.args()).To(Equal([]string{
 			"-drive",
@@ -137,9 +137,9 @@ smbios:
 		nodeSpec := cluster.Nodes[0]
 		volumeSpec := nodeSpec.Volumes[0]
 
-		volume, err := newNodeVolume(volumeSpec, cluster.Images)
+		volume, err := newNodeVolume(volumeSpec, cluster.Images, cluster.DeviceClasses)
 		Expect(err).NotTo(HaveOccurred())
-		args, err := volume.create(context.Background(), temp)
+		args, err := volume.create(context.Background(), temp, "")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(args.args()).To(Equal([]string{
 			"-virtfs",
@@ -173,13 +173,67 @@ smbios:
 		nodeSpec := cluster.Nodes[0]
 		volumeSpec := nodeSpec.Volumes[0]
 
-		volume, err := newNodeVolume(volumeSpec, cluster.Images)
+		volume, err := newNodeVolume(volumeSpec, cluster.Images, cluster.DeviceClasses)
 		Expect(err).NotTo(HaveOccurred())
-		args, err := volume.create(context.Background(), temp)
+		args, err := volume.create(context.Background(), temp, "")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(args.args()).To(Equal([]string{
 			"-drive",
 			fmt.Sprintf("if=virtio,cache=none,aio=native,format=qcow2,file=%s/data.img", temp),
 		}))
+	})
+
+	It("should create a volume with a specified device class", func() {
+		// Set up runtime
+		cur, err := os.Getwd()
+		Expect(err).NotTo(HaveOccurred())
+		temp := filepath.Join(cur, "temp")
+		Expect(os.Mkdir(temp, 0755)).NotTo(HaveOccurred())
+
+		// Create dummy files and directories
+		_, err = os.Create("temp/cybozu-ubuntu-18.04-server-cloudimg-amd64.img")
+		Expect(err).NotTo(HaveOccurred())
+		defer os.RemoveAll(temp)
+
+		clusterYaml := `
+kind: Node
+name: boot-0
+cpu: 8
+memory: 2G
+volumes:
+- kind: image
+  name: root
+  image: custom-ubuntu-image
+  cache: writeback
+  copy-on-write: true
+  device-class: hdd
+smbios:
+  serial: fb8f2417d0b4db30050719c31ce02a2e8141bbd8
+---
+kind: Image
+name: custom-ubuntu-image
+file: temp/cybozu-ubuntu-18.04-server-cloudimg-amd64.img
+---
+kind: DeviceClass
+name: hdd
+path: DEVICE_CLASS_PATH
+`
+		clusterYaml = strings.Replace(clusterYaml, "DEVICE_CLASS_PATH", temp, 1)
+		cluster, err := types.Parse(strings.NewReader(clusterYaml))
+		Expect(err).NotTo(HaveOccurred())
+
+		nodeSpec := cluster.Nodes[0]
+		volumeSpec := nodeSpec.Volumes[0]
+
+		volume, err := newNodeVolume(volumeSpec, cluster.Images, cluster.DeviceClasses)
+		Expect(err).NotTo(HaveOccurred())
+		args, err := volume.create(context.Background(), "/unused/path", "")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(args.args()).To(Equal([]string{
+			"-drive",
+			fmt.Sprintf("if=virtio,cache=writeback,aio=threads,file=%s/root.img", temp),
+		}))
+		_, err = os.Stat(filepath.Join(temp, "root.img"))
+		Expect(err).NotTo(HaveOccurred())
 	})
 })
