@@ -5,6 +5,17 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.6] - 2022-03-08
+
+### Changed
+
+- Change LICENSE from MIT to Apache 2.0 (#150)
+- Support Multiqueue virtio-net (#152)
+
+### Fixed
+
+- Disable rp_filter inside a netns (#153)
+
 ## [2.0.5] - 2021-04-02
 
 ### Fixed
@@ -168,7 +179,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.5...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.0.6...HEAD
+[2.0.6]: https://github.com/cybozu-go/placemat/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/cybozu-go/placemat/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/cybozu-go/placemat/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/cybozu-go/placemat/compare/v2.0.2...v2.0.3
