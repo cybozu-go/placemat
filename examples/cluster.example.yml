@@ -14,6 +14,10 @@ kind: Image
 name: ubuntu-image
 url: https://cloud-images.ubuntu.com/releases/20.04/release/ubuntu-20.04-server-cloudimg-amd64.img
 ---
+kind: DeviceClass
+name: ssd
+path: /var/scratch/ssd
+---
 kind: Node
 name: boot
 interfaces:
@@ -51,6 +55,7 @@ volumes:
   - kind: raw
     name: data
     size: 10G
+    device-class: ssd
 cpu: 1
 memory: 2G
 smbios:

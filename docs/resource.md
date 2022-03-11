@@ -8,6 +8,7 @@ Following resources are available.
 * Image
 * Node
 * NetworkNamespace
+* DeviceClass
 
 Network resource
 ----------------
@@ -73,6 +74,7 @@ volumes:
   - kind: raw
     name: data
     size: 10G
+    device-class: ssd
   - kind: hostPath
     name: host-data
     path: /var/lib/foo
@@ -113,6 +115,7 @@ The properties are:
 * `kind`: kind of the volume.  Required.
 * `name`: name of the volume.  Required.
 * `cache`: determine how to access backend storage. Possible values are `writeback`, `none`, `writethrough`, `directsync`, `unsafe`.  Defaulted to `none`.
+* `device-class`: determine where to locate backend storage. Possible values are defined in `DeviceClass` resource. If this field isn't set, unnamed device class will be assined and default path will be used.
 
 ### `image` volume
 
@@ -198,3 +201,18 @@ Interfaces will be named `eth0`, `eth1`, ... in the order of definition.
 ### apps
 
 List of applications running inside the network namespace.
+
+DeviceClass resource
+--------------------
+
+Placemat creates backend storage at the location specified by this resource.
+
+```yaml
+kind: DeviceClass
+name: ssd
+path: /var/scratch/ssd
+```
+
+The properties are:
+
+- `path`: The path to locate backend storage.

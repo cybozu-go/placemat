@@ -106,10 +106,10 @@ use-nat: false
 		// Create volumes
 		var volumeArgs []volumeArgs
 		for _, volumeSpec := range nodeSpec.Volumes {
-			volume, err := newNodeVolume(volumeSpec, cluster.Images)
+			volume, err := newNodeVolume(volumeSpec, cluster.Images, cluster.DeviceClasses)
 			Expect(err).NotTo(HaveOccurred())
 
-			args, err := volume.create(context.Background(), r.DataDir)
+			args, err := volume.create(context.Background(), r.DataDir, "")
 			Expect(err).NotTo(HaveOccurred())
 			volumeArgs = append(volumeArgs, args)
 		}
@@ -255,10 +255,10 @@ use-nat: false
 		// Create volumes
 		var volumeArgs []volumeArgs
 		for _, volumeSpec := range nodeSpec.Volumes {
-			volume, err := newNodeVolume(volumeSpec, cluster.Images)
+			volume, err := newNodeVolume(volumeSpec, cluster.Images, cluster.DeviceClasses)
 			Expect(err).NotTo(HaveOccurred())
 
-			args, err := volume.create(context.Background(), r.DataDir)
+			args, err := volume.create(context.Background(), r.DataDir, "")
 			Expect(err).NotTo(HaveOccurred())
 			volumeArgs = append(volumeArgs, args)
 		}

@@ -14,11 +14,11 @@ import (
 )
 
 type nodeVolume interface {
-	create(context.Context, string) (volumeArgs, error)
+	create(context.Context, string, string) (volumeArgs, error)
 	prepare(ctx context.Context, c *util.Cache) error
 }
 
-func newNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (nodeVolume, error) {
+func newNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec, deviceClassSpecs []*types.DeviceClassSpec) (nodeVolume, error) {
 	var cache types.NodeVolumeCache
 	switch spec.Cache {
 	case "":
@@ -29,6 +29,16 @@ func newNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (no
 		return nil, errors.New("invalid cache type for volume")
 	}
 
+	deviceClassDir := ""
+	for _, deviceClassSpec := range deviceClassSpecs {
+		if spec.DeviceClass == deviceClassSpec.Name {
+			deviceClassDir = deviceClassSpec.Path
+		}
+	}
+	if spec.DeviceClass != "" && deviceClassDir == "" {
+		return nil, fmt.Errorf("invalid device-class %s", spec.DeviceClass)
+	}
+
 	switch spec.Kind {
 	case types.NodeVolumeKindImage:
 		for _, imageSpec := range imageSpecs {
@@ -37,12 +47,12 @@ func newNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (no
 				if err != nil {
 					return nil, fmt.Errorf("failed to create the image %s: %w", imageSpec.Name, err)
 				}
-				return newImageVolume(spec.Name, cache, image, spec.CopyOnWrite), nil
+				return newImageVolume(spec.Name, cache, image, spec.CopyOnWrite, deviceClassDir), nil
 			}
 		}
 		return nil, fmt.Errorf("failed to find the image %s", spec.Image)
 	case types.NodeVolumeKindLocalds:
-		return newLocalDSVolume(spec.Name, cache, spec.UserData, spec.NetworkConfig), nil
+		return newLocalDSVolume(spec.Name, cache, spec.UserData, spec.NetworkConfig, deviceClassDir), nil
 	case types.NodeVolumeKindRaw:
 		var format types.NodeVolumeFormat
 		switch spec.Format {
@@ -53,7 +63,7 @@ func newNodeVolume(spec types.NodeVolumeSpec, imageSpecs []*types.ImageSpec) (no
 		default:
 			return nil, errors.New("invalid format for raw volume")
 		}
-		return newRawVolume(spec.Name, cache, spec.Size, format), nil
+		return newRawVolume(spec.Name, cache, spec.Size, format, deviceClassDir), nil
 	case types.NodeVolumeKindHostPath:
 		return newHosPathVolume(spec.Name, spec.Path, spec.Writable), nil
 	default:
@@ -65,25 +75,46 @@ func volumePath(dataDir, name string) string {
 	return filepath.Join(dataDir, name+".img")
 }
 
-type imageVolume struct {
-	name        string
-	cache       types.NodeVolumeCache
-	image       *image
-	copyOnWrite bool
+func makeVolumeDir(dataDir, deviceClassDir, dataPathLastPart, name string) (string, error) {
+	var volumePathFull string
+	if deviceClassDir == "" {
+		volumePathFull = filepath.Join(dataDir, dataPathLastPart)
+	} else {
+		volumePathFull = filepath.Join(deviceClassDir, dataPathLastPart)
+	}
+	if err := os.MkdirAll(volumePathFull, 0755); err != nil {
+		return "", fmt.Errorf("failed to make the directory %s: %w", volumePathFull, err)
+	}
+
+	vPath := volumePath(volumePathFull, name)
+	return vPath, nil
 }
 
-func newImageVolume(name string, cache types.NodeVolumeCache, image *image, cow bool) nodeVolume {
+type imageVolume struct {
+	name           string
+	cache          types.NodeVolumeCache
+	image          *image
+	copyOnWrite    bool
+	deviceClassDir string
+}
+
+func newImageVolume(name string, cache types.NodeVolumeCache, image *image, cow bool, deviceClassDir string) nodeVolume {
 	return &imageVolume{
-		name:        name,
-		cache:       cache,
-		image:       image,
-		copyOnWrite: cow,
+		name:           name,
+		cache:          cache,
+		image:          image,
+		copyOnWrite:    cow,
+		deviceClassDir: deviceClassDir,
 	}
 }
 
-func (v *imageVolume) create(ctx context.Context, dataDir string) (volumeArgs, error) {
-	vPath := volumePath(dataDir, v.name)
-	_, err := os.Stat(vPath)
+func (v *imageVolume) create(ctx context.Context, dataDir, dataPathLastPart string) (volumeArgs, error) {
+	vPath, err := makeVolumeDir(dataDir, v.deviceClassDir, dataPathLastPart, v.name)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = os.Stat(vPath)
 	if err == nil {
 		return &imageVolumeArgs{
 			volumePath: vPath,
@@ -162,25 +193,30 @@ func (v *imageVolume) prepare(ctx context.Context, c *util.Cache) error {
 }
 
 type localDSVolume struct {
-	name          string
-	cache         types.NodeVolumeCache
-	userData      string
-	networkConfig string
+	name           string
+	cache          types.NodeVolumeCache
+	userData       string
+	networkConfig  string
+	deviceClassDir string
 }
 
-func newLocalDSVolume(name string, cache types.NodeVolumeCache, u, n string) nodeVolume {
+func newLocalDSVolume(name string, cache types.NodeVolumeCache, u, n, deviceClassDir string) nodeVolume {
 	return &localDSVolume{
-		name:          name,
-		cache:         cache,
-		userData:      u,
-		networkConfig: n,
+		name:           name,
+		cache:          cache,
+		userData:       u,
+		networkConfig:  n,
+		deviceClassDir: deviceClassDir,
 	}
 }
 
-func (v *localDSVolume) create(ctx context.Context, dataDir string) (volumeArgs, error) {
-	vPath := volumePath(dataDir, v.name)
+func (v *localDSVolume) create(ctx context.Context, dataDir, dataPathLastPart string) (volumeArgs, error) {
+	vPath, err := makeVolumeDir(dataDir, v.deviceClassDir, dataPathLastPart, v.name)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err := os.Stat(vPath)
+	_, err = os.Stat(vPath)
 	switch {
 	case os.IsNotExist(err):
 		if v.networkConfig == "" {
@@ -210,24 +246,30 @@ func (v *localDSVolume) prepare(ctx context.Context, c *util.Cache) error {
 }
 
 type rawVolume struct {
-	name   string
-	cache  types.NodeVolumeCache
-	size   string
-	format types.NodeVolumeFormat
+	name           string
+	cache          types.NodeVolumeCache
+	size           string
+	format         types.NodeVolumeFormat
+	deviceClassDir string
 }
 
-func newRawVolume(name string, cache types.NodeVolumeCache, size string, format types.NodeVolumeFormat) nodeVolume {
+func newRawVolume(name string, cache types.NodeVolumeCache, size string, format types.NodeVolumeFormat, deviceClassDir string) nodeVolume {
 	return &rawVolume{
-		name:   name,
-		cache:  cache,
-		size:   size,
-		format: format,
+		name:           name,
+		cache:          cache,
+		size:           size,
+		format:         format,
+		deviceClassDir: deviceClassDir,
 	}
 }
 
-func (v *rawVolume) create(ctx context.Context, dataDir string) (volumeArgs, error) {
-	vPath := volumePath(dataDir, v.name)
-	_, err := os.Stat(vPath)
+func (v *rawVolume) create(ctx context.Context, dataDir, dataPathLastPart string) (volumeArgs, error) {
+	vPath, err := makeVolumeDir(dataDir, v.deviceClassDir, dataPathLastPart, v.name)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = os.Stat(vPath)
 	switch {
 	case os.IsNotExist(err):
 		err = well.CommandContext(ctx, "qemu-img", "create", "-f", string(v.format), vPath, v.size).Run()
@@ -264,7 +306,7 @@ func newHosPathVolume(name string, path string, writable bool) nodeVolume {
 	}
 }
 
-func (v *hostPathVolume) create(ctx context.Context, _ string) (volumeArgs, error) {
+func (v *hostPathVolume) create(ctx context.Context, _, _ string) (volumeArgs, error) {
 	p, err := filepath.Abs(v.path)
 	if err != nil {
 		return nil, err

@@ -13,10 +13,11 @@ import (
 
 // ClusterSpec represents a set of resources for a virtual data center.
 type ClusterSpec struct {
-	Networks []*NetworkSpec
-	NetNSs   []*NetNSSpec
-	Nodes    []*NodeSpec
-	Images   []*ImageSpec
+	Networks      []*NetworkSpec
+	NetNSs        []*NetNSSpec
+	DeviceClasses []*DeviceClassSpec
+	Nodes         []*NodeSpec
+	Images        []*ImageSpec
 }
 
 // Append appends another cluster into the receiver.
@@ -25,6 +26,7 @@ func (c *ClusterSpec) Append(other *ClusterSpec) *ClusterSpec {
 	c.NetNSs = append(c.NetNSs, other.NetNSs...)
 	c.Nodes = append(c.Nodes, other.Nodes...)
 	c.Images = append(c.Images, other.Images...)
+	c.DeviceClasses = append(c.DeviceClasses, other.DeviceClasses...)
 	return c
 }
 
@@ -118,6 +120,28 @@ type NetNSAppSpec struct {
 	Command []string `json:"command"`
 }
 
+// DeviceClassSpec represents a DeviceClass specification in YAML
+type DeviceClassSpec struct {
+	Kind string `json:"kind"`
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
+func (n *DeviceClassSpec) validate() error {
+	if len(n.Name) == 0 {
+		return errors.New("device class name is empty")
+	}
+
+	if n.Path == "" {
+		return errors.New("device class path is empty")
+	}
+
+	if !filepath.IsAbs(n.Path) {
+		return errors.New("path should be absolute")
+	}
+	return nil
+}
+
 type NodeVolumeCache string
 type NodeVolumeKind string
 type NodeVolumeFormat string
@@ -187,6 +211,7 @@ type NodeVolumeSpec struct {
 	Format        NodeVolumeFormat `json:"format,omitempty"`
 	VG            string           `json:"vg,omitempty"`
 	Writable      bool             `json:"writable,omitempty"`
+	DeviceClass   string           `json:"device-class,omitempty"`
 }
 
 func (n *NodeVolumeSpec) validate() error {
@@ -297,6 +322,15 @@ func Parse(r io.Reader) (*ClusterSpec, error) {
 				return nil, fmt.Errorf("invalid NetworkNamespace resource: %w", err)
 			}
 			cluster.NetNSs = append(cluster.NetNSs, n)
+		case "DeviceClass":
+			n := &DeviceClassSpec{}
+			if err := yaml.Unmarshal(y, n); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal the DeviceClass yaml document %s: %w", y, err)
+			}
+			if err := n.validate(); err != nil {
+				return nil, fmt.Errorf("invalid DeviceClass resource: %w", err)
+			}
+			cluster.DeviceClasses = append(cluster.DeviceClasses, n)
 		case "Node":
 			n := &NodeSpec{}
 			if err := yaml.Unmarshal(y, n); err != nil {

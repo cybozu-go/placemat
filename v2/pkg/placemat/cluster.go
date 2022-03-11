@@ -21,30 +21,32 @@ type Cluster interface {
 }
 
 type cluster struct {
-	networkSpecs []*types.NetworkSpec
-	netNSSpecs   []*types.NetNSSpec
-	nodeSpecs    []*types.NodeSpec
-	imageSpecs   []*types.ImageSpec
-	networks     []dcnet.Network
-	netNss       []dcnet.NetNS
-	nodes        []vm.Node
-	vms          map[string]vm.VM
-	networkMap   map[string]dcnet.Network
-	nodeSpecMap  map[string]*types.NodeSpec
-	nodeMap      map[string]vm.Node
+	networkSpecs     []*types.NetworkSpec
+	netNSSpecs       []*types.NetNSSpec
+	deviceClassSpecs []*types.DeviceClassSpec
+	nodeSpecs        []*types.NodeSpec
+	imageSpecs       []*types.ImageSpec
+	networks         []dcnet.Network
+	netNss           []dcnet.NetNS
+	nodes            []vm.Node
+	vms              map[string]vm.VM
+	networkMap       map[string]dcnet.Network
+	nodeSpecMap      map[string]*types.NodeSpec
+	nodeMap          map[string]vm.Node
 }
 
 // NewCluster creates a Cluster from spec.
 func NewCluster(spec *types.ClusterSpec) (*cluster, error) {
 	cluster := &cluster{
-		networkSpecs: spec.Networks,
-		netNSSpecs:   spec.NetNSs,
-		nodeSpecs:    spec.Nodes,
-		imageSpecs:   spec.Images,
-		vms:          make(map[string]vm.VM),
-		networkMap:   make(map[string]dcnet.Network),
-		nodeSpecMap:  make(map[string]*types.NodeSpec),
-		nodeMap:      make(map[string]vm.Node),
+		networkSpecs:     spec.Networks,
+		netNSSpecs:       spec.NetNSs,
+		deviceClassSpecs: spec.DeviceClasses,
+		nodeSpecs:        spec.Nodes,
+		imageSpecs:       spec.Images,
+		vms:              make(map[string]vm.VM),
+		networkMap:       make(map[string]dcnet.Network),
+		nodeSpecMap:      make(map[string]*types.NodeSpec),
+		nodeMap:          make(map[string]vm.Node),
 	}
 
 	for _, node := range cluster.nodeSpecs {
@@ -86,7 +88,7 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 	}
 
 	for _, spec := range c.nodeSpecs {
-		node, err := vm.NewNode(spec, c.imageSpecs)
+		node, err := vm.NewNode(spec, c.imageSpecs, c.deviceClassSpecs)
 		if err != nil {
 			return err
 		}

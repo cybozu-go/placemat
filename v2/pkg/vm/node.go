@@ -51,7 +51,7 @@ type smBIOSConfig struct {
 }
 
 // NewNode creates a Node from spec.
-func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec) (Node, error) {
+func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec, deviceClassSpecs []*types.DeviceClassSpec) (Node, error) {
 	n := &node{
 		name:               spec.Name,
 		ignitionFile:       spec.IgnitionFile,
@@ -68,7 +68,7 @@ func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec) (Node, error) 
 	}
 
 	for _, v := range spec.Volumes {
-		vol, err := newNodeVolume(v, imageSpecs)
+		vol, err := newNodeVolume(v, imageSpecs, deviceClassSpecs)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create the node volume %s: %w", v.Name, err)
 		}
@@ -186,13 +186,10 @@ func (n *node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMC
 }
 
 func (n *node) createVolumes(ctx context.Context, dataDir string) ([]volumeArgs, error) {
-	volumePath := filepath.Join(dataDir, "volumes", n.name)
-	if err := os.MkdirAll(volumePath, 0755); err != nil {
-		return nil, fmt.Errorf("failed to make the directory %s: %w", volumePath, err)
-	}
+	volumePathLastPart := filepath.Join("volumes", n.name)
 	var argsList []volumeArgs
 	for _, v := range n.volumes {
-		args, err := v.create(ctx, volumePath)
+		args, err := v.create(ctx, dataDir, volumePathLastPart)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create the volume: %w", err)
 		}
