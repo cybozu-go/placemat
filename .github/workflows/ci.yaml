@@ -8,7 +8,7 @@ defaults:
   run:
     working-directory: v2
 env:
-  go-version: 1.16
+  go-version: 1.17
 jobs:
   test:
     name: Small test
@@ -19,6 +19,9 @@ jobs:
         with:
           go-version: ${{ env.go-version }}
       - run: make setup
+      - run: make test-tools
+      - run: make check-generate
+      - run: make code-check
       - run: make test
         timeout-minutes: 20
       - run: make test-dcnet

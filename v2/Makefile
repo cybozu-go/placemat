@@ -1,6 +1,11 @@
 SUDO = sudo
 FAKEROOT = fakeroot
 
+TESTTOOLDIR := $(CURDIR)/bin
+NILERR := $(TESTTOOLDIR)/nilerr
+STATICCHECK := $(TESTTOOLDIR)/staticcheck
+CUSTOMCHECKER := $(TESTTOOLDIR)/custom-checker
+
 ### for debian package
 PACKAGES := fakeroot
 WORKDIR := $(CURDIR)/work
@@ -35,24 +40,34 @@ $(DEB):
 
 .PHONY: clean
 clean:
-	rm -rf $(WORKDIR) $(DEB)
+	rm -rf $(TESTTOOLDIR) $(WORKDIR) $(DEB)
 
 .PHONY: setup
 setup:
 	$(SUDO) apt-get update
 	$(SUDO) apt-get -y install --no-install-recommends qemu qemu-kvm cloud-utils freeipmi-tools
 
+.PHONY: test-tools
+test-tools:
+	GOBIN=$(TESTTOOLDIR) go install github.com/cybozu/neco-containers/golang/analyzer/cmd/custom-checker@latest
+	GOBIN=$(TESTTOOLDIR) go install honnef.co/go/tools/cmd/staticcheck@latest
+	GOBIN=$(TESTTOOLDIR) go install github.com/gostaticanalysis/nilerr/cmd/nilerr@latest
+
+.PHONY: check-generate
+check-generate:
+	go mod tidy
+	git diff --exit-code --name-only
+
 .PHONY: code-check
-code-check: test-tools
+code-check:
 	test -z "$$(gofmt -s -l . | tee /dev/stderr)"
-	staticcheck ./...
-	test -z "$$(nilerr ./... 2>&1 | tee /dev/stderr)"
-	test -z "$$(custom-checker -restrictpkg.packages=html/template,log $$(go list -tags='$(GOTAGS)' ./...) 2>&1 | tee /dev/stderr)"
-	go install ./...
+	$(STATICCHECK) ./...
+	test -z "$$($(NILERR) ./... 2>&1 | tee /dev/stderr)"
+	test -z "$$($(CUSTOMCHECKER) -restrictpkg.packages=html/template,log $$(go list -tags='$(GOTAGS)' ./...) 2>&1 | tee /dev/stderr)"
 	go vet ./...
 
 .PHONY: test
-test: code-check
+test:
 	go test -race -v -count 1 ./...
 
 .PHONY: test-dcnet
@@ -66,24 +81,3 @@ test-vm:
 	go test -c ./pkg/vm
 	$(SUDO) ./vm.test -test.v
 	rm -f vm.test
-
-.PHONY: test-tools
-test-tools: custom-checker staticcheck nilerr
-
-.PHONY: custom-checker
-custom-checker:
-	if ! which custom-checker >/dev/null; then \
-		cd /tmp; env GOFLAGS= GO111MODULE=on go get github.com/cybozu/neco-containers/golang/analyzer/cmd/custom-checker; \
-	fi
-
-.PHONY: staticcheck
-staticcheck:
-	if ! which staticcheck >/dev/null; then \
-		cd /tmp; env GOFLAGS= GO111MODULE=on go get honnef.co/go/tools/cmd/staticcheck; \
-	fi
-
-.PHONY: nilerr
-nilerr:
-	if ! which nilerr >/dev/null; then \
-		cd /tmp; env GOFLAGS= GO111MODULE=on go get github.com/gostaticanalysis/nilerr/cmd/nilerr; \
-	fi
