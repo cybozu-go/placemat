@@ -162,6 +162,16 @@ const (
 	NodeVolumeFormatRaw   = NodeVolumeFormat("raw")
 )
 
+// SMPSpec represents a SMP (CPU) specification in YAML
+type SMPSpec struct {
+	CPUs    int `json:"cpus,omitempty"`
+	Cores   int `json:"cores,omitempty"`
+	Threads int `json:"threads,omitempty"`
+	Dies    int `json:"dies,omitempty"`
+	Sockets int `json:"sockets,omitempty"`
+	MaxCPUs int `json:"maxcpus,omitempty"`
+}
+
 // NodeSpec represents a Node specification in YAML
 type NodeSpec struct {
 	Kind               string           `json:"kind"`
@@ -169,7 +179,8 @@ type NodeSpec struct {
 	Interfaces         []string         `json:"interfaces,omitempty"`
 	Volumes            []NodeVolumeSpec `json:"volumes,omitempty"`
 	IgnitionFile       string           `json:"ignition,omitempty"`
-	CPU                int              `json:"cpu,omitempty"`
+	CPU                int              `json:"cpu,omitempty"` // compatibility use
+	SMP                *SMPSpec         `json:"smp,omitempty"`
 	Memory             string           `json:"memory,omitempty"`
 	NetworkDeviceQueue int              `json:"network-device-queue,omitempty"`
 	UEFI               bool             `json:"uefi,omitempty"`
@@ -187,6 +198,18 @@ func (n *NodeSpec) validate() error {
 			return err
 		}
 	}
+
+	if n.CPU != 0 && n.SMP != nil {
+		return errors.New("node cpu and smp are exclusive")
+	}
+	if n.CPU == 0 && n.SMP == nil {
+		return errors.New("node cpu or smp is required")
+	}
+	if n.CPU != 0 {
+		n.SMP = &SMPSpec{CPUs: n.CPU}
+		n.CPU = 0
+	}
+
 	return nil
 }
 

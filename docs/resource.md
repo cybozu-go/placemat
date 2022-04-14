@@ -80,7 +80,12 @@ volumes:
     path: /var/lib/foo
     writable: false
 ignition: my-node.ign
-cpu: 2
+smp:
+  cpus: 384
+  cores: 6
+  threads: 2
+  dies: 8
+  sockets: 4
 memory: 4G
 network-device-queue: 4
 smbios:
@@ -100,7 +105,14 @@ The properties are:
     - `raw`: Raw (and empty) block device backed by a file.
     - `hostPath`: Shared directory of the host using QEMU 9pfs.
 - `ignition`: [Ignition file](https://coreos.com/ignition/docs/latest/configuration-v2_1.html).
-- `cpu`: The amount of virtual CPUs.
+- `smp`: The SMP configuration. The meaning of subfields are same as QEMU's `-smp` option. Omitted subfields are not passed to QEMU.
+    - `cpus`: The amount of virtual CPUs.
+    - `cores`: The amount of cores per die.
+    - `threads`: The amount of threads per core.
+    - `dies`: The amount of dies per socket.
+    - `sockets`: The amount of sockets.
+    - `maxcpus`: The amount of maximum hotpluggable CPUs. (CPU hotplug is not tested in placemat)
+- `cpu`: The amount of virtual CPUs. Compatibility for older placemat and exclusive with `smp`.
 - `memory`: The amount of memory.
 - `network-device-queue`: The count of VM's network device queue. Placemat enables multi queue virtio-net if network-device-queue is greater than 1.
 - `smbios`: System Management BIOS (SMBIOS) values for `manufacturer`, `product`, and `serial`.  If `serial` is not set, a hash value of the node's name is used.

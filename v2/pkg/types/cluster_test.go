@@ -51,7 +51,13 @@ interfaces:
 - r0-node1
 - r0-node2
 memory: 2G
-cpu: 8
+smp:
+  cpus: 8
+  cores: 3
+  threads: 2
+  dies: 6
+  sockets: 4
+  maxcpus: 100
 network-device-queue: 16
 smbios:
   manufacturer: cybozu
@@ -160,8 +166,15 @@ file: cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 							Path: "/var/foo/sabakan-data",
 						},
 					},
-					IgnitionFile:       "my-node.ign",
-					CPU:                8,
+					IgnitionFile: "my-node.ign",
+					SMP: &SMPSpec{
+						CPUs:    8,
+						Cores:   3,
+						Threads: 2,
+						Dies:    6,
+						Sockets: 4,
+						MaxCPUs: 100,
+					},
 					Memory:             "2G",
 					NetworkDeviceQueue: 16,
 					UEFI:               false,
@@ -181,6 +194,46 @@ file: cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 				},
 			},
 		}))
+	})
+
+	It("should create a node with old style cpu config from a yaml", func() {
+		clusterYaml := `
+kind: Node
+name: boot-0
+cpu: 8
+`
+		cluster, err := Parse(strings.NewReader(clusterYaml))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(*cluster).To(Equal(ClusterSpec{
+			Nodes: []*NodeSpec{
+				{
+					Kind: "Node",
+					Name: "boot-0",
+					SMP:  &SMPSpec{CPUs: 8},
+				},
+			},
+		}))
+	})
+
+	It("should NOT create a node with both cpu and smp", func() {
+		clusterYaml := `
+kind: Node
+name: boot-0
+cpu: 8
+smp:
+  cpus: 8
+`
+		_, err := Parse(strings.NewReader(clusterYaml))
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("should NOT create a node with neither cpu nor smp", func() {
+		clusterYaml := `
+kind: Node
+name: boot-0
+`
+		_, err := Parse(strings.NewReader(clusterYaml))
+		Expect(err).To(HaveOccurred())
 	})
 
 	It("should NOT create a network whose name is more than 15 characters", func() {

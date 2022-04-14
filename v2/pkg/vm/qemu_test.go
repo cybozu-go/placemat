@@ -48,7 +48,13 @@ var _ = Describe("QEMU command builder", func() {
 		clusterYaml := fmt.Sprintf(`
 kind: Node
 name: boot-0
-cpu: 8
+smp:
+  cpus: 8
+  cores: 3
+  threads: 2
+  dies: 6
+  sockets: 4
+  maxcpus: 100
 memory: 2G
 network-device-queue: 16
 interfaces:
@@ -132,19 +138,25 @@ use-nat: false
 			}
 		}()
 
-		qemu := newQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
-			nodeSpec.NetworkDeviceQueue, nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
-				manufacturer: nodeSpec.SMBIOS.Manufacturer,
-				product:      nodeSpec.SMBIOS.Product,
-				serial:       nodeSpec.SMBIOS.Serial,
-			})
+		qemu := newQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, smpSpec{
+			cpus:    nodeSpec.SMP.CPUs,
+			cores:   nodeSpec.SMP.Cores,
+			threads: nodeSpec.SMP.Threads,
+			dies:    nodeSpec.SMP.Dies,
+			sockets: nodeSpec.SMP.Sockets,
+			maxCpus: nodeSpec.SMP.MaxCPUs,
+		}, nodeSpec.Memory, nodeSpec.NetworkDeviceQueue, nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
+			manufacturer: nodeSpec.SMBIOS.Manufacturer,
+			product:      nodeSpec.SMBIOS.Product,
+			serial:       nodeSpec.SMBIOS.Serial,
+		})
 		qemu.macGenerator = &macGeneratorMock{}
 		command := qemu.command(r)
 
 		expected := strings.ReplaceAll(fmt.Sprintf(`
 qemu-system-x86_64
  -enable-kvm
- -smp 8
+ -smp 8,cores=3,threads=2,dies=6,sockets=4,maxcpus=100
  -m 2G
  -nographic
  -serial unix:%s/boot-0.socket,server,nowait
@@ -281,12 +293,18 @@ use-nat: false
 			}
 		}()
 
-		qemu := newQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, nodeSpec.CPU, nodeSpec.Memory,
-			nodeSpec.NetworkDeviceQueue, nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
-				manufacturer: nodeSpec.SMBIOS.Manufacturer,
-				product:      nodeSpec.SMBIOS.Product,
-				serial:       nodeSpec.SMBIOS.Serial,
-			})
+		qemu := newQemu(nodeSpec.Name, tapInfos, volumeArgs, nodeSpec.IgnitionFile, smpSpec{
+			cpus:    nodeSpec.SMP.CPUs,
+			cores:   nodeSpec.SMP.Cores,
+			threads: nodeSpec.SMP.Threads,
+			dies:    nodeSpec.SMP.Dies,
+			sockets: nodeSpec.SMP.Sockets,
+			maxCpus: nodeSpec.SMP.MaxCPUs,
+		}, nodeSpec.Memory, nodeSpec.NetworkDeviceQueue, nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
+			manufacturer: nodeSpec.SMBIOS.Manufacturer,
+			product:      nodeSpec.SMBIOS.Product,
+			serial:       nodeSpec.SMBIOS.Serial,
+		})
 		qemu.macGenerator = &macGeneratorMock{}
 		command := qemu.command(r)
 

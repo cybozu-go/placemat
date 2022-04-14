@@ -22,7 +22,7 @@ type qemu struct {
 	taps               []*tapInfo
 	volumes            []volumeArgs
 	ignitionFile       string
-	cpu                int
+	smp                smpSpec
 	memory             string
 	networkDeviceQueue int
 	uefi               bool
@@ -31,14 +31,14 @@ type qemu struct {
 	macGenerator
 }
 
-func newQemu(nodeName string, taps []*tapInfo, volumes []volumeArgs, ignitionFile string, cpu int,
+func newQemu(nodeName string, taps []*tapInfo, volumes []volumeArgs, ignitionFile string, smp smpSpec,
 	memory string, networkDeviceQueue int, uefi bool, tpm bool, smbios smBIOSConfig) *qemu {
 	return &qemu{
 		name:               nodeName,
 		taps:               taps,
 		volumes:            volumes,
 		ignitionFile:       ignitionFile,
-		cpu:                cpu,
+		smp:                smp,
 		memory:             memory,
 		networkDeviceQueue: networkDeviceQueue,
 		uefi:               uefi,
@@ -117,8 +117,24 @@ func (c *qemu) qemuParams(r *Runtime) []string {
 		params = append(params, fmt.Sprintf("opt/com.coreos/config,file=%s", c.ignitionFile))
 	}
 
-	if c.cpu != 0 {
-		params = append(params, "-smp", strconv.Itoa(c.cpu))
+	if c.smp.cpus != 0 {
+		smpParams := strconv.Itoa(c.smp.cpus)
+		if c.smp.cores != 0 {
+			smpParams += fmt.Sprintf(",cores=%d", c.smp.cores)
+		}
+		if c.smp.threads != 0 {
+			smpParams += fmt.Sprintf(",threads=%d", c.smp.threads)
+		}
+		if c.smp.dies != 0 {
+			smpParams += fmt.Sprintf(",dies=%d", c.smp.dies)
+		}
+		if c.smp.sockets != 0 {
+			smpParams += fmt.Sprintf(",sockets=%d", c.smp.sockets)
+		}
+		if c.smp.maxCpus != 0 {
+			smpParams += fmt.Sprintf(",maxcpus=%d", c.smp.maxCpus)
+		}
+		params = append(params, "-smp", smpParams)
 	}
 	if c.memory != "" {
 		params = append(params, "-m", c.memory)
