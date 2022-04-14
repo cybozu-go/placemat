@@ -34,10 +34,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - id: auth
-        uses: google-github-actions/auth@v0.7
+        uses: google-github-actions/auth@v0.7.0
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-      - uses: google-github-actions/setup-gcloud@v0.6
+      - uses: google-github-actions/setup-gcloud@v0.6.0
       - name: Run e2e test on GCP instance
         run: ../bin/run-mtest.sh
       - name: Set the instance lifetime
