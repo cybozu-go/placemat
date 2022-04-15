@@ -8,17 +8,20 @@ defaults:
   run:
     working-directory: v2
 env:
-  go-version: 1.16
+  go-version: 1.17
 jobs:
   test:
     name: Small test
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.go-version }}
       - run: make setup
+      - run: make test-tools
+      - run: make check-generate
+      - run: make code-check
       - run: make test
         timeout-minutes: 20
       - run: make test-dcnet
@@ -30,9 +33,11 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-      - uses: google-github-actions/setup-gcloud@v0.2.0
+      - id: auth
+        uses: google-github-actions/auth@v0.7.0
         with:
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v0.6.0
       - name: Run e2e test on GCP instance
         run: ../bin/run-mtest.sh
       - name: Set the instance lifetime
