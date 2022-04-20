@@ -172,6 +172,11 @@ type SMPSpec struct {
 	MaxCPUs int `json:"maxcpus,omitempty"`
 }
 
+type NUMASpec struct {
+	// Nodes represents the number of NUMA nodes. Used in case of simple symmetric NUMA configuration.
+	Nodes int `json:"nodes,omitempty"`
+}
+
 // NodeSpec represents a Node specification in YAML
 type NodeSpec struct {
 	Kind               string           `json:"kind"`
@@ -182,6 +187,7 @@ type NodeSpec struct {
 	CPU                int              `json:"cpu,omitempty"` // compatibility use
 	SMP                *SMPSpec         `json:"smp,omitempty"`
 	Memory             string           `json:"memory,omitempty"`
+	NUMA               NUMASpec         `json:"numa,omitempty"`
 	NetworkDeviceQueue int              `json:"network-device-queue,omitempty"`
 	UEFI               bool             `json:"uefi,omitempty"`
 	TPM                bool             `json:"tpm,omitempty"`

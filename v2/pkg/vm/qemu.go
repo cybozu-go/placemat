@@ -24,6 +24,7 @@ type qemu struct {
 	ignitionFile       string
 	smp                smpSpec
 	memory             string
+	numa               numaSpec
 	networkDeviceQueue int
 	uefi               bool
 	tpm                bool
@@ -32,7 +33,7 @@ type qemu struct {
 }
 
 func newQemu(nodeName string, taps []*tapInfo, volumes []volumeArgs, ignitionFile string, smp smpSpec,
-	memory string, networkDeviceQueue int, uefi bool, tpm bool, smbios smBIOSConfig) *qemu {
+	memory string, numa numaSpec, networkDeviceQueue int, uefi bool, tpm bool, smbios smBIOSConfig) *qemu {
 	return &qemu{
 		name:               nodeName,
 		taps:               taps,
@@ -40,6 +41,7 @@ func newQemu(nodeName string, taps []*tapInfo, volumes []volumeArgs, ignitionFil
 		ignitionFile:       ignitionFile,
 		smp:                smp,
 		memory:             memory,
+		numa:               numa,
 		networkDeviceQueue: networkDeviceQueue,
 		uefi:               uefi,
 		tpm:                tpm,
@@ -138,6 +140,12 @@ func (c *qemu) qemuParams(r *Runtime) []string {
 	}
 	if c.memory != "" {
 		params = append(params, "-m", c.memory)
+	}
+	if c.numa.nodes != 0 {
+		cpuPerNode := c.smp.cpus / c.numa.nodes
+		for i := 0; i < c.numa.nodes; i++ {
+			params = append(params, "-numa", fmt.Sprintf("node,cpus=%d-%d", cpuPerNode*i, cpuPerNode*(i+1)-1))
+		}
 	}
 	if !r.Graphic {
 		p := r.socketPath(c.name)

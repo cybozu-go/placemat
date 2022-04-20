@@ -58,6 +58,8 @@ smp:
   dies: 6
   sockets: 4
   maxcpus: 100
+numa:
+  nodes: 12
 network-device-queue: 16
 smbios:
   manufacturer: cybozu
@@ -175,7 +177,10 @@ file: cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 						Sockets: 4,
 						MaxCPUs: 100,
 					},
-					Memory:             "2G",
+					Memory: "2G",
+					NUMA: NUMASpec{
+						Nodes: 12,
+					},
 					NetworkDeviceQueue: 16,
 					UEFI:               false,
 					TPM:                true,
