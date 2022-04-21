@@ -114,7 +114,7 @@ The properties are:
     - `maxcpus`: The amount of maximum hotpluggable CPUs. (CPU hotplug is not tested in placemat)
 - `cpu`: The amount of virtual CPUs. Compatibility for older placemat and exclusive with `smp`.
 - `memory`: The amount of memory.
-- `numa`: The NUMA configuration. At present, only supports simple symmetric configuration: the amount of cpus and memory are same for all NUMA nodes and all the distances between NUMA nodes are same.
+- `numa`: The NUMA configuration. At present, only supports simple symmetric configuration: the amount of cpus and memory are same for all NUMA nodes and all the distances between NUMA nodes are same. If `numa` is omitted, no `-numa` option is passed to QEMU.
     - `nodes`: The number of NUMA nodes.
 - `network-device-queue`: The count of VM's network device queue. Placemat enables multi queue virtio-net if network-device-queue is greater than 1.
 - `smbios`: System Management BIOS (SMBIOS) values for `manufacturer`, `product`, and `serial`.  If `serial` is not set, a hash value of the node's name is used.
