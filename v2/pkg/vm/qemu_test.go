@@ -49,13 +49,15 @@ var _ = Describe("QEMU command builder", func() {
 kind: Node
 name: boot-0
 smp:
-  cpus: 8
+  cpus: 72
   cores: 3
   threads: 2
   dies: 6
   sockets: 4
   maxcpus: 100
 memory: 2G
+numa:
+  nodes: 6
 network-device-queue: 16
 interfaces:
 - r0-node1
@@ -145,7 +147,9 @@ use-nat: false
 			dies:    nodeSpec.SMP.Dies,
 			sockets: nodeSpec.SMP.Sockets,
 			maxCpus: nodeSpec.SMP.MaxCPUs,
-		}, nodeSpec.Memory, nodeSpec.NetworkDeviceQueue, nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
+		}, nodeSpec.Memory, numaSpec{
+			nodes: nodeSpec.NUMA.Nodes,
+		}, nodeSpec.NetworkDeviceQueue, nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
 			manufacturer: nodeSpec.SMBIOS.Manufacturer,
 			product:      nodeSpec.SMBIOS.Product,
 			serial:       nodeSpec.SMBIOS.Serial,
@@ -156,8 +160,14 @@ use-nat: false
 		expected := strings.ReplaceAll(fmt.Sprintf(`
 qemu-system-x86_64
  -enable-kvm
- -smp 8,cores=3,threads=2,dies=6,sockets=4,maxcpus=100
+ -smp 72,cores=3,threads=2,dies=6,sockets=4,maxcpus=100
  -m 2G
+ -numa node,cpus=0-11
+ -numa node,cpus=12-23
+ -numa node,cpus=24-35
+ -numa node,cpus=36-47
+ -numa node,cpus=48-59
+ -numa node,cpus=60-71
  -nographic
  -serial unix:%s/boot-0.socket,server,nowait
  -smbios type=1,serial=fb8f2417d0b4db30050719c31ce02a2e8141bbd8
@@ -300,7 +310,9 @@ use-nat: false
 			dies:    nodeSpec.SMP.Dies,
 			sockets: nodeSpec.SMP.Sockets,
 			maxCpus: nodeSpec.SMP.MaxCPUs,
-		}, nodeSpec.Memory, nodeSpec.NetworkDeviceQueue, nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
+		}, nodeSpec.Memory, numaSpec{
+			nodes: nodeSpec.NUMA.Nodes,
+		}, nodeSpec.NetworkDeviceQueue, nodeSpec.UEFI, nodeSpec.TPM, smBIOSConfig{
 			manufacturer: nodeSpec.SMBIOS.Manufacturer,
 			product:      nodeSpec.SMBIOS.Product,
 			serial:       nodeSpec.SMBIOS.Serial,

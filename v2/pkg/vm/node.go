@@ -38,6 +38,7 @@ type node struct {
 	ignitionFile       string
 	smp                smpSpec
 	memory             string
+	numa               numaSpec
 	networkDeviceQueue int
 	uefi               bool
 	tpm                bool
@@ -59,6 +60,10 @@ type smpSpec struct {
 	maxCpus int
 }
 
+type numaSpec struct {
+	nodes int
+}
+
 // NewNode creates a Node from spec.
 func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec, deviceClassSpecs []*types.DeviceClassSpec) (Node, error) {
 	n := &node{
@@ -72,7 +77,10 @@ func NewNode(spec *types.NodeSpec, imageSpecs []*types.ImageSpec, deviceClassSpe
 			sockets: spec.SMP.Sockets,
 			maxCpus: spec.SMP.MaxCPUs,
 		},
-		memory:             spec.Memory,
+		memory: spec.Memory,
+		numa: numaSpec{
+			nodes: spec.NUMA.Nodes,
+		},
 		networkDeviceQueue: spec.NetworkDeviceQueue,
 		uefi:               spec.UEFI,
 		tpm:                spec.TPM,
@@ -144,7 +152,7 @@ func (n *node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMC
 		}
 	}
 
-	qemu := newQemu(n.name, tapInfos, vArgs, n.ignitionFile, n.smp, n.memory, n.networkDeviceQueue, n.uefi, n.tpm, n.smbios)
+	qemu := newQemu(n.name, tapInfos, vArgs, n.ignitionFile, n.smp, n.memory, n.numa, n.networkDeviceQueue, n.uefi, n.tpm, n.smbios)
 	c := qemu.command(r)
 	qemuCommand := well.CommandContext(ctx, c[0], c[1:]...)
 	qemuCommand.Stdout = util.NewColoredLogWriter("qemu", n.name, os.Stdout)
