@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.0] - 2022-04-22
+
+### Added
+
+- Add simple NUMA support (#164)
+
 ## [2.2.0] - 2022-04-18
 
 ### Added
@@ -195,7 +201,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/cybozu-go/placemat/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/cybozu-go/placemat/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/cybozu-go/placemat/compare/v2.0.6...v2.1.0
 [2.0.6]: https://github.com/cybozu-go/placemat/compare/v2.0.5...v2.0.6
