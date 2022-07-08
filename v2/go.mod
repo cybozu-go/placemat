@@ -3,8 +3,7 @@ module github.com/cybozu-go/placemat/v2
 go 1.16
 
 require (
-	github.com/containernetworking/cni v1.0.1 // indirect
-	github.com/containernetworking/plugins v1.0.0
+	github.com/containernetworking/plugins v1.1.0
 	github.com/coreos/go-iptables v0.6.0
 	github.com/cybozu-go/log v1.6.1
 	github.com/cybozu-go/netutil v1.4.2
