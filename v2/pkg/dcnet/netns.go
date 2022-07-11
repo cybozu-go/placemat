@@ -135,7 +135,7 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 			if err != nil {
 				return err
 			}
-			hostVeth, containerVeth, err := ip.SetupVethWithName(fmt.Sprintf("eth%d", i), hostVethName, mtu, hostNS)
+			hostVeth, containerVeth, err := ip.SetupVethWithName(fmt.Sprintf("eth%d", i), hostVethName, mtu, "", hostNS)
 			if err != nil {
 				return fmt.Errorf("failed to set up veth: %w", err)
 			}
