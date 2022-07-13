@@ -37,14 +37,14 @@ Bump version
 
     ```console
     # Set VERSION and confirm it. It should not have "v" prefix.
-    $ VERSION=x.y.x
+    $ VERSION=x.y.z
     $ echo $VERSION
     ```
 
 2. Make a branch to release
 
     ```console
-    $ git neco dev "$VERSION"
+    $ git neco dev "bump-$VERSION"
     ```
 
 3. Edit `v2/version.go` for the new version.
@@ -61,7 +61,7 @@ Bump version
 
     ```console
     # Set VERSION again.
-    $ VERSION=x.y.x
+    $ VERSION=x.y.z
     $ echo $VERSION
 
     $ git checkout main
