@@ -2,7 +2,6 @@ SUDO = sudo
 FAKEROOT = fakeroot
 
 TESTTOOLDIR := $(CURDIR)/bin
-NILERR := $(TESTTOOLDIR)/nilerr
 STATICCHECK := $(TESTTOOLDIR)/staticcheck
 CUSTOMCHECKER := $(TESTTOOLDIR)/custom-checker
 
@@ -51,7 +50,6 @@ setup:
 test-tools:
 	GOBIN=$(TESTTOOLDIR) go install github.com/cybozu/neco-containers/golang/analyzer/cmd/custom-checker@latest
 	GOBIN=$(TESTTOOLDIR) go install honnef.co/go/tools/cmd/staticcheck@latest
-	GOBIN=$(TESTTOOLDIR) go install github.com/gostaticanalysis/nilerr/cmd/nilerr@latest
 
 .PHONY: check-generate
 check-generate:
@@ -62,7 +60,6 @@ check-generate:
 code-check:
 	test -z "$$(gofmt -s -l . | tee /dev/stderr)"
 	$(STATICCHECK) ./...
-	test -z "$$($(NILERR) ./... 2>&1 | tee /dev/stderr)"
 	test -z "$$($(CUSTOMCHECKER) -restrictpkg.packages=html/template,log $$(go list -tags='$(GOTAGS)' ./...) 2>&1 | tee /dev/stderr)"
 	go vet ./...
 
