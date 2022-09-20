@@ -56,4 +56,4 @@ $ sudo pmctl2 node enter worker-1    # autologin as "core" user
 [nginx]: https://nginx.org/
 [UEFI HTTP Boot]: https://github.com/tianocore/tianocore.github.io/wiki/HTTP-Boot
 [iPXE]: https://ipxe.org/
-[Flatcar Container Linux]: https://kinvolk.io/docs/flatcar-container-linux/latest/
+[Flatcar Container Linux]: https://www.flatcar.org/docs/latest/
