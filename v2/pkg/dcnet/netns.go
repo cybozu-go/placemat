@@ -139,6 +139,13 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 			if err != nil {
 				return fmt.Errorf("failed to set up veth: %w", err)
 			}
+			contVeth, err := netlink.LinkByName(fmt.Sprintf("eth%d", i))
+			if err != nil {
+				return err
+			}
+			if err = netlink.LinkSetUp(contVeth); err != nil {
+				return err
+			}
 			n.hostVethNames = append(n.hostVethNames, hostVeth.Name)
 
 			containerVethLink, err := netlink.LinkByName(containerVeth.Name)
