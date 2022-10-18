@@ -139,13 +139,6 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 			if err != nil {
 				return fmt.Errorf("failed to set up veth: %w", err)
 			}
-			contVeth, err := netlink.LinkByName(fmt.Sprintf("eth%d", i))
-			if err != nil {
-				return err
-			}
-			if err = netlink.LinkSetUp(contVeth); err != nil {
-				return err
-			}
 			n.hostVethNames = append(n.hostVethNames, hostVeth.Name)
 
 			containerVethLink, err := netlink.LinkByName(containerVeth.Name)
@@ -156,6 +149,9 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 				if err = netlink.AddrAdd(containerVethLink, addr); err != nil {
 					return fmt.Errorf("failed to add the address %s to %s: %w", addr.String(), containerVethLink.Attrs().Name, err)
 				}
+			}
+			if err = netlink.LinkSetUp(containerVethLink); err != nil {
+				return err
 			}
 		}
 
