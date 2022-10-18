@@ -151,7 +151,7 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 				}
 			}
 			if err = netlink.LinkSetUp(containerVethLink); err != nil {
-				return err
+				return fmt.Errorf("failed to set %s up: %w", containerVethLink.Attrs().Name, err)
 			}
 		}
 
