@@ -141,8 +141,11 @@ var _ = Describe("Placemat", func() {
 			Expect(status.PowerStatus).To(Equal(virtualbmc.PowerStatusOn))
 		})
 
-		By("forwarding to netns2 through netns1", func() {
+		By("forwarding to netns2 through netns1, 8000", func() {
 			checkForwarding(8000)
+		})
+
+		By("forwarding to netns2 through netns1, 8800", func() {
 			checkForwarding(8800)
 		})
 
@@ -171,8 +174,8 @@ var _ = Describe("Placemat", func() {
 })
 
 func checkForwarding(port int) {
-	err := exec.Command("sudo", pmctlPath, "forward", "add", "30000", fmt.Sprintf("netns1:%s:%d", netns2, port)).Run()
-	Expect(err).NotTo(HaveOccurred())
+	output, err := exec.Command("sudo", pmctlPath, "forward", "add", "30000", fmt.Sprintf("netns1:%s:%d", netns2, port)).CombinedOutput()
+	Expect(err).NotTo(HaveOccurred(), string(output))
 
 	var forwards []*cmd.ForwardSetting
 	stdout, err := pmctl("forward", "list", "--json")
@@ -185,8 +188,8 @@ func checkForwarding(port int) {
 	Expect(forwards[0].RemoteHost).Should(Equal(netns2))
 	Expect(forwards[0].RemotePort).Should(Equal(port))
 
-	err = exec.Command("curl", "localhost:30000").Run()
-	Expect(err).NotTo(HaveOccurred())
+	output, err = exec.Command("curl", "localhost:30000").CombinedOutput()
+	Expect(err).NotTo(HaveOccurred(), string(output))
 
 	err = exec.Command("sudo", pmctlPath, "forward", "delete", "30000").Run()
 	Expect(err).NotTo(HaveOccurred())

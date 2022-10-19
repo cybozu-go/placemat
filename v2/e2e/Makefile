@@ -93,7 +93,7 @@ $(OUTPUT)/pmctl2:
 .PHONY: test
 test: $(TEST_DEPS)
 	sudo rm -rf $(PLACEMAT_DATADIR)
-	env E2ETEST=1 go test -count 1 -v . -args -ginkgo.progress -ginkgo.v
+	env E2ETEST=1 go test -failfast -count 1 -v . -args -ginkgo.progress -ginkgo.v
 
 .PHONY: clean
 clean:

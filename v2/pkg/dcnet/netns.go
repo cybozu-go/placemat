@@ -150,6 +150,9 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 					return fmt.Errorf("failed to add the address %s to %s: %w", addr.String(), containerVethLink.Attrs().Name, err)
 				}
 			}
+			if err = netlink.LinkSetUp(containerVethLink); err != nil {
+				return fmt.Errorf("failed to set %s up: %w", containerVethLink.Attrs().Name, err)
+			}
 		}
 
 		return nil

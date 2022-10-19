@@ -5,6 +5,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Update dependencies (#167)
+    - Update Golang to 1.18
+
 ## [2.3.0] - 2022-04-22
 
 ### Added
