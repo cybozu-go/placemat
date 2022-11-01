@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -184,7 +185,18 @@ func (v *imageVolume) create(ctx context.Context, dataDir, dataPathLastPart stri
 }
 
 func createCoWImageFromBase(ctx context.Context, base, dest string) error {
-	c := well.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-o", "backing_file="+base, dest)
+	var info map[string]interface{}
+	out, err := well.CommandContext(ctx, "qemu-img", "info", "--output=json", base).Output()
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(out, &info); err != nil {
+		return err
+	}
+
+	fileFormat := fmt.Sprintf("%v", info["format"])
+	c := well.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-F", fileFormat, "-o", "backing_file="+base, dest)
 	return c.Run()
 }
 
