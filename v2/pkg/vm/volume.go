@@ -185,7 +185,10 @@ func (v *imageVolume) create(ctx context.Context, dataDir, dataPathLastPart stri
 }
 
 func createCoWImageFromBase(ctx context.Context, base, dest string) error {
-	var info map[string]interface{}
+	var info struct {
+		Format string `json:"format"`
+	}
+
 	out, err := well.CommandContext(ctx, "qemu-img", "info", "--output=json", base).Output()
 	if err != nil {
 		return err
@@ -195,8 +198,11 @@ func createCoWImageFromBase(ctx context.Context, base, dest string) error {
 		return err
 	}
 
-	fileFormat := fmt.Sprintf("%v", info["format"])
-	c := well.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-F", fileFormat, "-o", "backing_file="+base, dest)
+	if len(info.Format) == 0 {
+		return errors.New("failed to probe file format for " + base)
+	}
+
+	c := well.CommandContext(ctx, "qemu-img", "create", "-f", "qcow2", "-F", info.Format, "-o", "backing_file="+base, dest)
 	return c.Run()
 }
 
