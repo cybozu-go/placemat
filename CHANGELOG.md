@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 - Fix backing format (#171)
   - The PR #171 fixed a bug that the image is not created by `qemu-img create`.
+  - QEMU 6.1 or later support.
 
 ## [2.3.1] - 2022-10-19
 
