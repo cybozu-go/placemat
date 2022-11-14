@@ -5,6 +5,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.4.0] - 2022-11-11
+
+### Fixed
+
+- Fix backing format (#171)
+  - The PR #171 fixed a bug that the image is not created by `qemu-img create`.
+  - QEMU 6.1 or later support.
+
 ## [2.3.1] - 2022-10-19
 
 ### Changed
@@ -208,7 +216,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.3.1...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/cybozu-go/placemat/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/cybozu-go/placemat/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/cybozu-go/placemat/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/cybozu-go/placemat/compare/v2.1.0...v2.2.0
