@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -33,7 +32,7 @@ func escapeKey(key string) string {
 
 func (c *Cache) Put(key string, data io.Reader) error {
 	ek := escapeKey(key)
-	f, err := ioutil.TempFile(c.dir, ".tmp")
+	f, err := os.CreateTemp(c.dir, ".tmp")
 	if err != nil {
 		return err
 	}
