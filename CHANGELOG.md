@@ -5,6 +5,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Update dependencies in [#175](https://github.com/cybozu-go/placemat/pull/175)
+  - Upgrade direct dependencies in go.mod
+  - Update Golang used for testing from 1.18 to 1.19
+  - Update GitHub Actions
+
 ## [2.4.0] - 2022-11-11
 
 ### Fixed

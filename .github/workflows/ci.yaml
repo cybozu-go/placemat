@@ -8,11 +8,11 @@ defaults:
   run:
     working-directory: v2
 env:
-  go-version: 1.18
+  go-version: 1.19
 jobs:
   test:
     name: Small test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
@@ -30,14 +30,14 @@ jobs:
         timeout-minutes: 20
   e2e:
     name: End-to-end Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - id: auth
-        uses: google-github-actions/auth@v0.8.1
+        uses: google-github-actions/auth@v1.0.0
         with:
           credentials_json: ${{ secrets.NECO_TEST_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v0.6.0
+      - uses: google-github-actions/setup-gcloud@v1.0.1
       - name: Run e2e test on GCP instance
         run: ../bin/run-mtest.sh
       - name: Set the instance lifetime

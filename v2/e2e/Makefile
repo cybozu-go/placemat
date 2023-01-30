@@ -15,7 +15,7 @@ export BRIDGE_ADDRESS NODE1 NODE2 NETNS1 NETNS2 BMC1 BMC2
 # non-configuration variables
 SSH_PRIVKEY = $(realpath ./mtest_key)
 OUTPUT := ./output
-UBUNTU_IMAGE := ubuntu-20.04-server-cloudimg-amd64.img
+UBUNTU_IMAGE := ubuntu-22.04-server-cloudimg-amd64.img
 PLACEMAT = $(abspath $(OUTPUT))/placemat2
 PMCTL = $(abspath $(OUTPUT))/pmctl2
 CLUSTER_YAML = $(abspath $(OUTPUT))/cluster.yml
@@ -42,7 +42,7 @@ all:
 	@echo "    clean    - remove output directory."
 
 $(UBUNTU_IMAGE):
-	curl -sSLf -o $@ https://cloud-images.ubuntu.com/releases/20.04/release/$@
+	curl -sSLf -o $@ https://cloud-images.ubuntu.com/releases/22.04/release/$@
 
 $(OUTPUT)/cluster.yml: cluster.yml
 	mkdir -p $(OUTPUT)
