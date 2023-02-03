@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -321,7 +320,7 @@ type baseConfig struct {
 // Parse reads a yaml document and create ClusterSpec
 func Parse(r io.Reader) (*ClusterSpec, error) {
 	cluster := &ClusterSpec{}
-	f := json.YAMLFramer.NewFrameReader(ioutil.NopCloser(r))
+	f := json.YAMLFramer.NewFrameReader(io.NopCloser(r))
 	for {
 		y, err := readSingleYamlDoc(f)
 		if err == io.EOF {

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,7 +13,7 @@ import (
 	"github.com/cybozu-go/placemat/v2/cmd/pmctl2/cmd"
 	"github.com/cybozu-go/placemat/v2/pkg/placemat"
 	"github.com/cybozu-go/placemat/v2/pkg/virtualbmc"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
@@ -32,7 +32,7 @@ var _ = Describe("Placemat", func() {
 		})
 
 		By("using vhost_net", func() {
-			data, err := ioutil.ReadFile("/proc/modules")
+			data, err := os.ReadFile("/proc/modules")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(bytes.Contains(data, []byte("vhost_net"))).To(BeTrue())
 		})
@@ -116,7 +116,7 @@ var _ = Describe("Placemat", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer f.Close()
 
-			b, err := ioutil.ReadAll(f)
+			b, err := io.ReadAll(f)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(b)).To(Equal("hello\n"))
 		})
