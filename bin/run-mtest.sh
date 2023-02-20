@@ -5,6 +5,11 @@ TARGET=$2
 
 . $(dirname $0)/env
 
+if [ -z "${INSTANCE_NAME}" ]; then
+  echo 'Please set $INSTANCE_NAME'
+  exit 1
+fi
+
 delete_instance() {
   if [ $RET -ne 0 ]; then
     # do not delete GCP instance upon test failure to help debugging.

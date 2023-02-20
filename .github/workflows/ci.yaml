@@ -3,7 +3,7 @@ on:
   pull_request:
   push:
     branches:
-      - 'main'
+      - "main"
 defaults:
   run:
     working-directory: v2
@@ -38,6 +38,8 @@ jobs:
         with:
           credentials_json: ${{ secrets.NECO_TEST_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v1.0.1
+      - name: Set GCP instance name
+        run: "echo INSTANCE_NAME=placemat-${{ github.run_number }}-$(TZ=Asia/Tokyo date +%H%M%S) >> $GITHUB_ENV"
       - name: Run e2e test on GCP instance
         run: ../bin/run-mtest.sh
       - name: Set the instance lifetime
