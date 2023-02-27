@@ -20,8 +20,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
 	golang.org/x/text v0.3.3 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	k8s.io/apimachinery v0.0.0-20190301173222-2f7e9cae4418
-	k8s.io/klog v0.2.0 // indirect
+	k8s.io/apimachinery v0.15.7
 	sigs.k8s.io/yaml v1.1.0
 )
 
