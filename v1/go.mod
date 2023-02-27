@@ -17,8 +17,7 @@ require (
 	github.com/rmxymh/go-virtualbox v0.0.0-20160520145709-e1ed85288c0a // indirect
 	github.com/rmxymh/infra-ecosphere v0.0.0-20160601082221-353d14945925
 	github.com/spf13/cobra v0.0.3
-	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
-	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/crypto v0.1.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	k8s.io/apimachinery v0.0.0-20190301173222-2f7e9cae4418
 	k8s.io/klog v0.2.0 // indirect
