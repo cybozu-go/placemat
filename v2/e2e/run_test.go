@@ -185,7 +185,7 @@ func runPlacemat(cluster string, args ...string) *gexec.Session {
 
 func terminatePlacemat(session *gexec.Session) ([]byte, error) {
 	pid := session.Command.Process.Pid
-	return execAtLocal("sudo", "kill", "-TERM", strconv.Itoa(-pid))
+	return execAtLocal("sudo", "kill", "-TERM", "--", strconv.Itoa(-pid))
 }
 
 func cleanupPlacemat() {
