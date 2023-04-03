@@ -115,15 +115,15 @@ You can choose `go get` or debian package for installation.
 Install `placemat2` and `pmctl2`:
 
 ```console
-$ go get -u github.com/cybozu-go/placemat/v2/cmd/placemat2
-$ go get -u github.com/cybozu-go/placemat/v2/cmd/pmctl2
+$ go install github.com/cybozu-go/placemat/v2/cmd/placemat2@latest
+$ go install github.com/cybozu-go/placemat/v2/cmd/pmctl2@latest
 ```
 
 or
 
 ```console
-$ wget https://github.com/cybozu-go/placemat/releases/download/v${VERSION}/placemat_${VERSION}_amd64.deb
-$ sudo dpkg -i placemat_${VERSION}_amd64.deb
+$ wget https://github.com/cybozu-go/placemat/releases/download/v${VERSION}/placemat2_${VERSION}_amd64.deb
+$ sudo dpkg -i placemat2_${VERSION}_amd64.deb
 ```
 
 ### Run examples
