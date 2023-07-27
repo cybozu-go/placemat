@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
-          go-version-file: go.mod
+          go-version-file: v2/go.mod
       - run: make setup
       - run: make test-tools
       - run: make check-generate
