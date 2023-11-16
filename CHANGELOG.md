@@ -4,12 +4,25 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
-## [2.4.3] - 2023-07-28
+
+## [2.4.4] - 2023-11-15
+
 ### Changed
+
+- Update dependencies in [#193](https://github.com/cybozu-go/placemat/pull/193)
+  - Upgrade direct dependencies in go.mod
+  - Update Golang used for testing from 1.20 to 1.21
+  - Update GitHub Actions
+
+## [2.4.3] - 2023-07-28
+
+### Changed
+
 - Update dependencies in [#189](https://github.com/cybozu-go/placemat/pull/189)
   - Upgrade direct dependencies in go.mod
   - Update Golang used for testing from 1.19 to 1.20
   - Update GitHub Actions
+
 ## [2.4.2] - 2023-03-27
 
 ### Removed

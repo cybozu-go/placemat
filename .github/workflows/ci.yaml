@@ -12,8 +12,8 @@ jobs:
     name: Small test
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
         with:
           go-version-file: v2/go.mod
       - run: make setup
@@ -30,7 +30,7 @@ jobs:
     name: End-to-end Test
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - id: auth
         uses: google-github-actions/auth@v1
         with:
