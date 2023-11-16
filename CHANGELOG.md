@@ -250,7 +250,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.4.3...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.4.4...HEAD
+[2.4.4]: https://github.com/cybozu-go/placemat/compare/v2.4.3...v2.4.4
 [2.4.3]: https://github.com/cybozu-go/placemat/compare/v2.4.2...v2.4.3
 [2.4.2]: https://github.com/cybozu-go/placemat/compare/v2.4.1...v2.4.2
 [2.4.1]: https://github.com/cybozu-go/placemat/compare/v2.4.0...v2.4.1
