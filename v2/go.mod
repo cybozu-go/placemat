@@ -1,23 +1,23 @@
 module github.com/cybozu-go/placemat/v2
 
-go 1.21
+go 1.22.1
 
 require (
-	github.com/containernetworking/plugins v1.3.0
+	github.com/containernetworking/plugins v1.4.1
 	github.com/coreos/go-iptables v0.7.0
 	github.com/cybozu-go/log v1.7.0
-	github.com/cybozu-go/netutil v1.4.6
+	github.com/cybozu-go/netutil v1.4.7
 	github.com/cybozu-go/well v1.11.2
 	github.com/fatih/color v1.16.0
 	github.com/gin-gonic/gin v1.9.1
-	github.com/onsi/ginkgo/v2 v2.13.1
-	github.com/onsi/gomega v1.30.0
+	github.com/onsi/ginkgo/v2 v2.17.1
+	github.com/onsi/gomega v1.32.0
 	github.com/spf13/cobra v1.8.0
 	github.com/stmcginnis/gofish v0.15.0
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/vishvananda/netns v0.0.4
-	golang.org/x/crypto v0.17.0
-	k8s.io/apimachinery v0.27.7
+	golang.org/x/crypto v0.21.0
+	k8s.io/apimachinery v0.28.8
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -29,7 +29,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/go-logr/logr v1.3.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.14.1 // indirect
@@ -60,10 +60,10 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.4.0 // indirect
-	golang.org/x/net v0.18.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.14.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
