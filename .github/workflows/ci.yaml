@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: v2/go.mod
       - run: make setup
@@ -32,10 +32,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: auth
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.NECO_TEST_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v1
+      - uses: google-github-actions/setup-gcloud@v2
       - name: Set GCP instance name
         run: "echo INSTANCE_NAME=placemat-${{ github.run_number }}-$(TZ=Asia/Tokyo date +%H%M%S) >> $GITHUB_ENV"
       - name: Run e2e test on GCP instance
