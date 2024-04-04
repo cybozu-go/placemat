@@ -5,6 +5,17 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.4.5] - 2024-04-04
+
+### Changed
+
+- Bump golang.org/x/crypto from 0.15.0 to 0.17.0 in /v2 [#195](https://github.com/cybozu-go/placemat/pull/195)
+- Bump google.golang.org/protobuf from 1.31.0 to 1.33.0 in /v2 [#196](https://github.com/cybozu-go/placemat/pull/196)
+- Update dependencies in [#197](https://github.com/cybozu-go/placemat/pull/197)
+  - Update minimal Golang version from 1.21 to 1.22.1
+  - Upgrade direct dependencies in go.mod
+  - Update GitHub Actions
+
 ## [2.4.4] - 2023-11-15
 
 ### Changed
@@ -250,7 +261,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.4.4...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.4.5...HEAD
+[2.4.5]: https://github.com/cybozu-go/placemat/compare/v2.4.4...v2.4.5
 [2.4.4]: https://github.com/cybozu-go/placemat/compare/v2.4.3...v2.4.4
 [2.4.3]: https://github.com/cybozu-go/placemat/compare/v2.4.2...v2.4.3
 [2.4.2]: https://github.com/cybozu-go/placemat/compare/v2.4.1...v2.4.2
