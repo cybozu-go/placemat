@@ -5,6 +5,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.4.7] - 2024-11-13
+
 - Update dependencies in [#202](https://github.com/cybozu-go/placemat/pull/202)
 
 ## [2.4.6] - 2024-07-12
@@ -267,7 +269,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 
 - Many things.  See git log.
 
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.4.6...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.4.7...HEAD
+[2.4.7]: https://github.com/cybozu-go/placemat/compare/v2.4.6...v2.4.7
 [2.4.6]: https://github.com/cybozu-go/placemat/compare/v2.4.5...v2.4.6
 [2.4.5]: https://github.com/cybozu-go/placemat/compare/v2.4.4...v2.4.5
 [2.4.4]: https://github.com/cybozu-go/placemat/compare/v2.4.3...v2.4.4
