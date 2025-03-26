@@ -1,6 +1,6 @@
 module github.com/cybozu-go/placemat/v2
 
-go 1.23.3
+go 1.24.1
 
 require (
 	github.com/containernetworking/plugins v1.6.2
