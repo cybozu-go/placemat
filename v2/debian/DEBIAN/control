@@ -2,6 +2,6 @@ Package: placemat2
 Version: @VERSION@
 Maintainer: Cybozu <oss@cybozu.com>
 Architecture: amd64
-Depends: qemu, qemu-kvm, socat, picocom, cloud-utils
+Depends: qemu-system-x86, qemu-utils, socat, picocom, cloud-utils
 Homepage: https://github.com/cybozu-go/placemat
 Description: Virtual data center construction tool
