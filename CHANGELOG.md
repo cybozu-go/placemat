@@ -5,6 +5,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- Update dependencies in [#209](https://github.com/cybozu-go/placemat/pull/209)
+
 ## [2.4.8] - 2025-03-26
 
 - Update dependencies in [#206](https://github.com/cybozu-go/placemat/pull/206)
