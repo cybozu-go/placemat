@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stmcginnis/gofish"
-	"github.com/stmcginnis/gofish/redfish"
+	"github.com/stmcginnis/gofish/schemas"
 )
 
 var _ = Describe("Virtual BMC", func() {
@@ -142,14 +142,20 @@ var _ = Describe("Virtual BMC", func() {
 			}
 
 			// Check if the powerState is Off
-			if system.PowerState != redfish.OffPowerState {
+			if system.PowerState != schemas.OffPowerState {
 				return fmt.Errorf("powerState is not Off, actual: %s", system.PowerState)
 			}
 
 			// Power On
-			err = system.Reset(redfish.OnResetType)
+			taskMonitor, err := system.Reset(schemas.OnResetType)
 			if err != nil {
 				return err
+			}
+			if taskMonitor != nil {
+				_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
+				if err != nil {
+					return err
+				}
 			}
 
 			system, err = getComputerSystem(c.Service)
@@ -158,14 +164,20 @@ var _ = Describe("Virtual BMC", func() {
 			}
 
 			// Check if the powerState is On
-			if system.PowerState != redfish.OnPowerState {
+			if system.PowerState != schemas.OnPowerState {
 				return fmt.Errorf("powerState is not On, actual: %s", system.PowerState)
 			}
 
 			// Force Restart
-			err = system.Reset(redfish.ForceRestartResetType)
+			taskMonitor, err = system.Reset(schemas.ForceRestartResetType)
 			if err != nil {
 				return err
+			}
+			if taskMonitor != nil {
+				_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
+				if err != nil {
+					return err
+				}
 			}
 
 			system, err = getComputerSystem(c.Service)
@@ -174,14 +186,20 @@ var _ = Describe("Virtual BMC", func() {
 			}
 
 			// Check if the powerState is On
-			if system.PowerState != redfish.OnPowerState {
+			if system.PowerState != schemas.OnPowerState {
 				return fmt.Errorf("powerState is not On, actual: %s", system.PowerState)
 			}
 
 			// Graceful Shutdown
-			err = system.Reset(redfish.GracefulShutdownResetType)
+			taskMonitor, err = system.Reset(schemas.GracefulShutdownResetType)
 			if err != nil {
 				return err
+			}
+			if taskMonitor != nil {
+				_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
+				if err != nil {
+					return err
+				}
 			}
 
 			system, err = getComputerSystem(c.Service)
@@ -190,7 +208,7 @@ var _ = Describe("Virtual BMC", func() {
 			}
 
 			// Check if the powerState is Off
-			if system.PowerState != redfish.OffPowerState {
+			if system.PowerState != schemas.OffPowerState {
 				return fmt.Errorf("powerState is not Off, actual: %s", system.PowerState)
 			}
 
@@ -219,14 +237,20 @@ var _ = Describe("Virtual BMC", func() {
 			}
 
 			// Check if the powerState is Off
-			if chassis.PowerState != redfish.OffPowerState {
+			if chassis.PowerState != schemas.OffPowerState {
 				return fmt.Errorf("powerState is not Off, actual: %s", chassis.PowerState)
 			}
 
 			// Power On
-			err = chassis.Reset(redfish.OnResetType)
+			taskMonitor, err := chassis.Reset(schemas.OnResetType)
 			if err != nil {
 				return err
+			}
+			if taskMonitor != nil {
+				_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
+				if err != nil {
+					return err
+				}
 			}
 
 			chassis, err = getChassis(c.Service)
@@ -235,14 +259,20 @@ var _ = Describe("Virtual BMC", func() {
 			}
 
 			// Check if the powerState is On
-			if chassis.PowerState != redfish.OnPowerState {
+			if chassis.PowerState != schemas.OnPowerState {
 				return fmt.Errorf("powerState is not On, actual: %s", chassis.PowerState)
 			}
 
 			// Force Off
-			err = chassis.Reset(redfish.ForceOffResetType)
+			taskMonitor, err = chassis.Reset(schemas.ForceOffResetType)
 			if err != nil {
 				return err
+			}
+			if taskMonitor != nil {
+				_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
+				if err != nil {
+					return err
+				}
 			}
 
 			chassis, err = getChassis(c.Service)
@@ -251,7 +281,7 @@ var _ = Describe("Virtual BMC", func() {
 			}
 
 			// Check if the powerState is Off
-			if chassis.PowerState != redfish.OffPowerState {
+			if chassis.PowerState != schemas.OffPowerState {
 				return fmt.Errorf("powerState is not Off, actual: %s", chassis.PowerState)
 			}
 
@@ -263,7 +293,7 @@ var _ = Describe("Virtual BMC", func() {
 	})
 })
 
-func getComputerSystem(service *gofish.Service) (*redfish.ComputerSystem, error) {
+func getComputerSystem(service *gofish.Service) (*schemas.ComputerSystem, error) {
 	systems, err := service.Systems()
 	if err != nil {
 		return nil, err
@@ -277,7 +307,7 @@ func getComputerSystem(service *gofish.Service) (*redfish.ComputerSystem, error)
 	return systems[0], nil
 }
 
-func getChassis(service *gofish.Service) (*redfish.Chassis, error) {
+func getChassis(service *gofish.Service) (*schemas.Chassis, error) {
 	chassisCollection, err := service.Chassis()
 	if err != nil {
 		return nil, err

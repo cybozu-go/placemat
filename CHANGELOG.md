@@ -5,9 +5,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- Update dependencies in [#213](https://github.com/cybozu-go/placemat/pull/213)
+    - Upgrade direct dependencies in go.mod
+    - Update Makefiles with commit hash SHAs
+    - Update GitHub Actions with commit hash SHAs
+
 ## [2.4.10] - 2025-11-19
 
-- Update dependencies in  [#211](https://github.com/cybozu-go/placemat/pull/211)
+- Update dependencies in [#211](https://github.com/cybozu-go/placemat/pull/211)
 
 ## [2.4.9] - 2025-07-07
 

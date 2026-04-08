@@ -48,8 +48,8 @@ setup:
 
 .PHONY: test-tools
 test-tools:
-	GOBIN=$(TESTTOOLDIR) go install github.com/cybozu-go/golang-custom-analyzer/cmd/custom-checker@latest
-	GOBIN=$(TESTTOOLDIR) go install honnef.co/go/tools/cmd/staticcheck@latest
+	GOBIN=$(TESTTOOLDIR) go install github.com/cybozu-go/golang-custom-analyzer/cmd/custom-checker@5cda2f85e31dbe2453825f6520710a76465f197e # v0.1.5
+	GOBIN=$(TESTTOOLDIR) go install honnef.co/go/tools/cmd/staticcheck@ff63afafc529279f454e02f1d060210bd4263951 # v0.7.0
 
 .PHONY: check-generate
 check-generate:
