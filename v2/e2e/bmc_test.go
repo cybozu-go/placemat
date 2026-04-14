@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/stmcginnis/gofish"
-	"github.com/stmcginnis/gofish/redfish"
+	"github.com/stmcginnis/gofish/schemas"
 )
 
 const virtualBMCPort = "/dev/virtio-ports/placemat"
@@ -81,9 +81,15 @@ var _ = Describe("Virtual BMC", func() {
 				}
 
 				// Graceful Shutdown
-				err = system.Reset(redfish.GracefulShutdownResetType)
+				taskMonitor, err := system.Reset(schemas.GracefulShutdownResetType)
 				if err != nil {
 					return err
+				}
+				if taskMonitor != nil {
+					_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
+					if err != nil {
+						return err
+					}
 				}
 
 				system, err = getComputerSystem(c.Service)
@@ -92,7 +98,7 @@ var _ = Describe("Virtual BMC", func() {
 				}
 
 				// Check if the powerState is Off
-				if system.PowerState != redfish.OffPowerState {
+				if system.PowerState != schemas.OffPowerState {
 					return fmt.Errorf("powerState is not Off, actual: %s", system.PowerState)
 				}
 
@@ -107,7 +113,7 @@ var _ = Describe("Virtual BMC", func() {
 	})
 })
 
-func getComputerSystem(service *gofish.Service) (*redfish.ComputerSystem, error) {
+func getComputerSystem(service *gofish.Service) (*schemas.ComputerSystem, error) {
 	systems, err := service.Systems()
 	if err != nil {
 		return nil, err
