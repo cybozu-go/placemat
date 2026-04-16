@@ -10,6 +10,8 @@ NETNS2 = 10.0.0.22
 BMC1 = 10.1.0.11
 BMC2 = 10.1.0.12
 PLACEMAT_DATADIR = /var/scratch/placemat
+UBUNTU_RELEASE = release-20260320
+UBUNTU_SHA256SUM = ea85b16f81b3f6aa53a1260912d3f991fc33e0e0fc1d73f0b8c9c96247e42fdb
 export BRIDGE_ADDRESS NODE1 NODE2 NETNS1 NETNS2 BMC1 BMC2
 
 # non-configuration variables
@@ -42,7 +44,8 @@ all:
 	@echo "    clean    - remove output directory."
 
 $(UBUNTU_IMAGE):
-	curl -sSLf -o $@ https://cloud-images.ubuntu.com/releases/22.04/release/$@
+	curl -sSLf -o $@ https://cloud-images.ubuntu.com/releases/22.04/$(UBUNTU_RELEASE)/$@
+	echo "$@ $(UBUNTU_SHA256SUM)" | sha256sum -c -
 
 $(OUTPUT)/cluster.yml: cluster.yml
 	mkdir -p $(OUTPUT)
