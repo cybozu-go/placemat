@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-06-08
+
+### Changed
+
+- Support Ubuntu 26.04 in [#216](https://github.com/cybozu-go/placemat/pull/216)
+
 ## [2.4.11] - 2026-04-22
 
 - Update dependencies in [#213](https://github.com/cybozu-go/placemat/pull/213)
@@ -287,7 +293,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 ### Added
 
 - Many things.  See git log.
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.4.11...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/cybozu-go/placemat/compare/v2.4.11...v2.5.0
 [2.4.11]: https://github.com/cybozu-go/placemat/compare/v2.4.10...v2.4.11
 [2.4.10]: https://github.com/cybozu-go/placemat/compare/v2.4.9...v2.4.10
 [2.4.9]: https://github.com/cybozu-go/placemat/compare/v2.4.8...v2.4.9
