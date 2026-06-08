@@ -44,7 +44,7 @@ clean:
 .PHONY: setup
 setup:
 	$(SUDO) apt-get update
-	$(SUDO) apt-get -y install --no-install-recommends qemu qemu-kvm cloud-utils freeipmi-tools
+	$(SUDO) apt-get -y install --no-install-recommends qemu-system-x86 qemu-utils cloud-utils freeipmi-tools
 
 .PHONY: test-tools
 test-tools:
