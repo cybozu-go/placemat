@@ -11,13 +11,13 @@ BMC1 = 10.1.0.11
 BMC2 = 10.1.0.12
 PLACEMAT_DATADIR = /var/scratch/placemat
 UBUNTU_RELEASE = release-20260320
-UBUNTU_SHA256SUM = ea85b16f81b3f6aa53a1260912d3f991fc33e0e0fc1d73f0b8c9c96247e42fdb
+UBUNTU_SHA256SUM = dced94c031cc1f23dee14419a3723a5b110df9938de0ac31913a2bfd07c755b4
 export BRIDGE_ADDRESS NODE1 NODE2 NETNS1 NETNS2 BMC1 BMC2
 
 # non-configuration variables
 SSH_PRIVKEY = $(realpath ./mtest_key)
 OUTPUT := ./output
-UBUNTU_IMAGE := ubuntu-22.04-server-cloudimg-amd64.img
+UBUNTU_IMAGE := ubuntu-26.04-server-cloudimg-amd64.img
 PLACEMAT = $(abspath $(OUTPUT))/placemat2
 PMCTL = $(abspath $(OUTPUT))/pmctl2
 CLUSTER_YAML = $(abspath $(OUTPUT))/cluster.yml
@@ -44,7 +44,7 @@ all:
 	@echo "    clean    - remove output directory."
 
 $(UBUNTU_IMAGE):
-	curl -sSLf -o $@ https://cloud-images.ubuntu.com/releases/22.04/$(UBUNTU_RELEASE)/$@
+	curl -sSLf -o $@ https://cloud-images.ubuntu.com/releases/26.04/$(UBUNTU_RELEASE)/$@
 	echo "$@ $(UBUNTU_SHA256SUM)" | sha256sum -c -
 
 $(OUTPUT)/cluster.yml: cluster.yml

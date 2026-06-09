@@ -28,8 +28,8 @@ var _ = Describe("Virtual BMC", func() {
 		})
 
 		By("writing to "+virtualBMCPort, func() {
-			execSafeAt(node1, "echo", bmc1, "|", "sudo", "dd", "of="+virtualBMCPort)
-			execSafeAt(node2, "echo", bmc2, "|", "sudo", "dd", "of="+virtualBMCPort)
+			execSafeAt(node1, "echo", bmc1, "|", "sudo", "tee", virtualBMCPort, ">", "/dev/null")
+			execSafeAt(node2, "echo", bmc2, "|", "sudo", "tee", virtualBMCPort, ">", "/dev/null")
 		})
 
 		By("serving IPMI2.0", func() {
