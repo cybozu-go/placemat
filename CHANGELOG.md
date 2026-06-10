@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-06-10
+
+## Changed
+
+- Use Ubuntu 26.04 in e2e tests in [#218](https://github.com/cybozu-go/placemat/pull/218)
+
 ## [2.5.0] - 2026-06-08
 
 ### Changed
@@ -293,7 +299,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 ### Added
 
 - Many things.  See git log.
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.5.1...HEAD
+[2.5.1]: https://github.com/cybozu-go/placemat/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/cybozu-go/placemat/compare/v2.4.11...v2.5.0
 [2.4.11]: https://github.com/cybozu-go/placemat/compare/v2.4.10...v2.4.11
 [2.4.10]: https://github.com/cybozu-go/placemat/compare/v2.4.9...v2.4.10
