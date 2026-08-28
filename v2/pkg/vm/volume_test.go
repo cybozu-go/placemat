@@ -7,9 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cybozu-go/placemat/v2/pkg/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/cybozu-go/placemat/v2/pkg/types"
 )
 
 var _ = Describe("NodeVolume", func() {
@@ -18,7 +19,7 @@ var _ = Describe("NodeVolume", func() {
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		temp := filepath.Join(cur, "temp")
-		Expect(os.Mkdir(temp, 0755)).NotTo(HaveOccurred())
+		Expect(os.Mkdir(temp, 0o755)).NotTo(HaveOccurred())
 
 		// Create dummy files and directories
 		_, err = os.Create("temp/cybozu-ubuntu-18.04-server-cloudimg-amd64.img")
@@ -66,7 +67,7 @@ file: temp/cybozu-ubuntu-18.04-server-cloudimg-amd64.img
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		temp := filepath.Join(cur, "temp")
-		Expect(os.Mkdir(temp, 0755)).NotTo(HaveOccurred())
+		Expect(os.Mkdir(temp, 0o755)).NotTo(HaveOccurred())
 
 		// Create dummy files and directories
 		_, err = os.Create("temp/seed_boot-0.yml")
@@ -111,10 +112,10 @@ smbios:
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		temp := filepath.Join(cur, "temp")
-		Expect(os.Mkdir(temp, 0755)).NotTo(HaveOccurred())
+		Expect(os.Mkdir(temp, 0o755)).NotTo(HaveOccurred())
 
 		// Create a shared directory
-		Expect(os.Mkdir("temp/shared-dir", 0755)).NotTo(HaveOccurred())
+		Expect(os.Mkdir("temp/shared-dir", 0o755)).NotTo(HaveOccurred())
 		shareDir, err := filepath.Abs("temp/shared-dir")
 		Expect(err).NotTo(HaveOccurred())
 		defer os.RemoveAll(temp)
@@ -152,7 +153,7 @@ smbios:
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		temp := filepath.Join(cur, "temp")
-		Expect(os.Mkdir(temp, 0755)).NotTo(HaveOccurred())
+		Expect(os.Mkdir(temp, 0o755)).NotTo(HaveOccurred())
 		defer os.RemoveAll(temp)
 
 		clusterYaml := `
@@ -188,7 +189,7 @@ smbios:
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		temp := filepath.Join(cur, "temp")
-		Expect(os.Mkdir(temp, 0755)).NotTo(HaveOccurred())
+		Expect(os.Mkdir(temp, 0o755)).NotTo(HaveOccurred())
 
 		// Create dummy files and directories
 		_, err = os.Create("temp/cybozu-ubuntu-18.04-server-cloudimg-amd64.img")

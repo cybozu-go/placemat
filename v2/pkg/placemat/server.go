@@ -6,11 +6,12 @@ import (
 	"net/http"
 
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/well"
+	"github.com/gin-gonic/gin"
+
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/placemat/v2/pkg/virtualbmc"
 	"github.com/cybozu-go/placemat/v2/pkg/vm"
-	"github.com/cybozu-go/well"
-	"github.com/gin-gonic/gin"
 )
 
 // NodeStatus represents status of a Node
@@ -59,7 +60,7 @@ func (s *apiServer) start(ctx context.Context, listener net.Listener) error {
 		serv.Close()
 	}()
 
-	log.Info("Start Placemat API server", map[string]interface{}{"address": listener.Addr()})
+	log.Info("Start Placemat API server", map[string]any{"address": listener.Addr()})
 
 	if err := serv.Serve(listener); err != nil {
 		return err
@@ -109,24 +110,24 @@ func (s *apiServer) handleNodeAction(c *gin.Context) {
 	switch action {
 	case "start":
 		if err := v.PowerOn(); err != nil {
-			log.Error("failed to power on", map[string]interface{}{log.FnError: err})
+			log.Error("failed to power on", map[string]any{log.FnError: err})
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
 	case "stop":
 		if err := v.PowerOff(); err != nil {
-			log.Error("failed to power off", map[string]interface{}{log.FnError: err})
+			log.Error("failed to power off", map[string]any{log.FnError: err})
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
 	case "restart":
 		if err := v.PowerOff(); err != nil {
-			log.Error("failed to power off during restart", map[string]interface{}{log.FnError: err})
+			log.Error("failed to power off during restart", map[string]any{log.FnError: err})
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
 		if err := v.PowerOn(); err != nil {
-			log.Error("failed to power on during restart", map[string]interface{}{log.FnError: err})
+			log.Error("failed to power on during restart", map[string]any{log.FnError: err})
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
@@ -141,7 +142,7 @@ func (s *apiServer) handleNodeAction(c *gin.Context) {
 func newNodeStatus(spec *types.NodeSpec, node vm.Node, vm vm.VM, runtime *vm.Runtime) *NodeStatus {
 	powerStatus, err := vm.PowerStatus()
 	if err != nil {
-		log.Error("failed to confirm vm's power status", map[string]interface{}{log.FnError: err})
+		log.Error("failed to confirm vm's power status", map[string]any{log.FnError: err})
 	}
 
 	status := &NodeStatus{

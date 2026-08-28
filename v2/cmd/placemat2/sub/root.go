@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	v2 "github.com/cybozu-go/placemat/v2"
 	"github.com/spf13/cobra"
+
+	v2 "github.com/cybozu-go/placemat/v2"
 )
 
 const (

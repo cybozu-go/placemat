@@ -5,18 +5,19 @@ import (
 	"errors"
 	"os"
 
-	"github.com/cybozu-go/placemat/v2/pkg/placemat"
-	"github.com/cybozu-go/placemat/v2/pkg/virtualbmc"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+
+	"github.com/cybozu-go/placemat/v2/pkg/placemat"
+	"github.com/cybozu-go/placemat/v2/pkg/virtualbmc"
 )
 
 var _ = Describe("Example Cluster", func() {
 	var session *gexec.Session
 
 	AfterEach(func() {
-		terminatePlacemat(session)
+		_, _ = terminatePlacemat(session)
 	})
 
 	It("should set up nodes", func() {
@@ -45,7 +46,7 @@ var _ = Describe("Example Cluster", func() {
 		})
 
 		By("terminating placemat", func() {
-			terminatePlacemat(session)
+			_, _ = terminatePlacemat(session)
 			Eventually(session.Exited).Should(BeClosed())
 		})
 	})

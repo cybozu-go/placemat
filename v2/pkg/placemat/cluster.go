@@ -8,10 +8,11 @@ import (
 
 	"github.com/cybozu-go/log"
 	"github.com/cybozu-go/netutil"
+	"github.com/cybozu-go/well"
+
 	"github.com/cybozu-go/placemat/v2/pkg/dcnet"
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/placemat/v2/pkg/vm"
-	"github.com/cybozu-go/well"
 )
 
 // Cluster represents the interface to setup virtual data center
@@ -106,7 +107,6 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 
 	env := well.NewEnvironment(ctx)
 	for _, n := range c.nodes {
-		n := n
 		env.Go(func(ctx2 context.Context) error {
 			// reference the original context because ctx2 will soon be cancelled.
 			vm, serial, err := n.Setup(ctx, r, mtu, nodeCh)
@@ -148,7 +148,6 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 	}
 
 	for _, vm := range c.vms {
-		vm := vm
 		env.Go(func(ctx context.Context) error {
 			return vm.Wait()
 		})
@@ -156,14 +155,14 @@ func (c *cluster) Setup(ctx context.Context, r *vm.Runtime) error {
 
 	addr, err := net.ResolveTCPAddr("tcp", r.ListenAddr)
 	if err != nil {
-		log.Error("failed to resolve TCP address", map[string]interface{}{
+		log.Error("failed to resolve TCP address", map[string]any{
 			log.FnError: err,
 			"address":   r.ListenAddr,
 		})
 	}
 	listener, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		log.Error("failed to listen TCP address", map[string]interface{}{
+		log.Error("failed to listen TCP address", map[string]any{
 			log.FnError: err,
 			"address":   r.ListenAddr,
 		})

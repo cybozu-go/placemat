@@ -9,7 +9,7 @@ import (
 	"github.com/cybozu-go/well"
 )
 
-func getJSON(ctx context.Context, p string, params map[string]string, data interface{}) error {
+func getJSON(ctx context.Context, p string, params map[string]string, data any) error {
 	client := &well.HTTPClient{
 		Client: &http.Client{},
 	}

@@ -9,9 +9,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cybozu-go/well"
+
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/placemat/v2/pkg/util"
-	"github.com/cybozu-go/well"
 )
 
 type nodeVolume interface {
@@ -83,7 +84,7 @@ func makeVolumeDir(dataDir, deviceClassDir, dataPathLastPart, name string) (stri
 	} else {
 		volumePathFull = filepath.Join(deviceClassDir, dataPathLastPart)
 	}
-	if err := os.MkdirAll(volumePathFull, 0755); err != nil {
+	if err := os.MkdirAll(volumePathFull, 0o755); err != nil {
 		return "", fmt.Errorf("failed to make the directory %s: %w", volumePathFull, err)
 	}
 
@@ -329,7 +330,7 @@ func (v *hostPathVolume) create(ctx context.Context, _, _ string) (volumeArgs, e
 	if err != nil {
 		return nil, err
 	}
-	if err := os.MkdirAll(p, 0755); err != nil {
+	if err := os.MkdirAll(p, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to mkdir %s: %w", v.path, err)
 	}
 

@@ -49,29 +49,29 @@ type ipmiGetChassisStatusResponse struct {
 func (i *ipmi) handleIPMIChassis(message *ipmiMessage) ([]byte, error) {
 	switch message.Command {
 	case ipmiCmdGetChassisStatus:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_CHASSIS_STATUS", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_CHASSIS_STATUS", map[string]any{})
 		return i.handleIPMIGetChassisStatus()
 	case ipmiCmdChassisControl:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_CHASSIS_CONTROL", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_CHASSIS_CONTROL", map[string]any{})
 		return nil, i.handleIPMIChassisControl(message)
 	case ipmiCmdGetChassisCapabilities:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_CHASSIS_CAPABILITIES", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_CHASSIS_CAPABILITIES", map[string]any{})
 	case ipmiCmdChassisReset:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_CHASSIS_RESET", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_CHASSIS_RESET", map[string]any{})
 	case ipmiCmdChassisIdentify:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_CHASSIS_IDENTIFY", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_CHASSIS_IDENTIFY", map[string]any{})
 	case ipmiCmdSetChassisCapabilities:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_SET_CHASSIS_CAPABILITIES", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_SET_CHASSIS_CAPABILITIES", map[string]any{})
 	case ipmiCmdSetPowerRestorePolicy:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_SET_POWER_RESTORE_POLICY", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_SET_POWER_RESTORE_POLICY", map[string]any{})
 	case ipmiCmdGetSystemRestartCause:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_SYSTEM_RESTART_CAUSE", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_SYSTEM_RESTART_CAUSE", map[string]any{})
 	case ipmiCmdSetSystemBootOptions:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS", map[string]any{})
 	case ipmiCmdGetSystemBootOptions:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_SYSTEM_BOOT_OPTIONS", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_SYSTEM_BOOT_OPTIONS", map[string]any{})
 	case ipmiCmdGetPOHCounter:
-		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_POH_COUNTER", map[string]interface{}{})
+		log.Info("      ipmi CHASSIS: Command = IPMI_CMD_GET_POH_COUNTER", map[string]any{})
 	}
 
 	return nil, fmt.Errorf("unsupported Chassis command: %x", message.Command)

@@ -8,8 +8,9 @@ import (
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/cybozu-go/log"
-	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/vishvananda/netlink"
+
+	"github.com/cybozu-go/placemat/v2/pkg/types"
 )
 
 // Network represents a network configuration
@@ -169,7 +170,7 @@ func (n *network) AddAddr(addr string) error {
 func (n *network) Cleanup() {
 	link, err := netlink.LinkByName(n.name)
 	if err != nil {
-		log.Warn("failed to find link by name", map[string]interface{}{
+		log.Warn("failed to find link by name", map[string]any{
 			log.FnError: err,
 			"name":      n.name,
 		})
@@ -177,7 +178,7 @@ func (n *network) Cleanup() {
 	}
 	err = netlink.LinkDel(link)
 	if err != nil {
-		log.Warn("failed to delete link", map[string]interface{}{
+		log.Warn("failed to delete link", map[string]any{
 			log.FnError: err,
 			"name":      n.name,
 		})

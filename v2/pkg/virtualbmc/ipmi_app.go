@@ -119,108 +119,108 @@ type ipmiCloseSessionRequest struct {
 func (i *ipmi) handleIPMIApp(message *ipmiMessage) ([]byte, error) {
 	switch message.Command {
 	case ipmiCmdGetChannelAuthCapabilities:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES", map[string]any{})
 		return handleIPMIAuthenticationCapabilities(message)
 	case ipmiCmdSetSessionPrivilege:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SET_SESSION_PRIVILEGE", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_SESSION_PRIVILEGE", map[string]any{})
 		return handleIPMISetSessionPrivilegeLevel(message)
 	case ipmiCmdCloseSession:
-		log.Info("      ipmi APP: Command = IPMI_CMD_CLOSE_SESSION", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_CLOSE_SESSION", map[string]any{})
 		return nil, i.handleIPMICloseSession(message)
 	case ipmiCmdGetDeviceID:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_DEVICE_ID", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_DEVICE_ID", map[string]any{})
 	case ipmiCmdColdReset:
-		log.Info("      ipmi APP: Command = IPMI_CMD_COLD_RESET", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_COLD_RESET", map[string]any{})
 	case ipmiCmdWarmReset:
-		log.Info("      ipmi APP: Command = IPMI_CMD_WARM_RESET", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_WARM_RESET", map[string]any{})
 	case ipmiCmdGetSelfTestResults:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SELF_TEST_RESULTS", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SELF_TEST_RESULTS", map[string]any{})
 	case ipmiCmdManufacturingTestOn:
-		log.Info("      ipmi APP: Command = IPMI_CMD_MANUFACTURING_TEST_ON", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_MANUFACTURING_TEST_ON", map[string]any{})
 	case ipmiCmdSetACPIPowerState:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SET_ACPI_POWER_STATE", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_ACPI_POWER_STATE", map[string]any{})
 	case ipmiCmdGetACPIPowerState:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_ACPI_POWER_STATE", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_ACPI_POWER_STATE", map[string]any{})
 	case ipmiCmdGetDeviceGUID:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_DEVICE_GUID", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_DEVICE_GUID", map[string]any{})
 	case ipmiCmdResetWatchdogTimer:
-		log.Info("      ipmi APP: Command = IPMI_CMD_RESET_WATCHDOG_TIMER", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_RESET_WATCHDOG_TIMER", map[string]any{})
 	case ipmiCmdSetWatchdogTimer:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SET_WATCHDOG_TIMER", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_WATCHDOG_TIMER", map[string]any{})
 	case ipmiCmdGetWatchdogTimer:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_WATCHDOG_TIMER", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_WATCHDOG_TIMER", map[string]any{})
 	case ipmiCmdSetBMCGlobalEnables:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SET_BMC_GLOBAL_ENABLES", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_BMC_GLOBAL_ENABLES", map[string]any{})
 	case ipmiCmdGetBMCGlobalEnables:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_BMC_GLOBAL_ENABLES", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_BMC_GLOBAL_ENABLES", map[string]any{})
 	case ipmiCmdClearMSGFlags:
-		log.Info("      ipmi APP: Command =IPMI_CMD_CLEAR_MSG_FLAGS", map[string]interface{}{})
+		log.Info("      ipmi APP: Command =IPMI_CMD_CLEAR_MSG_FLAGS", map[string]any{})
 	case ipmiCmdGetMSGFlags:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_MSG_FLAGS", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_MSG_FLAGS", map[string]any{})
 	case ipmiCmdEnableMessageChannelRCV:
-		log.Info("      ipmi APP: Command = IPMI_CMD_ENABLE_MESSAGE_CHANNEL_RCV", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_ENABLE_MESSAGE_CHANNEL_RCV", map[string]any{})
 	case ipmiCmdGetMSG:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_MSG", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_MSG", map[string]any{})
 	case ipmiCmdSendMSG:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SEND_MSG", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SEND_MSG", map[string]any{})
 	case ipmiCmdReadEventMSGBuffer:
-		log.Info("      ipmi APP: Command = IPMI_CMD_READ_EVENT_MSG_BUFFER", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_READ_EVENT_MSG_BUFFER", map[string]any{})
 	case ipmiCmdGetBTInterfaceCapabilities:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_BT_INTERFACE_CAPABILITIES", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_BT_INTERFACE_CAPABILITIES", map[string]any{})
 	case ipmiCmdGetSystemGUID:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SYSTEM_GUID", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SYSTEM_GUID", map[string]any{})
 	case ipmiCmdGetSessionChallenge:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SESSION_CHALLENGE", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SESSION_CHALLENGE", map[string]any{})
 	case ipmiCmdActivateSession:
-		log.Info("      ipmi APP: Command = IPMI_CMD_ACTIVATE_SESSION", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_ACTIVATE_SESSION", map[string]any{})
 	case ipmiCmdGetSessionInfo:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SESSION_INFO", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SESSION_INFO", map[string]any{})
 	case ipmiCmdGetAuthCode:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_AUTHCODE", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_AUTHCODE", map[string]any{})
 	case ipmiCmdSetChannelAccess:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SET_CHANNEL_ACCESS", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_CHANNEL_ACCESS", map[string]any{})
 	case ipmiCmdGetChannelAccess:
-		log.Info("      ipmi APP: Command =IPMI_CMD_GET_CHANNEL_ACCESS", map[string]interface{}{})
+		log.Info("      ipmi APP: Command =IPMI_CMD_GET_CHANNEL_ACCESS", map[string]any{})
 	case ipmiCmdGetChannelInfo:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_INFO", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_INFO", map[string]any{})
 	case ipmiCmdSetUserAccess:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_ACCESS", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_ACCESS", map[string]any{})
 	case ipmiCmdGetUserAccess:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_USER_ACCESS", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_USER_ACCESS", map[string]any{})
 	case ipmiCmdSetUserName:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_NAME", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_NAME", map[string]any{})
 	case ipmiCmdGetUserName:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_USER_NAME", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_USER_NAME", map[string]any{})
 	case ipmiCmdSetUserPassword:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_PASSWORD", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_PASSWORD", map[string]any{})
 	case ipmiCmdActivatePayload:
-		log.Info("      ipmi APP: Command = IPMI_CMD_ACTIVATE_PAYLOAD", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_ACTIVATE_PAYLOAD", map[string]any{})
 	case ipmiCmdDeactivatePayload:
-		log.Info("      ipmi APP: Command = IPMI_CMD_DEACTIVATE_PAYLOAD", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_DEACTIVATE_PAYLOAD", map[string]any{})
 	case ipmiCmdGetPayloadActivationStatus:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_PAYLOAD_ACTIVATION_STATUS", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_PAYLOAD_ACTIVATION_STATUS", map[string]any{})
 	case ipmiCmdGetPayloadInstanceInfo:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_PAYLOAD_INSTANCE_INFO", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_PAYLOAD_INSTANCE_INFO", map[string]any{})
 	case ipmiCmdSetUserPayloadAccess:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_PAYLOAD_ACCESS", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_USER_PAYLOAD_ACCESS", map[string]any{})
 	case ipmiCmdGetUserPayloadAccess:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_USER_PAYLOAD_ACCESS", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_USER_PAYLOAD_ACCESS", map[string]any{})
 	case ipmiCmdGetChannelPayloadSupport:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_SUPPORT", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_SUPPORT", map[string]any{})
 	case ipmiCmdGetChannelPayloadVersion:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_VERSION", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_VERSION", map[string]any{})
 	case ipmiCmdGetChannelOEMPayloadInfo:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_OEM_PAYLOAD_INFO", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_OEM_PAYLOAD_INFO", map[string]any{})
 	case ipmiCmdMasterReadWrite:
-		log.Info("      ipmi APP: Command = IPMI_CMD_MASTER_READ_WRITE", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_MASTER_READ_WRITE", map[string]any{})
 	case ipmiCmdGetChannelCipherSuites:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_CIPHER_SUITES", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_CHANNEL_CIPHER_SUITES", map[string]any{})
 	case ipmiCmdSuspendResumePayloadEncryption:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SUSPEND_RESUME_PAYLOAD_ENCRYPTION", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SUSPEND_RESUME_PAYLOAD_ENCRYPTION", map[string]any{})
 	case ipmiCmdSetChannelSecurityKey:
-		log.Info("      ipmi APP: Command = IPMI_CMD_SET_CHANNEL_SECURITY_KEY", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_SET_CHANNEL_SECURITY_KEY", map[string]any{})
 	case ipmiCmdGetSystemInterfaceCapabilities:
-		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES", map[string]interface{}{})
+		log.Info("      ipmi APP: Command = IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES", map[string]any{})
 	}
 
 	return nil, fmt.Errorf("unsupported Command: %x", message.Command)

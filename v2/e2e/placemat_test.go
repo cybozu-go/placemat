@@ -10,19 +10,20 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/cybozu-go/placemat/v2/cmd/pmctl2/cmd"
-	"github.com/cybozu-go/placemat/v2/pkg/placemat"
-	"github.com/cybozu-go/placemat/v2/pkg/virtualbmc"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+
+	"github.com/cybozu-go/placemat/v2/cmd/pmctl2/cmd"
+	"github.com/cybozu-go/placemat/v2/pkg/placemat"
+	"github.com/cybozu-go/placemat/v2/pkg/virtualbmc"
 )
 
 var _ = Describe("Placemat", func() {
 	var session *gexec.Session
 
 	AfterEach(func() {
-		terminatePlacemat(session)
+		_, _ = terminatePlacemat(session)
 	})
 
 	It("should setup a cluster as specified", func() {
@@ -110,7 +111,7 @@ var _ = Describe("Placemat", func() {
 			Expect(err).NotTo(HaveOccurred())
 			_, _, err = execAt(node1, "echo", "hello", "|", "sudo", "tee", "/mnt/hello.txt")
 			Expect(err).NotTo(HaveOccurred())
-			defer execAt(node1, "sudo", "rm", "-f", "/mnt/hello.txt")
+			defer func() { _, _, _ = execAt(node1, "sudo", "rm", "-f", "/mnt/hello.txt") }()
 
 			f, err := os.Open("/mnt/placemat/node1/hello.txt")
 			Expect(err).NotTo(HaveOccurred())
@@ -150,7 +151,7 @@ var _ = Describe("Placemat", func() {
 		})
 
 		By("cleaning up garbage when it ends", func() {
-			terminatePlacemat(session)
+			_, _ = terminatePlacemat(session)
 			Eventually(session.Exited).Should(BeClosed())
 		})
 	})
@@ -158,7 +159,7 @@ var _ = Describe("Placemat", func() {
 	It("should run after cleaning up garbage", func() {
 		By("launching with force option", func() {
 			// Throw away trash
-			Expect(os.MkdirAll("/tmp/node1", 0755)).NotTo(HaveOccurred())
+			Expect(os.MkdirAll("/tmp/node1", 0o755)).NotTo(HaveOccurred())
 			_, err := os.Create("/tmp/node1/swtpm.socket")
 			Expect(err).NotTo(HaveOccurred())
 
@@ -167,7 +168,7 @@ var _ = Describe("Placemat", func() {
 		})
 
 		By("terminating placemat", func() {
-			terminatePlacemat(session)
+			_, _ = terminatePlacemat(session)
 			Eventually(session.Exited).Should(BeClosed())
 		})
 	})
@@ -182,7 +183,7 @@ func checkForwarding(port int) {
 	Expect(err).NotTo(HaveOccurred())
 	err = json.NewDecoder(strings.NewReader(string(stdout))).Decode(&forwards)
 	Expect(err).NotTo(HaveOccurred())
-	Expect(len(forwards)).Should(Equal(1))
+	Expect(forwards).Should(HaveLen(1))
 	Expect(forwards[0].LocalPort).Should(Equal(30000))
 	Expect(forwards[0].PodName).Should(Equal("netns1"))
 	Expect(forwards[0].RemoteHost).Should(Equal(netns2))

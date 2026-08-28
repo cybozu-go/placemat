@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/well"
+
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/placemat/v2/pkg/util"
 	"github.com/cybozu-go/placemat/v2/pkg/virtualbmc"
-	"github.com/cybozu-go/well"
 )
 
 // Node represents a virtual machine.
@@ -145,7 +146,7 @@ func (n *node) Setup(ctx context.Context, r *Runtime, mtu int, nodeCh chan<- BMC
 		p := r.nvramPath(n.name)
 		err := createNVRAM(ctx, p)
 		if err != nil {
-			log.Error("Failed to create nvram", map[string]interface{}{
+			log.Error("Failed to create nvram", map[string]any{
 				"error": err,
 			})
 			return nil, "", err
@@ -246,12 +247,12 @@ func createNVRAM(ctx context.Context, p string) error {
 }
 
 func (n *node) startSWTPM(ctx context.Context, r *Runtime) error {
-	err := os.Mkdir(r.swtpmSocketDirPath(n.name), 0755)
+	err := os.Mkdir(r.swtpmSocketDirPath(n.name), 0o755)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Starting swtpm for node", map[string]interface{}{
+	log.Info("Starting swtpm for node", map[string]any{
 		"name":   n.name,
 		"socket": r.swtpmSocketPath(n.name),
 	})
@@ -288,7 +289,7 @@ func (n *node) startSWTPM(ctx context.Context, r *Runtime) error {
 }
 
 func (n *node) Taps() map[string]string {
-	var taps = make(map[string]string)
+	taps := make(map[string]string)
 	for _, tap := range n.taps {
 		taps[tap.bridge.Attrs().Name] = tap.tapName
 	}
@@ -313,7 +314,7 @@ func (n *node) CleanupGarbage(r *Runtime) {
 		if err == nil {
 			err = os.Remove(f)
 			if err != nil {
-				log.Warn("failed to clean", map[string]interface{}{
+				log.Warn("failed to clean", map[string]any{
 					"filename":  f,
 					log.FnError: err,
 				})
@@ -325,7 +326,7 @@ func (n *node) CleanupGarbage(r *Runtime) {
 	if err == nil {
 		err = os.RemoveAll(dir)
 		if err != nil {
-			log.Warn("failed to clean", map[string]interface{}{
+			log.Warn("failed to clean", map[string]any{
 				"directory": dir,
 				log.FnError: err,
 			})
@@ -426,7 +427,7 @@ func read(reader *bufio.Reader) ([]byte, error) {
 	if err != nil {
 		return line, err
 	}
-	log.Info("QMP response", map[string]interface{}{"response": string(line)})
+	log.Info("QMP response", map[string]any{"response": string(line)})
 
 	return line, nil
 }
@@ -546,7 +547,7 @@ func (n *vm) SocketPath() string {
 func (n *vm) Cleanup() {
 	if _, err := os.Stat(n.guest); err == nil {
 		if err := n.connGuest.Close(); err != nil {
-			log.Warn("failed to close guest connection", map[string]interface{}{
+			log.Warn("failed to close guest connection", map[string]any{
 				log.FnError: err,
 			})
 		}
@@ -562,7 +563,7 @@ func (n *vm) Cleanup() {
 		if err == nil {
 			err = os.Remove(f)
 			if err != nil {
-				log.Warn("failed to clean", map[string]interface{}{
+				log.Warn("failed to clean", map[string]any{
 					"filename":  f,
 					log.FnError: err,
 				})
@@ -573,7 +574,7 @@ func (n *vm) Cleanup() {
 	if err == nil {
 		err = os.RemoveAll(n.swtpmDir)
 		if err != nil {
-			log.Warn("failed to clean", map[string]interface{}{
+			log.Warn("failed to clean", map[string]any{
 				"directory": n.swtpmDir,
 				log.FnError: err,
 			})

@@ -48,7 +48,7 @@ func (w *coloredLogWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
 	input := string(p)
 
-	input = strings.Replace(input, "\r\n", "\n", -1)
+	input = strings.ReplaceAll(input, "\r\n", "\n")
 	input = w.prev + input
 
 	inputs := strings.Split(input, "\n")

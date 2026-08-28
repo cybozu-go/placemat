@@ -33,7 +33,8 @@ type qemu struct {
 }
 
 func newQemu(nodeName string, taps []*tapInfo, volumes []volumeArgs, ignitionFile string, smp smpSpec,
-	memory string, numa numaSpec, networkDeviceQueue int, uefi bool, tpm bool, smbios smBIOSConfig) *qemu {
+	memory string, numa numaSpec, networkDeviceQueue int, uefi bool, tpm bool, smbios smBIOSConfig,
+) *qemu {
 	return &qemu{
 		name:               nodeName,
 		taps:               taps,
@@ -177,8 +178,7 @@ type macGenerator interface {
 	generate() string
 }
 
-type macGeneratorForKVM struct {
-}
+type macGeneratorForKVM struct{}
 
 func (m *macGeneratorForKVM) generate() string {
 	vendorPrefix := "52:54:00" // QEMU's vendor prefix

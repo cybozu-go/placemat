@@ -23,7 +23,7 @@ func (b *bmcUserHolder) addBMCUser(name string, password string) {
 		Password: password,
 	}
 	b.users[name] = newUser
-	log.Info("BMC USer: Add user", map[string]interface{}{"user": name})
+	log.Info("BMC USer: Add user", map[string]any{"user": name})
 }
 
 func (b *bmcUserHolder) getBMCUser(name string) (*bmcUser, bool) {

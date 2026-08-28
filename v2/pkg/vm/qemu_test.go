@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cybozu-go/placemat/v2/pkg/dcnet"
-	"github.com/cybozu-go/placemat/v2/pkg/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/cybozu-go/placemat/v2/pkg/dcnet"
+	"github.com/cybozu-go/placemat/v2/pkg/types"
 )
 
 var _ = Describe("QEMU command builder", func() {
@@ -28,7 +29,7 @@ var _ = Describe("QEMU command builder", func() {
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		temp := filepath.Join(cur, "temp")
-		Expect(os.Mkdir(temp, 0755)).NotTo(HaveOccurred())
+		Expect(os.Mkdir(temp, 0o755)).NotTo(HaveOccurred())
 		r, err := NewRuntime(false, false, filepath.Join(temp, "run"), filepath.Join(temp, "data"),
 			filepath.Join(temp, "cache"), "127.0.0.1:10808")
 		Expect(err).NotTo(HaveOccurred())
@@ -40,7 +41,7 @@ var _ = Describe("QEMU command builder", func() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = os.Create("temp/network.yml")
 		Expect(err).NotTo(HaveOccurred())
-		Expect(os.Mkdir("temp/shared-dir", 0755)).NotTo(HaveOccurred())
+		Expect(os.Mkdir("temp/shared-dir", 0o755)).NotTo(HaveOccurred())
 		sharedDir, err := filepath.Abs("temp/shared-dir")
 		Expect(err).NotTo(HaveOccurred())
 		defer os.RemoveAll(temp)
@@ -197,7 +198,7 @@ qemu-system-x86_64
 		cur, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		temp := filepath.Join(cur, "temp")
-		Expect(os.Mkdir(temp, 0755)).NotTo(HaveOccurred())
+		Expect(os.Mkdir(temp, 0o755)).NotTo(HaveOccurred())
 		r, err := NewRuntime(false, false, filepath.Join(temp, "run"), filepath.Join(temp, "data"),
 			filepath.Join(temp, "cache"), "127.0.0.1:10808")
 		Expect(err).NotTo(HaveOccurred())
@@ -209,7 +210,7 @@ qemu-system-x86_64
 		Expect(err).NotTo(HaveOccurred())
 		_, err = os.Create("temp/network.yml")
 		Expect(err).NotTo(HaveOccurred())
-		Expect(os.Mkdir("temp/shared-dir", 0755)).NotTo(HaveOccurred())
+		Expect(os.Mkdir("temp/shared-dir", 0o755)).NotTo(HaveOccurred())
 		sharedDir, err := filepath.Abs("temp/shared-dir")
 		Expect(err).NotTo(HaveOccurred())
 		defer os.RemoveAll(temp)
@@ -354,8 +355,7 @@ qemu-system-x86_64
 	})
 })
 
-type macGeneratorMock struct {
-}
+type macGeneratorMock struct{}
 
 func (m *macGeneratorMock) generate() string {
 	return "placemat"

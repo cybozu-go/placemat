@@ -49,7 +49,7 @@ func WriteToFile(srcPath, destPath string, decomp Decompressor) error {
 	}
 	defer f.Close()
 
-	destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
+	destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0o644)
 	if err != nil {
 		return err
 	}

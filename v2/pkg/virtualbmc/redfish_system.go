@@ -21,7 +21,7 @@ type ComputerSystem struct {
 	EthernetInterfaces      OdataID               `json:"EthernetInterfaces"`
 	HostName                string                `json:"HostName"`
 	HostWatchdogTimer       HostWatchdogTimer     `json:"HostWatchdogTimer"`
-	HostingRoles            []interface{}         `json:"HostingRoles"`
+	HostingRoles            []any                 `json:"HostingRoles"`
 	HostingRolesOdataCount  int                   `json:"HostingRoles@odata.count"`
 	ID                      string                `json:"Id"`
 	IndicatorLED            string                `json:"IndicatorLED"`
@@ -101,8 +101,7 @@ type ComputerSystemLinks struct {
 }
 
 // ComputerSystemLinksOem represents ComputerSystem resource's Links Oem field
-type ComputerSystemLinksOem struct {
-}
+type ComputerSystemLinksOem struct{}
 
 // MemorySummary represents ComputerSystem resource's MemorySummary field
 type MemorySummary struct {
@@ -119,8 +118,7 @@ type MachineStatus struct {
 }
 
 // ComputerSystemOem represents ComputerSystem resource's Oem field
-type ComputerSystemOem struct {
-}
+type ComputerSystemOem struct{}
 
 // ProcessorSummary represents ComputerSystem resource's ProcessorSummary field
 type ProcessorSummary struct {
@@ -157,7 +155,7 @@ var serverIsAlreadyPoweredOffResponse = ErrorResponse{
 				MessageArgs:                 []string{},
 				MessageArgsOdataCount:       0,
 				MessageID:                   "X.X.X",
-				RelatedProperties:           []interface{}{},
+				RelatedProperties:           []any{},
 				RelatedPropertiesOdataCount: 0,
 				Resolution:                  "No response action is required.",
 				Severity:                    "Informational",
@@ -176,7 +174,7 @@ var serverIsAlreadyPoweredOnResponse = ErrorResponse{
 				MessageArgs:                 []string{},
 				MessageArgsOdataCount:       0,
 				MessageID:                   "X.X.X",
-				RelatedProperties:           []interface{}{},
+				RelatedProperties:           []any{},
 				RelatedPropertiesOdataCount: 0,
 				Resolution:                  "No response action is required.",
 				Severity:                    "Informational",
@@ -269,7 +267,7 @@ func createComputerSystemResponse(systemID string, powerState PowerStatus) Compu
 			},
 			TimeoutAction: "None",
 		},
-		HostingRoles:           []interface{}{},
+		HostingRoles:           []any{},
 		HostingRolesOdataCount: 0,
 		ID:                     systemID,
 		IndicatorLED:           "Off",

@@ -25,7 +25,7 @@ type Chassis struct {
 	OdataType        string           `json:"@odata.type"`
 	Actions          ChassisActions   `json:"Actions"`
 	Assembly         OdataID          `json:"Assembly"`
-	AssetTag         interface{}      `json:"AssetTag"`
+	AssetTag         any              `json:"AssetTag"`
 	ChassisType      string           `json:"ChassisType"`
 	Description      string           `json:"Description"`
 	ID               string           `json:"Id"`
@@ -59,24 +59,24 @@ type ChassisReset struct {
 
 // ChassisLinks represents Chassis's Links field
 type ChassisLinks struct {
-	ComputerSystems             []OdataID     `json:"ComputerSystems"`
-	ComputerSystemsOdataCount   int           `json:"ComputerSystems@odata.count"`
-	Contains                    []OdataID     `json:"Contains"`
-	ContainsOdataCount          int           `json:"Contains@odata.count"`
-	CooledBy                    []OdataID     `json:"CooledBy"`
-	CooledByOdataCount          int           `json:"CooledBy@odata.count"`
-	Drives                      []interface{} `json:"Drives"`
-	DrivesOdataCount            int           `json:"Drives@odata.count"`
-	ManagedBy                   []OdataID     `json:"ManagedBy"`
-	ManagedByOdataCount         int           `json:"ManagedBy@odata.count"`
-	ManagersInChassis           []OdataID     `json:"ManagersInChassis"`
-	ManagersInChassisOdataCount int           `json:"ManagersInChassis@odata.count"`
-	PCIeDevices                 []OdataID     `json:"PCIeDevices"`
-	PCIeDevicesOdataCount       int           `json:"PCIeDevices@odata.count"`
-	PoweredBy                   []OdataID     `json:"PoweredBy"`
-	PoweredByOdataCount         int           `json:"PoweredBy@odata.count"`
-	Storage                     []OdataID     `json:"Storage"`
-	StorageOdataCount           int           `json:"Storage@odata.count"`
+	ComputerSystems             []OdataID `json:"ComputerSystems"`
+	ComputerSystemsOdataCount   int       `json:"ComputerSystems@odata.count"`
+	Contains                    []OdataID `json:"Contains"`
+	ContainsOdataCount          int       `json:"Contains@odata.count"`
+	CooledBy                    []OdataID `json:"CooledBy"`
+	CooledByOdataCount          int       `json:"CooledBy@odata.count"`
+	Drives                      []any     `json:"Drives"`
+	DrivesOdataCount            int       `json:"Drives@odata.count"`
+	ManagedBy                   []OdataID `json:"ManagedBy"`
+	ManagedByOdataCount         int       `json:"ManagedBy@odata.count"`
+	ManagersInChassis           []OdataID `json:"ManagersInChassis"`
+	ManagersInChassisOdataCount int       `json:"ManagersInChassis@odata.count"`
+	PCIeDevices                 []OdataID `json:"PCIeDevices"`
+	PCIeDevicesOdataCount       int       `json:"PCIeDevices@odata.count"`
+	PoweredBy                   []OdataID `json:"PoweredBy"`
+	PoweredByOdataCount         int       `json:"PoweredBy@odata.count"`
+	Storage                     []OdataID `json:"Storage"`
+	StorageOdataCount           int       `json:"Storage@odata.count"`
 }
 
 // Location represents Chassis's Location field
@@ -179,7 +179,7 @@ func createChassisResponse(chassisID string, powerState PowerStatus) Chassis {
 				},
 			},
 			CooledByOdataCount: 2,
-			Drives:             []interface{}{},
+			Drives:             []any{},
 			DrivesOdataCount:   0,
 			ManagedBy: []OdataID{
 				{
@@ -262,7 +262,7 @@ func createChassisNotFoundErrorResponse(chassisID string) ErrorResponse {
 					MessageArgs:                 []string{chassisID},
 					MessageArgsOdataCount:       1,
 					MessageID:                   "X.X.X",
-					RelatedProperties:           []interface{}{},
+					RelatedProperties:           []any{},
 					RelatedPropertiesOdataCount: 0,
 					Resolution:                  "Enter the correct resource and retry the operation. For information about valid resource, see the Redfish Users Guide available on the support site.",
 					Severity:                    "Critical",
@@ -272,7 +272,7 @@ func createChassisNotFoundErrorResponse(chassisID string) ErrorResponse {
 					MessageArgs:                 []string{chassisID},
 					MessageArgsOdataCount:       1,
 					MessageID:                   "Base.X.X.ResourceMissingAtURI",
-					RelatedProperties:           []interface{}{""},
+					RelatedProperties:           []any{""},
 					RelatedPropertiesOdataCount: 1,
 					Resolution:                  "Place a valid resource at the URI or correct the URI and resubmit the request.",
 					Severity:                    "Critical",
@@ -280,7 +280,8 @@ func createChassisNotFoundErrorResponse(chassisID string) ErrorResponse {
 			},
 			Code:    "Base.X.X.GeneralError",
 			Message: "A general error has occurred. See ExtendedInfo for more information",
-		}}
+		},
+	}
 }
 
 func (r *redfishServer) handleChassisActionsReset(c *gin.Context) {

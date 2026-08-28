@@ -52,14 +52,14 @@ func StartIPMIServer(ctx context.Context, conn net.PacketConn, machine Machine) 
 		bytebuf := bytes.NewBuffer(buf)
 		res, err := handleRMCPRequest(bytebuf, machine, session, bmcUser)
 		if err != nil {
-			log.Warn("failed to handle RMCP request", map[string]interface{}{
+			log.Warn("failed to handle RMCP request", map[string]any{
 				log.FnError: err,
 			})
 			continue
 		}
 		_, err = conn.WriteTo(res, addr)
 		if err != nil {
-			log.Warn("failed to write to UDP", map[string]interface{}{
+			log.Warn("failed to write to UDP", map[string]any{
 				log.FnError: err,
 			})
 			continue
@@ -94,7 +94,7 @@ func StartRedfishServer(ctx context.Context, listener net.Listener, machine Mach
 	cfg := &tls.Config{Certificates: []tls.Certificate{cert}}
 	tlsListener := tls.NewListener(listener, cfg)
 	if err := serv.Server.Serve(tlsListener); err != nil {
-		log.Error("failed to serve TLS", map[string]interface{}{
+		log.Error("failed to serve TLS", map[string]any{
 			log.FnError: err,
 		})
 		return err
