@@ -2,8 +2,8 @@ SUDO = sudo
 FAKEROOT = fakeroot
 
 TESTTOOLDIR := $(CURDIR)/bin
-STATICCHECK := $(TESTTOOLDIR)/staticcheck
-CUSTOMCHECKER := $(TESTTOOLDIR)/custom-checker
+
+GOLANGCI_LINT := go tool -modfile=$(CURDIR)/tools/go.mod github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 ### for debian package
 PACKAGES := fakeroot
@@ -46,11 +46,6 @@ setup:
 	$(SUDO) apt-get update
 	$(SUDO) apt-get -y install --no-install-recommends qemu-system-x86 qemu-utils cloud-utils freeipmi-tools
 
-.PHONY: test-tools
-test-tools:
-	GOBIN=$(TESTTOOLDIR) go install github.com/cybozu-go/golang-custom-analyzer/cmd/custom-checker@5cda2f85e31dbe2453825f6520710a76465f197e # v0.1.5
-	GOBIN=$(TESTTOOLDIR) go install honnef.co/go/tools/cmd/staticcheck@ff63afafc529279f454e02f1d060210bd4263951 # v0.7.0
-
 .PHONY: check-generate
 check-generate:
 	go mod tidy
@@ -58,10 +53,11 @@ check-generate:
 
 .PHONY: code-check
 code-check:
-	test -z "$$(gofmt -s -l . | tee /dev/stderr)"
-	$(STATICCHECK) ./...
-	test -z "$$($(CUSTOMCHECKER) -restrictpkg.packages=html/template,log $$(go list -tags='$(GOTAGS)' ./...) 2>&1 | tee /dev/stderr)"
-	go vet ./...
+	$(GOLANGCI_LINT) run
+
+.PHONY: lint-fix
+lint-fix:
+	$(GOLANGCI_LINT) run --fix
 
 .PHONY: test
 test:

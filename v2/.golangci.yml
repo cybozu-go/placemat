@@ -1,0 +1,42 @@
+version: "2"
+linters:
+  default: standard
+  enable:
+    - depguard
+    - ginkgolinter
+    - nilerr
+    - modernize
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+  settings:
+    depguard:
+      rules:
+        restricted-packages:
+          files:
+            - $all
+          deny:
+            - pkg: ^html/template$
+              desc: stdlib html/template must not be used
+            - pkg: ^log$
+              desc: log must not be used
+    errcheck:
+      exclude-functions:
+        - github.com/cybozu-go/log.Info
+        - github.com/cybozu-go/log.Warn
+        - github.com/cybozu-go/log.Error
+        - github.com/cybozu-go/log.Debug
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/cybozu-go/placemat
