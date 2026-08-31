@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.5.2] - 2026-08-31
+
+### Changed
+
+- Replace custom-checker and staticcheck with golangci-lint in [#220](https://github.com/cybozu-go/placemat/pull/220)
+
 ## [2.5.1] - 2026-06-10
 
 ## Changed
@@ -299,7 +305,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 ### Added
 
 - Many things.  See git log.
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.5.1...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.5.2...HEAD
+[2.5.2]: https://github.com/cybozu-go/placemat/compare/v2.5.1...v2.5.2
 [2.5.1]: https://github.com/cybozu-go/placemat/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/cybozu-go/placemat/compare/v2.4.11...v2.5.0
 [2.4.11]: https://github.com/cybozu-go/placemat/compare/v2.4.10...v2.4.11
