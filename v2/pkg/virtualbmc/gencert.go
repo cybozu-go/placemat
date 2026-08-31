@@ -52,7 +52,7 @@ func generateCertificate(host string, validFor time.Duration) ([]byte, []byte, e
 func dnsAliases(host string) []string {
 	parts := strings.Split(host, ".")
 	aliases := make([]string, len(parts))
-	for i := 0; i < len(parts); i++ {
+	for i := range parts {
 		aliases[i] = strings.Join(parts[0:len(parts)-i], ".")
 	}
 	return aliases

@@ -4,11 +4,12 @@ import (
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/utils/sysctl"
-	"github.com/cybozu-go/placemat/v2/pkg/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/vishvananda/netlink"
 	"sigs.k8s.io/yaml"
+
+	"github.com/cybozu-go/placemat/v2/pkg/types"
 )
 
 var _ = Describe("Bridge Network", func() {

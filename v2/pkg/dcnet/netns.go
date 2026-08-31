@@ -13,10 +13,11 @@ import (
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/utils/sysctl"
 	"github.com/cybozu-go/log"
-	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/well"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
+
+	"github.com/cybozu-go/placemat/v2/pkg/types"
 )
 
 // NetNS represents a NetworkNamespace resource.
@@ -189,7 +190,6 @@ func (n *netNS) Setup(ctx context.Context, mtu int, force bool) error {
 	// Run Commands
 	env := well.NewEnvironment(ctx)
 	for _, app := range n.apps {
-		app := app
 		env.Go(func(ctx context.Context) error {
 			err := createdNS.Do(func(hostNS ns.NetNS) error {
 				if err := well.CommandContext(ctx, app.command[0], app.command[1:]...).Run(); err != nil {
@@ -255,7 +255,7 @@ func getNsRunDir() string {
 
 func (n *netNS) Cleanup() {
 	if err := netns.DeleteNamed(n.name); err != nil {
-		log.Warn("failed to delete the network namespace", map[string]interface{}{
+		log.Warn("failed to delete the network namespace", map[string]any{
 			log.FnError: err,
 			"netns":     n.name,
 		})

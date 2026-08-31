@@ -18,7 +18,7 @@ var _ = Describe("Virtual BMC", func() {
 	var session *gexec.Session
 
 	AfterEach(func() {
-		terminatePlacemat(session)
+		_, _ = terminatePlacemat(session)
 	})
 
 	It("should serve IPMI2.0 and Redfish", func() {
@@ -107,7 +107,7 @@ var _ = Describe("Virtual BMC", func() {
 		})
 
 		By("terminating placemat", func() {
-			terminatePlacemat(session)
+			_, _ = terminatePlacemat(session)
 			Eventually(session.Exited).Should(BeClosed())
 		})
 	})

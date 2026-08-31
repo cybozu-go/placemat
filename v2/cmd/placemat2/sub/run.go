@@ -8,11 +8,12 @@ import (
 	"path/filepath"
 
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/well"
+	"github.com/gin-gonic/gin"
+
 	"github.com/cybozu-go/placemat/v2/pkg/placemat"
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/placemat/v2/pkg/vm"
-	"github.com/cybozu-go/well"
-	"github.com/gin-gonic/gin"
 )
 
 func subMain(args []string) error {
@@ -44,7 +45,7 @@ func run(yamls []string) error {
 
 	err := os.Chdir(filepath.Dir(yamls[0]))
 	if err != nil {
-		log.Warn("cannot chdir to YAML directory", map[string]interface{}{
+		log.Warn("cannot chdir to YAML directory", map[string]any{
 			log.FnError: err.Error(),
 		})
 	}

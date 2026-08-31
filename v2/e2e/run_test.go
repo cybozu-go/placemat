@@ -134,7 +134,7 @@ func doExec(agent *sshAgent, input io.Reader, args ...string) ([]byte, []byte, e
 	if err != nil {
 		return nil, nil, err
 	}
-	defer agent.conn.SetDeadline(time.Time{})
+	defer func() { _ = agent.conn.SetDeadline(time.Time{}) }()
 
 	sess, err := agent.client.NewSession()
 	if err != nil {

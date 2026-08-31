@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/cybozu-go/log"
-	"github.com/cybozu-go/placemat/v2/pkg/dcnet"
 	"github.com/vishvananda/netlink"
+
+	"github.com/cybozu-go/placemat/v2/pkg/dcnet"
 )
 
 type tap struct {
@@ -82,7 +83,7 @@ func (t *tap) TapInfo() tapInfo {
 func (t *tap) Cleanup() {
 	link, err := netlink.LinkByName(t.tapName)
 	if err != nil {
-		log.Warn("failed to find the tap", map[string]interface{}{
+		log.Warn("failed to find the tap", map[string]any{
 			log.FnError: err,
 			"tap":       t.tapName,
 		})
@@ -90,7 +91,7 @@ func (t *tap) Cleanup() {
 	}
 
 	if err := netlink.LinkDel(link); err != nil {
-		log.Warn("failed to delete the tap", map[string]interface{}{
+		log.Warn("failed to delete the tap", map[string]any{
 			log.FnError: err,
 			"tap":       t.tapName,
 		})

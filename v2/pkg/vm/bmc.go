@@ -8,10 +8,11 @@ import (
 	"net"
 
 	"github.com/cybozu-go/log"
+	"github.com/cybozu-go/well"
+
 	"github.com/cybozu-go/placemat/v2/pkg/dcnet"
 	"github.com/cybozu-go/placemat/v2/pkg/types"
 	"github.com/cybozu-go/placemat/v2/pkg/virtualbmc"
-	"github.com/cybozu-go/well"
 )
 
 type BMCServer interface {
@@ -50,7 +51,7 @@ OUTER:
 			// Configure network
 			err := s.addBMCAddrToNetwork(info)
 			if err != nil {
-				log.Error("failed to add BMC port", map[string]interface{}{
+				log.Error("failed to add BMC port", map[string]any{
 					log.FnError:   err,
 					"serial":      info.serial,
 					"bmc_address": info.bmcAddress,
@@ -60,14 +61,14 @@ OUTER:
 			// Start IPMI server
 			serverAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", info.bmcAddress, 623))
 			if err != nil {
-				log.Error("failed to resolve UDP address", map[string]interface{}{
+				log.Error("failed to resolve UDP address", map[string]any{
 					log.FnError: err,
 					"address":   info.bmcAddress,
 				})
 			}
 			conn, err := net.ListenUDP("udp", serverAddr)
 			if err != nil {
-				log.Error("failed to listen UDP address", map[string]interface{}{
+				log.Error("failed to listen UDP address", map[string]any{
 					log.FnError: err,
 					"address":   info.bmcAddress,
 				})
@@ -79,14 +80,14 @@ OUTER:
 			// Start Redfish server
 			addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", info.bmcAddress, 443))
 			if err != nil {
-				log.Error("failed to resolve TCP address", map[string]interface{}{
+				log.Error("failed to resolve TCP address", map[string]any{
 					log.FnError: err,
 					"address":   info.bmcAddress,
 				})
 			}
 			listener, err := net.ListenTCP("tcp", addr)
 			if err != nil {
-				log.Error("failed to listen TCP address", map[string]interface{}{
+				log.Error("failed to listen TCP address", map[string]any{
 					log.FnError: err,
 					"address":   info.bmcAddress,
 				})
@@ -110,7 +111,7 @@ func (s *bmcServer) addBMCAddrToNetwork(info BMCInfo) error {
 		return err
 	}
 
-	log.Info("creating BMC port", map[string]interface{}{
+	log.Info("creating BMC port", map[string]any{
 		"serial":      info.serial,
 		"bmc_address": info.bmcAddress,
 	})

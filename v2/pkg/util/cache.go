@@ -105,7 +105,7 @@ func DownloadData(ctx context.Context, u *url.URL, decomp Decompressor, c *Cache
 		return err
 	}
 
-	log.Info("Downloading data...", map[string]interface{}{
+	log.Info("Downloading data...", map[string]any{
 		"url":  urlString,
 		"size": size,
 	})

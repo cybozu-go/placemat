@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/cybozu-go/log"
-	"github.com/cybozu-go/placemat/v2/pkg/placemat"
 	"github.com/cybozu-go/well"
 	"github.com/spf13/cobra"
+
+	"github.com/cybozu-go/placemat/v2/pkg/placemat"
 )
 
 func ptyPath(host string) string {
@@ -32,7 +33,6 @@ var nodeEnterCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-
 		node := args[0]
 
 		sockCh := make(chan string)

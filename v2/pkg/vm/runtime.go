@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/cybozu-go/log"
+
 	"github.com/cybozu-go/placemat/v2/pkg/util"
 )
 
@@ -18,14 +19,14 @@ var vhostNetSupported bool
 func LoadModules() {
 	err := exec.Command("modprobe", "vhost-net").Run()
 	if err != nil {
-		log.Error("failed to modprobe vhost-net", map[string]interface{}{
+		log.Error("failed to modprobe vhost-net", map[string]any{
 			"error": err,
 		})
 	}
 
 	f, err := os.Open("/proc/modules")
 	if err != nil {
-		log.Error("failed to open /proc/modules", map[string]interface{}{
+		log.Error("failed to open /proc/modules", map[string]any{
 			"error": err,
 		})
 	}
@@ -67,7 +68,7 @@ func NewRuntime(force, graphic bool, runDir, dataDir, cacheDir, listenAddr strin
 			return nil, errors.New(cacheDir + " is not a directory")
 		}
 	case os.IsNotExist(err):
-		err = os.MkdirAll(cacheDir, 0755)
+		err = os.MkdirAll(cacheDir, 0o755)
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +77,7 @@ func NewRuntime(force, graphic bool, runDir, dataDir, cacheDir, listenAddr strin
 	}
 
 	imageCacheDir := filepath.Join(cacheDir, "image_cache")
-	err = os.MkdirAll(imageCacheDir, 0755)
+	err = os.MkdirAll(imageCacheDir, 0o755)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +91,7 @@ func NewRuntime(force, graphic bool, runDir, dataDir, cacheDir, listenAddr strin
 			return nil, errors.New(dataDir + " is not a directory")
 		}
 	case os.IsNotExist(err):
-		err = os.MkdirAll(dataDir, 0755)
+		err = os.MkdirAll(dataDir, 0o755)
 		if err != nil {
 			return nil, err
 		}
@@ -99,13 +100,13 @@ func NewRuntime(force, graphic bool, runDir, dataDir, cacheDir, listenAddr strin
 	}
 
 	volumeDir := filepath.Join(dataDir, "volumes")
-	err = os.MkdirAll(volumeDir, 0755)
+	err = os.MkdirAll(volumeDir, 0o755)
 	if err != nil {
 		return nil, err
 	}
 
 	nvramDir := filepath.Join(dataDir, "nvram")
-	err = os.MkdirAll(nvramDir, 0755)
+	err = os.MkdirAll(nvramDir, 0o755)
 	if err != nil {
 		return nil, err
 	}

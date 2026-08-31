@@ -33,7 +33,7 @@ func RandomLinkName(typ LinkType) (string, error) {
 func CleanupAllLinks() {
 	links, err := netlink.LinkList()
 	if err != nil {
-		log.Warn("failed to list links", map[string]interface{}{
+		log.Warn("failed to list links", map[string]any{
 			log.FnError: err,
 		})
 		return
@@ -42,7 +42,7 @@ func CleanupAllLinks() {
 	for _, link := range links {
 		if strings.HasPrefix(link.Attrs().Name, prefix) {
 			if err := netlink.LinkDel(link); err != nil {
-				log.Warn("failed to delete the link", map[string]interface{}{
+				log.Warn("failed to delete the link", map[string]any{
 					log.FnError: err,
 					"name":      link.Attrs().Name,
 				})

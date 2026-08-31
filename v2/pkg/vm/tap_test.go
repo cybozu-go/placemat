@@ -3,11 +3,12 @@ package vm
 import (
 	"strings"
 
-	"github.com/cybozu-go/placemat/v2/pkg/dcnet"
-	"github.com/cybozu-go/placemat/v2/pkg/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/vishvananda/netlink"
+
+	"github.com/cybozu-go/placemat/v2/pkg/dcnet"
+	"github.com/cybozu-go/placemat/v2/pkg/types"
 )
 
 var _ = Describe("Tap", func() {

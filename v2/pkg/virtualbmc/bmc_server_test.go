@@ -106,7 +106,7 @@ var _ = Describe("Virtual BMC", func() {
 		}).Should(Succeed())
 
 		env.Cancel(nil)
-		env.Wait()
+		_ = env.Wait()
 	})
 
 	It("should turn on and off Machine power via redfish", func() {
@@ -289,7 +289,7 @@ var _ = Describe("Virtual BMC", func() {
 		}).Should(Succeed())
 
 		env.Cancel(nil)
-		env.Wait()
+		_ = env.Wait()
 	})
 })
 

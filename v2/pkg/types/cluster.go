@@ -141,9 +141,11 @@ func (n *DeviceClassSpec) validate() error {
 	return nil
 }
 
-type NodeVolumeCache string
-type NodeVolumeKind string
-type NodeVolumeFormat string
+type (
+	NodeVolumeCache  string
+	NodeVolumeKind   string
+	NodeVolumeFormat string
+)
 
 const (
 	NodeVolumeCacheWriteback    = NodeVolumeCache("writeback")
@@ -186,11 +188,11 @@ type NodeSpec struct {
 	CPU                int              `json:"cpu,omitempty"` // compatibility use
 	SMP                *SMPSpec         `json:"smp,omitempty"`
 	Memory             string           `json:"memory,omitempty"`
-	NUMA               NUMASpec         `json:"numa,omitempty"`
+	NUMA               NUMASpec         `json:"numa,omitzero"`
 	NetworkDeviceQueue int              `json:"network-device-queue,omitempty"`
 	UEFI               bool             `json:"uefi,omitempty"`
 	TPM                bool             `json:"tpm,omitempty"`
-	SMBIOS             SMBIOSConfigSpec `json:"smbios,omitempty"`
+	SMBIOS             SMBIOSConfigSpec `json:"smbios,omitzero"`
 }
 
 func (n *NodeSpec) validate() error {

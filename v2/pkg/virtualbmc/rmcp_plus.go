@@ -52,9 +52,11 @@ type confidentialityAlgorithm uint8
 // We only support AES-CBC-128 which is default confidentiality algorithm
 const confidentialityAlgorithmAESCBC128 confidentialityAlgorithm = 0x01
 
-const authenticationPayloadTypeAuthenticationAlgorithm = 0x00
-const integrityPayloadTypeIntegrityAlgorithm = 0x01
-const confidentialityPayloadTypeConfidentialityAlgorithm = 0x02
+const (
+	authenticationPayloadTypeAuthenticationAlgorithm   = 0x00
+	integrityPayloadTypeIntegrityAlgorithm             = 0x01
+	confidentialityPayloadTypeConfidentialityAlgorithm = 0x02
+)
 
 // rmcpPlus represents RMCP+
 type rmcpPlus struct {
@@ -374,7 +376,8 @@ func deserializeRAKPMessage1RequestPayload(buf io.Reader) (*rakpMessage1Request,
 }
 
 func generateAuthCode(remoteConsoleSessionId, managedSystemSessionId uint32, remoteConsoleRandomNumber, managedSystemRandomNumber, managedSystemGuid [16]byte,
-	requestedPrivilegeLevel, usernameLength uint8, userName []byte, password string) ([]byte, error) {
+	requestedPrivilegeLevel, usernameLength uint8, userName []byte, password string,
+) ([]byte, error) {
 	buf := bytes.Buffer{}
 	if err := binary.Write(&buf, binary.LittleEndian, remoteConsoleSessionId); err != nil {
 		return nil, err
@@ -540,7 +543,7 @@ func generateK2(sessionIntegrityKey []byte) []byte {
 func generateAdditionalKeyingMaterials(sessionIntegrityKey []byte, b byte) []byte {
 	mac := hmac.New(sha1.New, sessionIntegrityKey)
 	var cons []byte
-	for i := 0; i < sha1.Size; i++ {
+	for range sha1.Size {
 		cons = append(cons, b)
 	}
 	mac.Write(cons)

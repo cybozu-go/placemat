@@ -50,7 +50,7 @@ ACTION
 	Run: func(cmd *cobra.Command, args []string) {
 		action := args[0]
 		node := args[1]
-		if err := (nodeAction(action)).valid(); err != nil {
+		if err := nodeAction(action).valid(); err != nil {
 			log.ErrorExit(err)
 		}
 

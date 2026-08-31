@@ -48,8 +48,7 @@ type ServiceRootLinks struct {
 }
 
 // ServiceRootOem represents ServiceRoot's Oem field
-type ServiceRootOem struct {
-}
+type ServiceRootOem struct{}
 
 // ProtocolFeaturesSupported represents ServiceRoot's ProtocolFeaturesSupported field
 type ProtocolFeaturesSupported struct {
@@ -97,14 +96,14 @@ type Error struct {
 
 // MessageExtendedInfo represents ErrorResponse's MessageExtendedInfo field
 type MessageExtendedInfo struct {
-	Message                     string        `json:"Message"`
-	MessageArgs                 []string      `json:"MessageArgs"`
-	MessageArgsOdataCount       int           `json:"MessageArgs@odata.count"`
-	MessageID                   string        `json:"MessageId"`
-	RelatedProperties           []interface{} `json:"RelatedProperties"`
-	RelatedPropertiesOdataCount int           `json:"RelatedProperties@odata.count"`
-	Resolution                  string        `json:"Resolution"`
-	Severity                    string        `json:"Severity"`
+	Message                     string   `json:"Message"`
+	MessageArgs                 []string `json:"MessageArgs"`
+	MessageArgsOdataCount       int      `json:"MessageArgs@odata.count"`
+	MessageID                   string   `json:"MessageId"`
+	RelatedProperties           []any    `json:"RelatedProperties"`
+	RelatedPropertiesOdataCount int      `json:"RelatedProperties@odata.count"`
+	Resolution                  string   `json:"Resolution"`
+	Severity                    string   `json:"Severity"`
 }
 
 const systemID = "System.Embedded.1"

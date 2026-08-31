@@ -17,7 +17,6 @@ jobs:
         with:
           go-version-file: v2/go.mod
       - run: make setup
-      - run: make test-tools
       - run: make check-generate
       - run: make code-check
       - run: make test

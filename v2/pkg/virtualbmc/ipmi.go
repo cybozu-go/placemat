@@ -107,7 +107,7 @@ func (i *ipmi) handle() ([]byte, error) {
 
 	switch netFunction {
 	case ipmiNetFNApp:
-		log.Info("    ipmi: NetFunction = APP", map[string]interface{}{})
+		log.Info("    ipmi: NetFunction = APP", map[string]any{})
 		code := completionCodeOK
 		res, err := i.handleIPMIApp(i.message)
 		if err != nil {
@@ -115,7 +115,7 @@ func (i *ipmi) handle() ([]byte, error) {
 		}
 		return appendIPMIMessageHeader(i.message, res, ipmiNetFNApp|ipmiNetFNResponse, code)
 	case ipmiNetFNChassis:
-		log.Info("    ipmi: NetFunction = CHASSIS", map[string]interface{}{})
+		log.Info("    ipmi: NetFunction = CHASSIS", map[string]any{})
 		code := completionCodeOK
 		res, err := i.handleIPMIChassis(i.message)
 		if err != nil {
@@ -123,21 +123,21 @@ func (i *ipmi) handle() ([]byte, error) {
 		}
 		return appendIPMIMessageHeader(i.message, res, ipmiNetFNChassis|ipmiNetFNResponse, code)
 	case ipmiNetFNBridge:
-		log.Info("    ipmi: NetFunction = BRIDGE", map[string]interface{}{})
+		log.Info("    ipmi: NetFunction = BRIDGE", map[string]any{})
 	case ipmiNetFNSensorEvent:
-		log.Info("    ipmi: NetFunction = SENSOR / EVENT", map[string]interface{}{})
+		log.Info("    ipmi: NetFunction = SENSOR / EVENT", map[string]any{})
 	case ipmiNetFNFirmware:
-		log.Info("    ipmi: NetFunction = FIRMWARE", map[string]interface{}{})
+		log.Info("    ipmi: NetFunction = FIRMWARE", map[string]any{})
 	case ipmiNetFNStorage:
-		log.Info("    ipmi: NetFunction = STORAGE", map[string]interface{}{})
+		log.Info("    ipmi: NetFunction = STORAGE", map[string]any{})
 	case ipmiNetFNTransport:
-		log.Info("    ipmi: NetFunction = TRANSPORT", map[string]interface{}{})
+		log.Info("    ipmi: NetFunction = TRANSPORT", map[string]any{})
 	case ipmiNetFNGroupExtension:
-		log.Info("    ipmi: NetFunction = GROUP EXTENSION", map[string]interface{}{})
+		log.Info("    ipmi: NetFunction = GROUP EXTENSION", map[string]any{})
 	case ipmiNetFNOEMGroup:
-		log.Info("    ipmi: NetFunction = OEM GROUP", map[string]interface{}{})
+		log.Info("    ipmi: NetFunction = OEM GROUP", map[string]any{})
 	default:
-		log.Info("    ipmi: NetFunction = Unknown NetFunction", map[string]interface{}{"NetFunction": netFunction})
+		log.Info("    ipmi: NetFunction = Unknown NetFunction", map[string]any{"NetFunction": netFunction})
 	}
 
 	return nil, fmt.Errorf("unsupported NetFunction: %x", netFunction)
