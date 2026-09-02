@@ -111,6 +111,12 @@ func NewRuntime(force, graphic bool, runDir, dataDir, cacheDir, listenAddr strin
 		return nil, err
 	}
 
+	swtpmStateDir := filepath.Join(dataDir, "swtpm")
+	err = os.MkdirAll(swtpmStateDir, 0o755)
+	if err != nil {
+		return nil, err
+	}
+
 	return r, nil
 }
 
@@ -132,6 +138,12 @@ func (r *Runtime) nvramPath(host string) string {
 
 func (r *Runtime) swtpmSocketDirPath(host string) string {
 	return filepath.Join(r.RunDir, host)
+}
+
+// The TPM state is placed under DataDir so that, like NVRAM and volumes,
+// it survives placemat restarts as long as the data directory is kept.
+func (r *Runtime) swtpmStateDirPath(host string) string {
+	return filepath.Join(r.DataDir, "swtpm", host)
 }
 
 func (r *Runtime) swtpmSocketPath(host string) string {

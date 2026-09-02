@@ -247,7 +247,15 @@ func createNVRAM(ctx context.Context, p string) error {
 }
 
 func (n *node) startSWTPM(ctx context.Context, r *Runtime) error {
-	err := os.Mkdir(r.swtpmSocketDirPath(n.name), 0o755)
+	err := os.MkdirAll(r.swtpmSocketDirPath(n.name), 0o755)
+	if err != nil {
+		return err
+	}
+	// a socket file may be left over from a previous run
+	if err := os.Remove(r.swtpmSocketPath(n.name)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	err = os.MkdirAll(r.swtpmStateDirPath(n.name), 0o755)
 	if err != nil {
 		return err
 	}
@@ -257,7 +265,7 @@ func (n *node) startSWTPM(ctx context.Context, r *Runtime) error {
 		"socket": r.swtpmSocketPath(n.name),
 	})
 	c := well.CommandContext(ctx, "swtpm", "socket",
-		"--tpmstate", "dir="+r.swtpmSocketDirPath(n.name),
+		"--tpmstate", "dir="+r.swtpmStateDirPath(n.name),
 		"--tpm2",
 		"--ctrl",
 		"type=unixio,path="+r.swtpmSocketPath(n.name),

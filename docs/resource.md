@@ -124,6 +124,7 @@ The properties are:
 - `tpm`: Create Trusted Platform Module(TPM) for the VM. This feature requires [swtpm](https://github.com/stefanberger/swtpm).
     - If false: Provide no TPM device.
     - If true: Provide a TPM device as `/dev/tpm0` on the VM.
+    - The TPM state is stored in `<data-dir>/swtpm/<node name>` and is reused across placemat runs, just like volumes and NVRAM. Remove the data directory to reset it.
 
 ### common volume parameters
 * `kind`: kind of the volume.  Required.
