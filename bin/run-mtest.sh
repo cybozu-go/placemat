@@ -48,6 +48,14 @@ mkdir -p /var/scratch
 mount -t ext4 /dev/disk/by-id/google-local-ssd-0 /var/scratch
 chmod 1777 /var/scratch
 
+# The swtpm AppArmor profile does not cover the TPM state directory under the
+# placemat data directory; allow it via the profile's local override.
+if [ -f /etc/apparmor.d/usr.bin.swtpm ]; then
+  mkdir -p /etc/apparmor.d/local
+  echo "/var/scratch/placemat/swtpm/** rwk," > /etc/apparmor.d/local/usr.bin.swtpm
+  apparmor_parser -r /etc/apparmor.d/usr.bin.swtpm || true
+fi
+
 # Run mtest
 GOPATH=\$HOME/go
 export GOPATH
