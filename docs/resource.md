@@ -125,7 +125,13 @@ The properties are:
     - If false: Provide no TPM device.
     - If true: Provide a TPM device as `/dev/tpm0` on the VM.
     - The TPM state is stored in `<data-dir>/swtpm/<node name>` and is reused across placemat runs, just like volumes and NVRAM. Remove the data directory to reset it.
-    - On hosts that enforce the swtpm AppArmor profile (e.g. Ubuntu), allow the state directory via the profile's local override, e.g. `echo "/var/scratch/placemat/swtpm/** rwk," > /etc/apparmor.d/local/usr.bin.swtpm && apparmor_parser -r /etc/apparmor.d/usr.bin.swtpm`.
+    - On hosts that enforce the swtpm AppArmor profile (e.g. Ubuntu), allow the state directory via the profile's local override:
+
+      ```console
+      $ sudo mkdir -p /etc/apparmor.d/local
+      $ echo "/var/scratch/placemat/swtpm/** rwk," | sudo tee -a /etc/apparmor.d/local/usr.bin.swtpm
+      $ sudo apparmor_parser -r /etc/apparmor.d/usr.bin.swtpm
+      ```
 
 ### common volume parameters
 * `kind`: kind of the volume.  Required.
