@@ -56,6 +56,12 @@ export GO111MODULE
 PATH=/usr/local/go/bin:\$GOPATH/bin:\$PATH
 export PATH
 
+# Download Go modules through Takumi Guard. This runs on the GCE instance, so
+# the OIDC token obtained on the GitHub runner is not available here; requests
+# are anonymous.
+GOPROXY=https://golang.flatt.tech
+export GOPROXY
+
 git clone https://github.com/${GITHUB_REPOSITORY} \
     \$HOME/go/src/github.com/${GITHUB_REPOSITORY}
 cd \$HOME/go/src/github.com/${GITHUB_REPOSITORY}
