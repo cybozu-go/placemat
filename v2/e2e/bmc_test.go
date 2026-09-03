@@ -2,8 +2,9 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strings"
+	"net/http"
 
 	"github.com/cybozu-go/well"
 	. "github.com/onsi/ginkgo/v2"
@@ -86,7 +87,8 @@ var _ = Describe("Virtual BMC", func() {
 				// Off, further reset requests are rejected with 409 Conflict.
 				taskMonitor, err := system.Reset(schemas.GracefulShutdownResetType)
 				if err != nil {
-					if !strings.Contains(err.Error(), "409") {
+					var redfishErr *schemas.Error
+					if !errors.As(err, &redfishErr) || redfishErr.HTTPReturnedStatusCode != http.StatusConflict {
 						return err
 					}
 				} else if taskMonitor != nil {
