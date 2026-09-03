@@ -2,6 +2,7 @@ package vm
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -573,8 +574,16 @@ func (n *vm) PowerDown() error {
 	if err := writeCommand(conn, "system_powerdown"); err != nil {
 		return err
 	}
-	if _, err := read(bufr); err != nil {
-		return err
+	// system_powerdown emits a POWERDOWN event alongside the command reply and
+	// their order is not guaranteed; read until the reply arrives.
+	for range 5 {
+		line, err := read(bufr)
+		if err != nil {
+			return err
+		}
+		if bytes.Contains(line, []byte(`"return"`)) || bytes.Contains(line, []byte(`"error"`)) {
+			break
+		}
 	}
 
 	return nil
