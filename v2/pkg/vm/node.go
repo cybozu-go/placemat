@@ -581,8 +581,11 @@ func (n *vm) PowerDown() error {
 		if err != nil {
 			return err
 		}
-		if bytes.Contains(line, []byte(`"return"`)) || bytes.Contains(line, []byte(`"error"`)) {
-			break
+		if bytes.Contains(line, []byte(`"return"`)) {
+			return nil
+		}
+		if bytes.Contains(line, []byte(`"error"`)) {
+			return fmt.Errorf("system_powerdown failed: %s", bytes.TrimSpace(line))
 		}
 	}
 
