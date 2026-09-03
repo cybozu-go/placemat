@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/cybozu-go/well"
 	. "github.com/onsi/ginkgo/v2"
@@ -80,12 +81,15 @@ var _ = Describe("Virtual BMC", func() {
 					return err
 				}
 
-				// Graceful Shutdown
+				// Graceful Shutdown. The guest shuts down asynchronously, so this
+				// closure is retried until the power state becomes Off; once it is
+				// Off, further reset requests are rejected with 409 Conflict.
 				taskMonitor, err := system.Reset(schemas.GracefulShutdownResetType)
 				if err != nil {
-					return err
-				}
-				if taskMonitor != nil {
+					if !strings.Contains(err.Error(), "409") {
+						return err
+					}
+				} else if taskMonitor != nil {
 					_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
 					if err != nil {
 						return err

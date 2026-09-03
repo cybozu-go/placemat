@@ -113,7 +113,9 @@ func (c *qemu) command(r *Runtime) []string {
 }
 
 func (c *qemu) qemuParams(r *Runtime) []string {
-	params := []string{"-enable-kvm"}
+	// -no-shutdown keeps the QEMU process after guest shutdown so that the VM
+	// can be powered on again via QMP, like a real machine after a soft-off.
+	params := []string{"-enable-kvm", "-no-shutdown"}
 
 	if c.ignitionFile != "" {
 		params = append(params, "-fw_cfg")

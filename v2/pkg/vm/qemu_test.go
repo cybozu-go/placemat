@@ -161,6 +161,7 @@ use-nat: false
 		expected := strings.ReplaceAll(fmt.Sprintf(`
 qemu-system-x86_64
  -enable-kvm
+ -no-shutdown
  -smp 72,cores=3,threads=2,dies=6,sockets=4,maxcpus=100
  -m 2G
  -numa node,cpus=0-11
@@ -324,6 +325,7 @@ use-nat: false
 		expected := strings.ReplaceAll(fmt.Sprintf(`
 qemu-system-x86_64
  -enable-kvm
+ -no-shutdown
  -smp 8
  -m 2G
  -nographic
