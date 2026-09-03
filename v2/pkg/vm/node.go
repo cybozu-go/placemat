@@ -2,7 +2,6 @@ package vm
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -582,11 +581,18 @@ func (n *vm) PowerDown() error {
 		if err != nil {
 			return err
 		}
-		if bytes.Contains(line, []byte(`"return"`)) {
-			return nil
+		var reply struct {
+			Return json.RawMessage `json:"return"`
+			Error  json.RawMessage `json:"error"`
 		}
-		if bytes.Contains(line, []byte(`"error"`)) {
-			return fmt.Errorf("system_powerdown failed: %s", bytes.TrimSpace(line))
+		if err := json.Unmarshal(line, &reply); err != nil {
+			continue
+		}
+		if reply.Error != nil {
+			return fmt.Errorf("system_powerdown failed: %s", reply.Error)
+		}
+		if reply.Return != nil {
+			return nil
 		}
 	}
 }
