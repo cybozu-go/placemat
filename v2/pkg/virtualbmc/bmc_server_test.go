@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync/atomic"
 
 	"github.com/cybozu-go/well"
 	. "github.com/onsi/ginkgo/v2"
@@ -19,9 +20,10 @@ var _ = Describe("Virtual BMC", func() {
 		conn, err := net.ListenUDP("udp", serverAddr)
 		Expect(err).NotTo(HaveOccurred())
 
+		machine := &MachineMock{status: PowerStatusOff}
 		env := well.NewEnvironment(context.Background())
 		env.Go(func(ctx context.Context) error {
-			return StartIPMIServer(ctx, conn, &MachineMock{status: PowerStatusOff})
+			return StartIPMIServer(ctx, conn, machine)
 		})
 
 		Eventually(func() error {
@@ -137,6 +139,9 @@ var _ = Describe("Virtual BMC", func() {
 
 			return nil
 		}).Should(Succeed())
+
+		// Ensure that power soft went through PowerDown, not the hard-off path.
+		Expect(machine.powerDownCount.Load()).To(BeNumerically(">", 0))
 
 		env.Cancel(nil)
 		_ = env.Wait()
@@ -355,7 +360,8 @@ func getChassis(service *gofish.Service) (*schemas.Chassis, error) {
 }
 
 type MachineMock struct {
-	status PowerStatus
+	status         PowerStatus
+	powerDownCount atomic.Int32
 }
 
 func (v *MachineMock) PowerStatus() (PowerStatus, error) {
@@ -373,6 +379,7 @@ func (v *MachineMock) PowerOff() error {
 }
 
 func (v *MachineMock) PowerDown() error {
+	v.powerDownCount.Add(1)
 	v.status = PowerStatusOff
 	return nil
 }
