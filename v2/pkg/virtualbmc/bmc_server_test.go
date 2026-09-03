@@ -102,6 +102,39 @@ var _ = Describe("Virtual BMC", func() {
 				return fmt.Errorf("ipmipowert stat reponse is not 127.0.0.1: off, actual is: %s", string(output))
 			}
 
+			// Power On again to test soft shutdown
+			ipmipower = well.CommandContext(context.Background(),
+				"ipmipower", "--on", "--wait-until-on", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
+			output, err = ipmipower.Output()
+			if err != nil {
+				return err
+			}
+			if string(output) != "127.0.0.1: ok\n" {
+				return fmt.Errorf("ipmipowert on reponse is not 127.0.0.1: ok, actual is: %s", string(output))
+			}
+
+			// Power Soft (graceful shutdown)
+			ipmipower = well.CommandContext(context.Background(),
+				"ipmipower", "--soft", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
+			output, err = ipmipower.Output()
+			if err != nil {
+				return err
+			}
+			if string(output) != "127.0.0.1: ok\n" {
+				return fmt.Errorf("ipmipowert soft reponse is not 127.0.0.1: ok, actual is: %s", string(output))
+			}
+
+			// Power State
+			ipmipower = well.CommandContext(context.Background(),
+				"ipmipower", "--stat", "-u", "cybozu", "-p", "cybozu", "-h", "127.0.0.1:9623", "-D", "LAN_2_0")
+			output, err = ipmipower.Output()
+			if err != nil {
+				return err
+			}
+			if string(output) != "127.0.0.1: off\n" {
+				return fmt.Errorf("ipmipowert stat reponse is not 127.0.0.1: off, actual is: %s", string(output))
+			}
+
 			return nil
 		}).Should(Succeed())
 

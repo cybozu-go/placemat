@@ -2,9 +2,7 @@ package e2e
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/cybozu-go/well"
 	. "github.com/onsi/ginkgo/v2"
@@ -63,51 +61,41 @@ var _ = Describe("Virtual BMC", func() {
 		})
 
 		By("serving Redfish", func() {
+			config := gofish.ClientConfig{
+				Endpoint:  fmt.Sprintf("https://%s", bmc2),
+				Username:  "cybozu",
+				Password:  "cybozu",
+				BasicAuth: true,
+				Insecure:  true,
+			}
+			var c *gofish.APIClient
 			Eventually(func() error {
-				config := gofish.ClientConfig{
-					Endpoint:  fmt.Sprintf("https://%s", bmc2),
-					Username:  "cybozu",
-					Password:  "cybozu",
-					BasicAuth: true,
-					Insecure:  true,
-				}
-				c, err := gofish.Connect(config)
-				if err != nil {
-					return err
-				}
-				defer c.Logout()
+				var err error
+				c, err = gofish.Connect(config)
+				return err
+			}).Should(Succeed())
+			defer c.Logout()
 
+			system, err := getComputerSystem(c.Service)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Request a graceful shutdown once; the guest shuts down asynchronously.
+			taskMonitor, err := system.Reset(schemas.GracefulShutdownResetType)
+			Expect(err).NotTo(HaveOccurred())
+			if taskMonitor != nil {
+				_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// Poll until the guest powers off.
+			Eventually(func() error {
 				system, err := getComputerSystem(c.Service)
 				if err != nil {
 					return err
 				}
-
-				// Graceful Shutdown. The guest shuts down asynchronously, so this
-				// closure is retried until the power state becomes Off; once it is
-				// Off, further reset requests are rejected with 409 Conflict.
-				taskMonitor, err := system.Reset(schemas.GracefulShutdownResetType)
-				if err != nil {
-					var redfishErr *schemas.Error
-					if !errors.As(err, &redfishErr) || redfishErr.HTTPReturnedStatusCode != http.StatusConflict {
-						return err
-					}
-				} else if taskMonitor != nil {
-					_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
-					if err != nil {
-						return err
-					}
-				}
-
-				system, err = getComputerSystem(c.Service)
-				if err != nil {
-					return err
-				}
-
-				// Check if the powerState is Off
 				if system.PowerState != schemas.OffPowerState {
 					return fmt.Errorf("powerState is not Off, actual: %s", system.PowerState)
 				}
-
 				return nil
 			}).Should(Succeed())
 		})

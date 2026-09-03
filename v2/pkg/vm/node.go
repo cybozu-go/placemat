@@ -550,11 +550,11 @@ func (n *vm) PowerDown() error {
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 	err = conn.SetDeadline(time.Now().Add(readTimeout))
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	bufr := bufio.NewReader(conn)
 
