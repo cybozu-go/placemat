@@ -110,7 +110,7 @@ var _ = Describe("Virtual BMC", func() {
 				return err
 			}
 			if string(output) != "127.0.0.1: ok\n" {
-				return fmt.Errorf("ipmipowert on reponse is not 127.0.0.1: ok, actual is: %s", string(output))
+				return fmt.Errorf("ipmipower on response is not 127.0.0.1: ok, actual is: %s", string(output))
 			}
 
 			// Power Soft (graceful shutdown)
@@ -121,7 +121,7 @@ var _ = Describe("Virtual BMC", func() {
 				return err
 			}
 			if string(output) != "127.0.0.1: ok\n" {
-				return fmt.Errorf("ipmipowert soft reponse is not 127.0.0.1: ok, actual is: %s", string(output))
+				return fmt.Errorf("ipmipower soft response is not 127.0.0.1: ok, actual is: %s", string(output))
 			}
 
 			// Power State
@@ -132,7 +132,7 @@ var _ = Describe("Virtual BMC", func() {
 				return err
 			}
 			if string(output) != "127.0.0.1: off\n" {
-				return fmt.Errorf("ipmipowert stat reponse is not 127.0.0.1: off, actual is: %s", string(output))
+				return fmt.Errorf("ipmipower stat response is not 127.0.0.1: off, actual is: %s", string(output))
 			}
 
 			return nil

@@ -98,6 +98,27 @@ var _ = Describe("Virtual BMC", func() {
 				}
 				return nil
 			}).Should(Succeed())
+
+			// Power the machine on again; the QEMU process must survive the
+			// guest shutdown thanks to -no-shutdown.
+			system, err = getComputerSystem(c.Service)
+			Expect(err).NotTo(HaveOccurred())
+			taskMonitor, err = system.Reset(schemas.OnResetType)
+			Expect(err).NotTo(HaveOccurred())
+			if taskMonitor != nil {
+				_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			Eventually(func() error {
+				system, err := getComputerSystem(c.Service)
+				if err != nil {
+					return err
+				}
+				if system.PowerState != schemas.OnPowerState {
+					return fmt.Errorf("powerState is not On, actual: %s", system.PowerState)
+				}
+				return nil
+			}).Should(Succeed())
 		})
 
 		By("terminating placemat", func() {
