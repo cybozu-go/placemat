@@ -338,3 +338,8 @@ func (v *MachineMock) PowerOff() error {
 	v.status = PowerStatusOff
 	return nil
 }
+
+func (v *MachineMock) PowerDown() error {
+	v.status = PowerStatusOff
+	return nil
+}

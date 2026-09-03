@@ -544,6 +544,42 @@ func (n *vm) PowerOff() error {
 	return nil
 }
 
+func (n *vm) PowerDown() error {
+	conn, err := net.Dial("unix", n.qmp)
+	if err != nil {
+		return err
+	}
+	err = conn.SetDeadline(time.Now().Add(readTimeout))
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	bufr := bufio.NewReader(conn)
+
+	// Read Greeting response
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+
+	if err := writeCommand(conn, "qmp_capabilities"); err != nil {
+		return err
+	}
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+
+	// The guest OS decides when to shut down; QEMU only acknowledges the request here.
+	if err := writeCommand(conn, "system_powerdown"); err != nil {
+		return err
+	}
+	if _, err := read(bufr); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (n *vm) Wait() error {
 	return n.cmd.Wait()
 }

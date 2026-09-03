@@ -170,6 +170,16 @@ Restart a node.
 $ pmctl2 node action restart node1
 ```
 
+### `pmctl2 node action powerdown <NODE>`
+
+Request a graceful shutdown to a node like an ACPI power button.
+The guest OS decides when to shut down; nodes without a running OS (e.g. waiting for PXE boot) ignore the request.
+Once the guest shuts down, its QEMU process exits, so the node cannot be started again until placemat is restarted.
+
+```console
+$ pmctl2 node action powerdown node1
+```
+
 `forward` subcommand
 --------------------
 

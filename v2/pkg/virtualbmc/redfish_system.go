@@ -423,7 +423,7 @@ func (r *redfishServer) handleComputerSystemActionsReset(c *gin.Context) {
 			c.JSON(http.StatusConflict, serverIsAlreadyPoweredOffResponse)
 			return
 		}
-		if err := r.machine.PowerOff(); err != nil {
+		if err := r.machine.PowerDown(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

@@ -19,6 +19,8 @@ type Machine interface {
 	PowerStatus() (PowerStatus, error)
 	PowerOn() error
 	PowerOff() error
+	// PowerDown requests a graceful shutdown to the machine like an ACPI power button.
+	PowerDown() error
 }
 
 type PowerStatus string

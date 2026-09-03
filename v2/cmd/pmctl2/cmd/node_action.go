@@ -13,17 +13,18 @@ import (
 type nodeAction string
 
 const (
-	nodeActionStart   = nodeAction("start")
-	nodeActionStop    = nodeAction("stop")
-	nodeActionRestart = nodeAction("restart")
+	nodeActionStart     = nodeAction("start")
+	nodeActionStop      = nodeAction("stop")
+	nodeActionRestart   = nodeAction("restart")
+	nodeActionPowerDown = nodeAction("powerdown")
 )
 
 func (n nodeAction) valid() error {
 	switch n {
-	case nodeActionStart, nodeActionStop, nodeActionRestart:
+	case nodeActionStart, nodeActionStop, nodeActionRestart, nodeActionPowerDown:
 		return nil
 	default:
-		return fmt.Errorf("invalid node action: %s: valid actions are [%s|%s|%s]", n, nodeActionStart, nodeActionStop, nodeActionRestart)
+		return fmt.Errorf("invalid node action: %s: valid actions are [%s|%s|%s|%s]", n, nodeActionStart, nodeActionStop, nodeActionRestart, nodeActionPowerDown)
 	}
 }
 
@@ -35,8 +36,9 @@ var nodeActionCmd = &cobra.Command{
 
 ACTION
   * start: power on the target node
-  * stop: power off the target node 
-  * restart: restart the target node`,
+  * stop: power off the target node
+  * restart: restart the target node
+  * powerdown: request a graceful shutdown to the target node like an ACPI power button`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return errors.New("action name not specified")
