@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-09-03
+
+### Added
+
+- Add graceful shutdown of VMs via QMP system_powerdown in [#226](https://github.com/cybozu-go/placemat/pull/226)
+
 ## [2.6.0] - 2026-09-02
 
 ### Changed
@@ -311,7 +317,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 ### Added
 
 - Many things.  See git log.
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/cybozu-go/placemat/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/cybozu-go/placemat/compare/v2.5.2...v2.6.0
 [2.5.2]: https://github.com/cybozu-go/placemat/compare/v2.5.1...v2.5.2
 [2.5.1]: https://github.com/cybozu-go/placemat/compare/v2.5.0...v2.5.1
