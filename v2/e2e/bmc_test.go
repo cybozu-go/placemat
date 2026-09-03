@@ -61,47 +61,62 @@ var _ = Describe("Virtual BMC", func() {
 		})
 
 		By("serving Redfish", func() {
+			config := gofish.ClientConfig{
+				Endpoint:  fmt.Sprintf("https://%s", bmc2),
+				Username:  "cybozu",
+				Password:  "cybozu",
+				BasicAuth: true,
+				Insecure:  true,
+			}
+			var c *gofish.APIClient
 			Eventually(func() error {
-				config := gofish.ClientConfig{
-					Endpoint:  fmt.Sprintf("https://%s", bmc2),
-					Username:  "cybozu",
-					Password:  "cybozu",
-					BasicAuth: true,
-					Insecure:  true,
-				}
-				c, err := gofish.Connect(config)
-				if err != nil {
-					return err
-				}
-				defer c.Logout()
+				var err error
+				c, err = gofish.Connect(config)
+				return err
+			}).Should(Succeed())
+			defer c.Logout()
 
+			system, err := getComputerSystem(c.Service)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Request a graceful shutdown once; the guest shuts down asynchronously.
+			taskMonitor, err := system.Reset(schemas.GracefulShutdownResetType)
+			Expect(err).NotTo(HaveOccurred())
+			if taskMonitor != nil {
+				_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// Poll until the guest powers off.
+			Eventually(func() error {
 				system, err := getComputerSystem(c.Service)
 				if err != nil {
 					return err
 				}
-
-				// Graceful Shutdown
-				taskMonitor, err := system.Reset(schemas.GracefulShutdownResetType)
-				if err != nil {
-					return err
-				}
-				if taskMonitor != nil {
-					_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
-					if err != nil {
-						return err
-					}
-				}
-
-				system, err = getComputerSystem(c.Service)
-				if err != nil {
-					return err
-				}
-
-				// Check if the powerState is Off
 				if system.PowerState != schemas.OffPowerState {
 					return fmt.Errorf("powerState is not Off, actual: %s", system.PowerState)
 				}
+				return nil
+			}).Should(Succeed())
 
+			// Power the machine on again; the QEMU process must survive the
+			// guest shutdown thanks to -no-shutdown.
+			system, err = getComputerSystem(c.Service)
+			Expect(err).NotTo(HaveOccurred())
+			taskMonitor, err = system.Reset(schemas.OnResetType)
+			Expect(err).NotTo(HaveOccurred())
+			if taskMonitor != nil {
+				_, err := schemas.WaitForTaskMonitor(context.Background(), c, 0, taskMonitor, nil)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			Eventually(func() error {
+				system, err := getComputerSystem(c.Service)
+				if err != nil {
+					return err
+				}
+				if system.PowerState != schemas.OnPowerState {
+					return fmt.Errorf("powerState is not On, actual: %s", system.PowerState)
+				}
 				return nil
 			}).Should(Succeed())
 		})

@@ -120,6 +120,12 @@ func (s *apiServer) handleNodeAction(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
+	case "powerdown":
+		if err := v.PowerDown(); err != nil {
+			log.Error("failed to power down", map[string]any{log.FnError: err})
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
 	case "restart":
 		if err := v.PowerOff(); err != nil {
 			log.Error("failed to power off during restart", map[string]any{log.FnError: err})

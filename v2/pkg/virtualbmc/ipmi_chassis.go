@@ -151,7 +151,14 @@ func (i *ipmi) handleIPMIChassisControl(message *ipmiMessage) error {
 	case chassisControlPulse:
 		// do nothing
 	case chassisControlPowerSoft:
-		// do nothing
+		powerState, err := i.machine.PowerStatus()
+		if err != nil {
+			return err
+		}
+		if powerState == PowerStatusOff || powerState == PowerStatusPoweringOff {
+			return errors.New("server is already powered off")
+		}
+		return i.machine.PowerDown()
 	}
 
 	return nil
