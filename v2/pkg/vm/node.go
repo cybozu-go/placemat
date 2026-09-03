@@ -575,8 +575,9 @@ func (n *vm) PowerDown() error {
 		return err
 	}
 	// system_powerdown emits a POWERDOWN event alongside the command reply and
-	// their order is not guaranteed; read until the reply arrives.
-	for range 5 {
+	// their order is not guaranteed; read until the reply arrives. The read
+	// deadline set on the connection bounds this loop.
+	for {
 		line, err := read(bufr)
 		if err != nil {
 			return err
@@ -588,8 +589,6 @@ func (n *vm) PowerDown() error {
 			return fmt.Errorf("system_powerdown failed: %s", bytes.TrimSpace(line))
 		}
 	}
-
-	return nil
 }
 
 func (n *vm) Wait() error {
