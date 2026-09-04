@@ -1,6 +1,6 @@
 module github.com/cybozu-go/placemat/v2
 
-go 1.26.1
+go 1.26.5
 
 require (
 	github.com/containernetworking/plugins v1.9.1
@@ -16,8 +16,8 @@ require (
 	github.com/stmcginnis/gofish v0.25.0
 	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
-	golang.org/x/crypto v0.55.0
-	k8s.io/apimachinery v0.34.11
+	golang.org/x/crypto v0.56.0
+	k8s.io/apimachinery v0.35.6
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -40,7 +40,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/pprof v0.0.0-20260902005441-ca85771921e4 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -78,6 +77,7 @@ require (
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
+	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/knftables v0.0.19 // indirect
