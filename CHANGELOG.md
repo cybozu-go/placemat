@@ -5,6 +5,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.7.1] - 2026-09-04
+
+### Changed
+
+- Update Go dependencies in [#225](https://github.com/cybozu-go/placemat/pull/225)
+- Bump GitHub Actions runner to Ubuntu 26.04 in [#225](https://github.com/cybozu-go/placemat/pull/225)
+
 ## [2.7.0] - 2026-09-03
 
 ### Added
@@ -317,7 +324,8 @@ See [upgrade_v2.md](docs/upgrade_v2.md) for more information.
 ### Added
 
 - Many things.  See git log.
-[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.7.0...HEAD
+[Unreleased]: https://github.com/cybozu-go/placemat/compare/v2.7.1...HEAD
+[2.7.1]: https://github.com/cybozu-go/placemat/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/cybozu-go/placemat/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/cybozu-go/placemat/compare/v2.5.2...v2.6.0
 [2.5.2]: https://github.com/cybozu-go/placemat/compare/v2.5.1...v2.5.2
