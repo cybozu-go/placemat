@@ -9,8 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- Update Go dependencies in [#225](https://github.com/cybozu-go/placemat/pull/225)
-- Bump GitHub Actions runner to Ubuntu 26.04 in [#225](https://github.com/cybozu-go/placemat/pull/225)
+- Update dependencies in [#225](https://github.com/cybozu-go/placemat/pull/225)
 
 ## [2.7.0] - 2026-09-03
 
