@@ -64,11 +64,11 @@ export GO111MODULE
 PATH=/usr/local/go/bin:\$GOPATH/bin:\$PATH
 export PATH
 
-# Download Go modules through Takumi Guard. This runs on the GCE instance, so
-# the OIDC token obtained on the GitHub runner is not available here; requests
-# are anonymous.
+# Download Go modules through Takumi Guard.
 GOPROXY=https://golang.flatt.tech
 export GOPROXY
+NETRC=/home/cybozu/.netrc
+export NETRC
 
 git clone https://github.com/${GITHUB_REPOSITORY} \
     \$HOME/go/src/github.com/${GITHUB_REPOSITORY}
@@ -83,6 +83,13 @@ cp /assets/ubuntu-*.img .
 exec make test
 EOF
 chmod +x run.sh
+
+NETRC_FILE=$(mktemp)
+if grep -q '^machine golang\.flatt\.tech ' "$HOME/.netrc" 2>/dev/null; then
+  grep '^machine golang\.flatt\.tech ' "$HOME/.netrc" > ${NETRC_FILE}
+  $GCLOUD compute scp --zone=${ZONE} ${NETRC_FILE} cybozu@${INSTANCE_NAME}:.netrc
+fi
+rm -f ${NETRC_FILE}
 
 $GCLOUD compute scp --zone=${ZONE} run.sh cybozu@${INSTANCE_NAME}:
 set +e
