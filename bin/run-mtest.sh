@@ -26,7 +26,10 @@ $GCLOUD compute instances create ${INSTANCE_NAME} \
   --image vmx-enabled \
   --boot-disk-type ${DISK_TYPE} \
   --boot-disk-size ${BOOT_DISK_SIZE} \
-  --local-ssd interface=scsi
+  --local-ssd interface=scsi \
+  --metadata block-project-ssh-keys=TRUE \
+  --no-service-account \
+  --no-scopes
 
 RET=0
 trap delete_instance INT QUIT TERM 0

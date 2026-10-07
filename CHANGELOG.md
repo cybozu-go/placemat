@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Clean up GCP settings in mtest in [#230](https://github.com/cybozu-go/placemat/pull/230)
+
 ## [2.7.1] - 2026-09-04
 
 ### Changed

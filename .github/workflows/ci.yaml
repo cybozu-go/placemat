@@ -57,8 +57,5 @@ jobs:
       - name: Run e2e test on GCP instance
         run: ../bin/run-mtest.sh
       - name: Set the instance lifetime
-        run: |
-          . ../bin/env
-          $GCLOUD compute instances add-metadata ${INSTANCE_NAME} --zone ${ZONE} \
-            --metadata shutdown-at=$(date -Iseconds -d+30minutes)
+        run: ../bin/set-lifetime.sh
         if: failure()
