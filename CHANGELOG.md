@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Clean up GCP settings in mtest in [#230](https://github.com/cybozu-go/placemat/pull/230)
+- Bump GitHub Actions and Go modules in [#231](https://github.com/cybozu-go/placemat/pull/231)
 
 ## [2.7.1] - 2026-09-04
 
